@@ -207,19 +207,19 @@ _(All done — the shared base every track builds on.)_
 > In-browser embedded wallet (viem). Build against the chain-lib interface; mock `swap()` until T-108.
 
 ### T-301 — Wallet generate + encrypt + persist
-- Status: pending
+- Status: in-progress @Claude 2026-06-03
 - Depends-on: —
 - Scope: wallet
 - Acceptance: `packages/wallet/src/wallet.ts` generates an EOA (viem), encrypts the key with a passphrase (WebCrypto), persists in IndexedDB; unlock round-trip test passes. Add `packages/wallet` to root `workspaces`.
 
 ### T-302 — Export wallet
-- Status: pending
+- Status: in-progress @Claude 2026-06-03
 - Depends-on: T-301
 - Scope: wallet
 - Acceptance: reveal private key + download a MetaMask-importable keystore JSON; re-import verified in a test.
 
 ### T-303 — Spending-limit policy
-- Status: pending
+- Status: in-progress @Claude 2026-06-03
 - Depends-on: T-301
 - Scope: wallet
 - Acceptance: enforces max trade size + token allowlist before signing; rejects over-limit with a clear error; tested.
@@ -321,7 +321,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: one-click share of a thesis or verdict as an image/link card.
 
 ### T-414 — Markets overview page (`/markets`)
-- Status: pending
+- Status: in-progress @Claude 2026-06-03 — mockup in progress (`web/mockups/markets.html`); real React page later.
 - Depends-on: T-401, T-405
 - Scope: web
 - Acceptance: Binance-style markets overview (PRD §11g) — market-stats header, sortable table of all `mUSD/<asset>` pairs (price, 24h %, 24h volume, sparkline), top gainers/losers strip, favorite toggle; clicking a row opens `/trade` with the pair preloaded. Reuses the market price feed (T-204 / T-405), no new backend contract.
