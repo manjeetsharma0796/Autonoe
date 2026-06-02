@@ -71,7 +71,7 @@ Node/Express + LangChain.js. Can mock Track A's chain lib via PRD §12 until A8 
 | B4 | Data subagents (tools) | `server/agents/subagents/{onchain,market,news,indicators}.ts` | Each is a callable tool returning structured data; each gated by `activeSources`; onchain reads via chain lib (mock until A8) | | ☐ | depends 0.2 |
 | B5 | Thesis agent (+ human thesis) | `server/agents/thesis.ts`, `server/routes/thesis.ts` | `POST /api/thesis` → valid `Thesis` (PRD §12) using the role's model, orchestrating only active subagents; **populates `reasoning` + per-subagent `traces`**; `POST /api/thesis/human` structures a user-written thesis (source:'human') into options | | ☐ | depends B2–B4 |
 | B6 | Debate graph | `server/agents/debate.ts`, `server/routes/debate.ts` | `POST /api/debate` → `DebateResult` (accepts AI **or** human thesis); Supporter→Discriminator→Judge each use their configured model; returns refined options w/ predicted % + risk + caveats **plus per-judge `traces`** | | ☐ | depends B2,B3 |
-| B7 | History endpoint | `server/routes/history.ts` | `GET /api/history` merges SQLite records + on-chain DecisionLog (via chain lib) | | ☐ | depends A8,B1 |
+| B7 | History + leaderboard | `server/routes/history.ts`, `server/routes/leaderboard.ts` | `GET /api/history` merges SQLite records + on-chain DecisionLog; each record stores **models used per role**; `GET /api/leaderboard` aggregates realized outcomes by model+role | | ☐ | depends A8,B1 |
 | B8 | Assistant chat endpoint | `server/agents/assistant.ts`, `server/routes/assistant.ts` | `POST /api/assistant` streams a `ChatMessage` reply using the `assistant` role's model; optional market/position context; can emit a thesis | | ☐ | depends B2,B3 |
 
 ---
@@ -98,7 +98,7 @@ React 19 + Vite. **5 routes + 1 wallet drawer** (PRD §11a–§11e; route names 
 | ID | Task | Files | Acceptance criteria | Owner | Status | Notes |
 |----|------|-------|---------------------|-------|--------|-------|
 | D1 | App scaffold + routing + theme | `web/` (Vite+React+Router), `web/src/App.tsx`, `web/src/theme.css`, wagmi/RainbowKit | App runs; 5 routes wired (`/`,`/trade`,`/studio`,`/history`,`/settings`); design tokens applied; MetaMask connect on Mantle Sepolia | | ☐ | depends 0.1 |
-| D2 | Global shell + wallet drawer | `web/src/components/{AppShell,WalletDrawer}.tsx` | Persistent nav + global slide-over wallet drawer reachable from every route; balances/fund/export/limits (calls `packages/wallet`) | | ☐ | depends D1, C-track |
+| D2 | Global shell + wallet drawer | `web/src/components/{AppShell,WalletDrawer}.tsx` | Persistent nav + global slide-over wallet drawer; balances/fund/export/limits (calls `packages/wallet`); **clearly distinguishes funding wallet (MetaMask) vs autonomous agent wallet** with an "acting wallet" indicator; persistent **"testnet · not financial advice" disclaimer** in the shell | | ☐ | depends D1, C-track |
 | D3 | **ReasoningTrace component** (shared "Show thinking") | `web/src/components/ReasoningTrace.tsx` | Reusable collapsible trace: shows `summary` collapsed, expands to `steps[]` (PRD §12 `ReasoningTrace`); used by thesis, subagents, and judges | | ☐ | depends D1,0.2 |
 | D4 | `/` Landing page | `web/src/pages/Landing.tsx` | Hero + how-it-works (thesis→judge→execute) + on-chain-benchmark pitch + "Launch App" CTA; passes design review | | ☐ | depends D1 |
 | D5 | `/trade` chart + execute | `web/src/pages/Trade.tsx`, `web/src/components/{ChartPanel,SwapBox,Positions}.tsx` | TradingView embed for selected pair; manual swap/execute via `packages/wallet`; balances/positions | | ☐ | depends D1,C4 |
@@ -108,6 +108,8 @@ React 19 + Vite. **5 routes + 1 wallet drawer** (PRD §11a–§11e; route names 
 | D9 | Execute flow (shared) | `web/src/components/ExecuteModal.tsx` | From a chosen option (direct from thesis OR from judge) → confirm → tx status + PnL + mantlescan link (calls `packages/wallet` execute) | | ☐ | depends D7,D8,C4 |
 | D10 | `/settings` page | `web/src/pages/Settings.tsx` | Per-provider paste field + "Get free key" link + free-tier note; **auto-populate models on paste**; per-role model dropdowns (incl. `assistant`); data-source toggles; persists via `/api/keys`,`/api/roles` | | ☐ | depends D1,0.3 |
 | D11 | `/history` Benchmark page | `web/src/pages/History.tsx` | DecisionLog records + PnL-over-time / win-rate charts + mantlescan links; reads `/api/history` | | ☐ | depends D1,B7 |
+| D12 | Model performance leaderboard | `web/src/components/Leaderboard.tsx` | On Benchmark: ranks models per role (thesis/supporter/discriminator/judge) by realized outcome; reads `/api/leaderboard` | | ☐ | depends D11,B7 |
+| D13 | Share thesis/verdict card | `web/src/components/ShareCard.tsx` | One-click share of a thesis or verdict as an image/link card | | ☐ | depends D7,D8 |
 
 ---
 

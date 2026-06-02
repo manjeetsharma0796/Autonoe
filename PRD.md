@@ -165,6 +165,13 @@ Persisted as the source of truth in **`design-system/autonoe/MASTER.md`** (page 
 - **Effects:** minimal glow (`text-shadow: 0 0 10px`), smooth 150–300ms transitions, visible focus rings.
 - **Non-negotiables:** SVG icons only (Lucide/Heroicons, no emoji), `cursor-pointer` on all interactives, `prefers-reduced-motion` respected, responsive at 375/768/1024/1440, WCAG 4.5:1 contrast.
 
+## 11f. Additional locked features
+
+- **Model performance leaderboard** (on Benchmark): rank which model — per role (`thesis`, `supporter`, `discriminator`, `judge`) — produced the best realized outcomes. Computed from history (each record stores the models used) joined with on-chain PnL. This is the clearest expression of the hackathon's "benchmark AI on-chain" theme.
+- **Your-wallet vs agent-wallet clarity**: the UI always visually distinguishes the user's funding wallet (MetaMask) from the autonomous **agent wallet** that holds mUSD and signs swaps — labels, colors, and an explicit "acting wallet" indicator in the drawer and execute flow.
+- **Risk disclaimer + share**: a persistent "testnet · not financial advice" notice, plus a one-click **share** of a thesis/verdict card (image/link) for demo flair and social proof.
+- **Execution is manual-confirm (MVP):** the agent never auto-executes; the user confirms each trade. (Auto-execute within limits is explicitly deferred.)
+
 ## 12. Interface contracts (the parallelization backbone — freeze these first)
 
 These shared shapes let the four tracks build independently against stable interfaces. They live in `packages/shared/types.ts`.
@@ -211,6 +218,7 @@ export interface Thesis {
   options: ThesisOption[];
   reasoning?: string;               // overall thesis reasoning (collapsed by default)
   traces?: ReasoningTrace[];        // per-subagent "show thinking"
+  modelsUsed?: Partial<RoleModelMap>; // attribution for the leaderboard
   createdAt: string;                // ISO
 }
 
@@ -253,7 +261,8 @@ export interface SwapResult {
 | POST | `/api/thesis/human` | `{intent, body, suggestedPair}` → `Thesis` (source:'human', structured into options) |
 | POST | `/api/debate` | `{thesis: Thesis}` → `DebateResult` (accepts AI- or human-authored thesis; includes per-judge `traces`) |
 | POST | `/api/assistant` | `{messages: ChatMessage[], context?}` → streamed `ChatMessage` (Trade-page chat) |
-| GET | `/api/history` | → past theses/verdicts/outcomes (from SQLite + DecisionLog) |
+| GET | `/api/history` | → past theses/verdicts/outcomes (from SQLite + DecisionLog; includes models used) |
+| GET | `/api/leaderboard` | → realized outcomes aggregated by model + role (for the leaderboard) |
 
 **On-chain artifacts contract:** Track A writes deployed addresses to `packages/chain/addresses.json` and ABIs to `packages/chain/abis/`. All other tracks import from there — never hard-code addresses.
 
