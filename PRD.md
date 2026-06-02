@@ -166,6 +166,22 @@ Persisted as the source of truth in **`design-system/autonoe/MASTER.md`** (page 
 - **Effects:** minimal glow (`text-shadow: 0 0 10px`), smooth 150–300ms transitions, visible focus rings.
 - **Non-negotiables:** SVG icons only (Lucide/Heroicons, no emoji), `cursor-pointer` on all interactives, `prefers-reduced-motion` respected, responsive at 375/768/1024/1440, WCAG 4.5:1 contrast.
 
+**Motion / VFX stack (web3-vfx-stack):**
+- **Smooth scrolling:** Lenis (syncs with GSAP ScrollTrigger).
+- **Scroll animations:** GSAP + ScrollTrigger (landing sequences/pinning); Framer Motion (per-element fade-ins on app pages).
+- **Atmosphere:** CSS gradient orbs (gold/purple) on every page.
+- **Hero wow (landing/markets only):** copy-paste Aceternity UI (AuroraBackground, TextGenerateEffect, SpotlightCard) + Magic UI (NumberTicker, ShimmerButton, Marquee).
+- **Discipline:** landing/markets get the full effect stack; the Trade terminal + AI Workspace stay clean (atmosphere + light fade-ins only) so they read as serious tools. Respect `prefers-reduced-motion` everywhere.
+
+## 11h. UI build workflow (template-first)
+
+To keep the UI on-target without Figma, the team uses a **one-page slice → template** loop:
+1. The user provides direction via **screenshots + adjectives** (and may pick between mockup options shown in-browser).
+2. Direction is baked into `design-system/autonoe/MASTER.md` (the contract).
+3. **Build the Landing page first** as the full visual reference (complete motion stack); review via screenshot / preview URL; iterate until approved.
+4. The approved Landing becomes the **visual template** the other five routes inherit (same tokens, motion language, component patterns).
+Each frontend PR ships a preview URL for the team to review.
+
 ## 11f. Additional locked features
 
 - **Model performance leaderboard** (on Benchmark): rank which model — per role (`thesis`, `supporter`, `discriminator`, `judge`) — produced the best realized outcomes. Computed from history (each record stores the models used) joined with on-chain PnL. This is the clearest expression of the hackathon's "benchmark AI on-chain" theme.

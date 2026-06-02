@@ -240,7 +240,7 @@ _(All done — the shared base every track builds on.)_
 - Status: pending
 - Depends-on: —
 - Scope: web
-- Acceptance: Vite + React + Router; 6 routes wired (`/`, `/markets`, `/trade`, `/studio`, `/history`, `/settings`); design tokens applied (dark OLED, gold `#F59E0B` + purple `#8B5CF6`, Orbitron/Exo 2); MetaMask connect on Mantle Sepolia. Add `web` to root `workspaces`.
+- Acceptance: Vite + React + Router; 6 routes wired (`/`, `/markets`, `/trade`, `/studio`, `/history`, `/settings`); design tokens applied (dark OLED, gold `#F59E0B` + purple `#8B5CF6`, Orbitron/Exo 2); motion/VFX deps installed via bun (Lenis, gsap + @gsap/react, framer-motion); MetaMask connect on Mantle Sepolia. Add `web` to root `workspaces`. See PRD §11b motion stack + §11h workflow.
 
 ### T-402 — Global shell + wallet drawer
 - Status: pending
@@ -254,11 +254,11 @@ _(All done — the shared base every track builds on.)_
 - Scope: web
 - Acceptance: reusable collapsible trace — shows `summary` collapsed, expands to `steps[]` (PRD §12 `ReasoningTrace`); reused by thesis, subagents, and judges.
 
-### T-404 — Landing page (`/`)
+### T-404 — Landing page (`/`) — VISUAL TEMPLATE
 - Status: pending
 - Depends-on: T-401
 - Scope: web
-- Acceptance: hero + how-it-works (thesis → judge → execute) + on-chain-benchmark pitch + "Launch App" CTA; passes a design review.
+- Acceptance: **built first as the visual reference for the whole app** (PRD §11h). Full motion stack — Lenis smooth scroll + GSAP/ScrollTrigger + Aceternity/Magic UI hero effects + gold/purple atmosphere. Sections: hero + how-it-works (thesis → judge → execute) + on-chain-benchmark pitch + "Launch App" CTA. Reviewed via screenshot/preview and iterated to approval; the approved tokens + motion language become the template the other routes inherit.
 
 ### T-405 — Trade page — chart + execute (`/trade`)
 - Status: pending
