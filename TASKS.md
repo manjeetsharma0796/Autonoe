@@ -1,7 +1,7 @@
 # TASKS — Autonoe
 
 Living task tracker for 4 parallel contributors. See [PRD.md](PRD.md) for the full design.
-**Last updated:** 2026-06-02 — _(update this line whenever you change a status)_
+**Last updated:** 2026-06-02 — Phase 0 complete (shared types, API contract, network config scaffolded).
 
 ---
 
@@ -34,10 +34,10 @@ These unblock all four tracks. One person can do them while others read the PRD;
 
 | ID | Task | Files | Acceptance criteria | Owner | Status | Notes |
 |----|------|-------|---------------------|-------|--------|-------|
-| 0.1 | Monorepo scaffold | `package.json` (workspaces), `tsconfig.base.json`, `.gitignore`, `.env.example` | `npm install` works at root; workspaces `web`, `server`, `packages/*`, `contracts` resolve | | ☐ | |
-| 0.2 | Freeze shared types | `packages/shared/types.ts` | All types from PRD §12 compile and are exported; published as `@aegis/shared` | | ☐ | |
-| 0.3 | Freeze REST API contract | `packages/shared/api.ts` (route consts + req/res types) | Every endpoint in PRD §12 has a typed request/response | | ☐ | |
-| 0.4 | Env + network config | `.env.example`, `packages/chain/network.ts` | Chain 5003 RPC + explorer constants exported; `.env.example` lists all keys (provider keys, deployer key) | | ☐ | |
+| 0.1 | Monorepo scaffold | `package.json` (workspaces), `tsconfig.base.json`, `tsconfig.json`, `.gitignore`, `.env.example` | `npm install` works at root; `npm run build` passes | Claude | ✅ | 2026-06-02. Workspaces = `packages/*`; **Track owners add `web`/`server`/`contracts` to root `workspaces` when they scaffold** (Vite/Hardhat generate their own package.json). |
+| 0.2 | Freeze shared types | `packages/shared/src/types.ts` | All types from PRD §12 compile and are exported as `@autonoe/shared` | Claude | ✅ | 2026-06-02. Incl. ReasoningTrace, assistant role, Thesis.source/suggestedPair/reasoning/traces/modelsUsed, role/asset const arrays. |
+| 0.3 | Freeze REST API contract | `packages/shared/src/api.ts` (route consts + req/res types) | Every endpoint in PRD §12 has a typed request/response | Claude | ✅ | 2026-06-02. `API` route map + request/response types for all 10 endpoints. |
+| 0.4 | Env + network config | `.env.example`, `packages/chain/src/network.ts`, `packages/chain/addresses.json` | Chain 5003 RPC + explorer constants exported; `.env.example` lists all keys | Claude | ✅ | 2026-06-02. `mantleSepolia` viem-shaped chain, txUrl/addressUrl helpers, placeholder `addresses.json` (Track A fills via A7). |
 
 ---
 

@@ -1,0 +1,21 @@
+{
+  "name": "autonoe",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Autonoe — autonomous AI trading thesis & debate copilot on Mantle Sepolia",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b --pretty"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
