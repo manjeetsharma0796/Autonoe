@@ -6,3 +6,4 @@ mono.db
 mono.db.json
 artifacts/
 cache/
+*.tsbuildinfo
