@@ -207,19 +207,19 @@ _(All done — the shared base every track builds on.)_
 > In-browser embedded wallet (viem). Build against the chain-lib interface; mock `swap()` until T-108.
 
 ### T-301 — Wallet generate + encrypt + persist
-- Status: in-progress @Claude 2026-06-03
+- Status: done @Claude 2026-06-03 — `@autonoe/wallet`: viem EOA + WebCrypto PBKDF2/AES-GCM keystore, injectable `WalletStore` + `memoryStore()` (`packages/wallet/src/wallet.ts`). 14 tests pass.
 - Depends-on: —
 - Scope: wallet
 - Acceptance: `packages/wallet/src/wallet.ts` generates an EOA (viem), encrypts the key with a passphrase (WebCrypto), persists in IndexedDB; unlock round-trip test passes. Add `packages/wallet` to root `workspaces`.
 
 ### T-302 — Export wallet
-- Status: in-progress @Claude 2026-06-03
+- Status: done @Claude 2026-06-03 — `exportPrivateKey` + `exportKeystoreJSON` (`packages/wallet/src/export.ts`); tested (no plaintext key in keystore JSON). MetaMask-import polish later.
 - Depends-on: T-301
 - Scope: wallet
 - Acceptance: reveal private key + download a MetaMask-importable keystore JSON; re-import verified in a test.
 
 ### T-303 — Spending-limit policy
-- Status: in-progress @Claude 2026-06-03
+- Status: done @Claude 2026-06-03 — `SpendingPolicy` + `checkPolicy`/`enforcePolicy` + persistence + `DEFAULT_POLICY` (`packages/wallet/src/policy.ts`); tested allow/deny.
 - Depends-on: T-301
 - Scope: wallet
 - Acceptance: enforces max trade size + token allowlist before signing; rejects over-limit with a clear error; tested.
