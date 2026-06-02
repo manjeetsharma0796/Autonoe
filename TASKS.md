@@ -1,4 +1,4 @@
-# TASKS — Aegis-on-Mantle
+# TASKS — Autonoe
 
 Living task tracker for 4 parallel contributors. See [PRD.md](PRD.md) for the full design.
 **Last updated:** 2026-06-02 — _(update this line whenever you change a status)_
@@ -91,17 +91,20 @@ In-browser embedded wallet with viem. Builds against chain lib interface; mock `
 
 ## Track D — Frontend UI (Best UI/UX target)
 
-React 19 + Vite. Renders against PRD §12 types; mock API responses until server endpoints land. Use the `frontend-design` skill for polish.
+React 19 + Vite. **4 routes + 1 wallet drawer** (PRD §11a). Renders against PRD §12 types; mock API responses until server endpoints land.
+**Build to the design system in `design-system/autonoe/MASTER.md`** (page overrides in `design-system/autonoe/pages/`). Use the `frontend-design` skill for polish and `web3-vfx-stack` for the landing visual wow. Dark OLED · gold `#F59E0B` + purple `#8B5CF6` on `#0F172A` · Orbitron/Exo 2.
 
 | ID | Task | Files | Acceptance criteria | Owner | Status | Notes |
 |----|------|-------|---------------------|-------|--------|-------|
-| D1 | App scaffold + layout | `web/` (Vite+React), `web/src/App.tsx`, wagmi/RainbowKit setup | App runs; trading-terminal layout shell; MetaMask connect works on Mantle Sepolia | | ☐ | depends 0.1 |
-| D2 | Chart panel | `web/src/components/ChartPanel.tsx` | TradingView embed widget renders for the selected pair | | ☐ | depends D1 |
-| D3 | Intent + Thesis panel | `web/src/components/{IntentBar,SourceToggles,ThesisOptions}.tsx` | Intent input + data-source toggles; renders multi-option thesis as cards (direction/asset/size/rationale/predicted return/risk) | | ☐ | depends D1,0.2 |
-| D4 | Debate panel visualization | `web/src/components/DebatePanel.tsx` | Shows Supporter/Discriminator/Judge, their arguments, verdict, and refined options with predicted % + risk + caveats graphed | | ☐ | depends D1,0.2 |
-| D5 | Settings page | `web/src/components/Settings.tsx` | Provider key entry (Mono UX) + per-role model dropdowns + source toggles; persists via `/api/keys`,`/api/roles` | | ☐ | depends D1,0.3 |
-| D6 | Wallet panel | `web/src/components/WalletPanel.tsx` | Shows mUSD + asset balances; fund/mint, export, and limit-config controls (calls `packages/wallet`) | | ☐ | depends D1,C-track |
-| D7 | Execution + history | `web/src/components/{ExecuteModal,History}.tsx` | Select option → confirm → tx status + PnL + mantlescan link; history view reads `/api/history` | | ☐ | depends D1,D3,D4 |
+| D1 | App scaffold + routing + theme | `web/` (Vite+React+Router), `web/src/App.tsx`, `web/src/theme.css`, wagmi/RainbowKit | App runs; 4 routes wired (`/`,`/app`,`/history`,`/settings`); design tokens (colors/fonts) applied; MetaMask connect works on Mantle Sepolia | | ☐ | depends 0.1 |
+| D2 | Global shell + wallet drawer | `web/src/components/{AppShell,WalletDrawer}.tsx` | Persistent nav + a global slide-over wallet drawer reachable from every route; balances/fund/export/limits controls (calls `packages/wallet`) | | ☐ | depends D1, C-track |
+| D3 | `/` Landing page | `web/src/pages/Landing.tsx` | Hero + how-it-works (thesis→debate→execute) + on-chain-benchmark pitch + "Launch App" CTA; passes design review | | ☐ | depends D1 |
+| D4 | `/app` Terminal — chart + intent | `web/src/pages/Terminal.tsx`, `web/src/components/{ChartPanel,IntentBar,SourceToggles}.tsx` | TradingView embed for selected pair; intent input + data-source toggles fire `POST /api/thesis` | | ☐ | depends D1,0.2 |
+| D5 | `/app` Terminal — thesis options | `web/src/components/ThesisOptions.tsx` | Renders multi-option thesis as cards (direction/asset/size/rationale/predicted return/risk); "Execute" + "Send to debate" actions | | ☐ | depends D4 |
+| D6 | `/app` Terminal — debate panel | `web/src/components/DebatePanel.tsx` | Shows Supporter/Discriminator/Judge arguments, verdict, and refined options with predicted % + risk + caveats; visual/graph explanation | | ☐ | depends D4,0.2 |
+| D7 | `/app` Terminal — execute flow | `web/src/components/ExecuteModal.tsx` | Select option → confirm → tx status + PnL + mantlescan link (calls `packages/wallet` execute) | | ☐ | depends D5,D6,C4 |
+| D8 | `/settings` page | `web/src/pages/Settings.tsx` | Provider key entry (Mono UX) + per-role model dropdowns + source toggles; persists via `/api/keys`,`/api/roles` | | ☐ | depends D1,0.3 |
+| D9 | `/history` Benchmark page | `web/src/pages/History.tsx` | DecisionLog records + PnL-over-time / win-rate charts + mantlescan links; reads `/api/history` | | ☐ | depends D1,B7 |
 
 ---
 
@@ -121,6 +124,6 @@ React 19 + Vite. Renders against PRD §12 types; mock API responses until server
 
 - **Person 1 → Track A** (Solidity/viem) — the critical path; start immediately.
 - **Person 2 → Track B** (backend + LangChain agents).
-- **Person 3 → Track C + Settings UX glue** (wallet) — pairs with Person 4 on D5/D6.
+- **Person 3 → Track C + wallet UX glue** (wallet) — pairs with Person 4 on D2 (wallet drawer) and D8 (settings).
 - **Person 4 → Track D** (frontend/UX) — owns the Best UI/UX target.
 - Everyone does **Phase 0 together first**, then splits. Integration phase is shared.

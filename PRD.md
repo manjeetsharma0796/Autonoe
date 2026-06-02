@@ -1,4 +1,6 @@
-# PRD — Aegis-on-Mantle: AI Trading Thesis & Debate Copilot
+# PRD — Autonoe: Autonomous AI Trading Thesis & Debate Copilot
+
+> **Name:** **Autonoe** (Greek _auto_ + _nous_ = "self-mind" / autonomous intelligence). Tagline: _"Your autonomous mind for on-chain trades."_
 
 > **Status:** Approved design · **Date:** 2026-06-02 · **Event:** Mantle "The Turing Test" Hackathon 2026 (Phase 2 — AI Awakening)
 > **Submission deadline:** 2026-06-15 15:59 UTC · **Demo Day:** 2026-07-02/03
@@ -104,6 +106,30 @@ THESIS = { options[]: { direction, asset, sizeMUSD, rationale, predictedReturnPc
 | `server/` | Express: provider proxy (Mono), role/model config, subagents, thesis + debate endpoints |
 | `packages/wallet/` | Embedded EOA: generate/encrypt/persist/export, spending-limit policy, agent-sign flow |
 | `web/` | React UI: chart, intent+thesis panel, debate visualization, settings, wallet panel, results/history |
+
+## 11a. Information architecture — 4 routes + 1 wallet drawer
+
+Kept deliberately small for a 13-day, 4-person build; each route is a clean surface one contributor can own.
+
+| # | Route | Owner-ish | Purpose | Key sections |
+|---|-------|-----------|---------|--------------|
+| 1 | `/` **Landing** | Track D | First impression for judges + submission | Hero, how-it-works (thesis→debate→execute), on-chain-benchmark pitch, "Launch App" CTA, footer |
+| 2 | `/app` **Terminal** ⭐ | Track D (lead) | The core product — ~50% of UI effort | Chart panel (TradingView), intent bar + data-source toggles, thesis option cards, debate panel (Supporter/Discriminator/Judge + refined options), execute action |
+| 3 | `/history` **Benchmark** | Track D | On-chain AI-performance showcase | DecisionLog records, PnL over time, win-rate / per-model performance charts, mantlescan links |
+| 4 | `/settings` **Settings** | Track D + C | Low-friction config | Provider keys (Mono UX), per-role model dropdowns, data-source toggles |
+| — | **Wallet** (global slide-over drawer, **not** a route) | Track C | Contextual, reachable everywhere | mUSD + asset balances, fund/mint, export, spending limits |
+
+Wallet is a drawer (not a page) because it's needed in-context while executing on `/app`.
+
+## 11b. Design system (Track D builds to this)
+
+Persisted as the source of truth in **`design-system/autonoe/MASTER.md`** (page overrides in `design-system/autonoe/pages/`). Summary:
+
+- **Style:** Dark Mode (OLED), high-contrast, web3-futuristic.
+- **Palette:** background `#0F172A`, text `#F8FAFC`, primary/gold `#F59E0B` (markets/trust), secondary `#FBBF24`, CTA/purple `#8B5CF6` (AI/tech).
+- **Type:** **Orbitron** (headings) + **Exo 2** (body).
+- **Effects:** minimal glow (`text-shadow: 0 0 10px`), smooth 150–300ms transitions, visible focus rings.
+- **Non-negotiables:** SVG icons only (Lucide/Heroicons, no emoji), `cursor-pointer` on all interactives, `prefers-reduced-motion` respected, responsive at 375/768/1024/1440, WCAG 4.5:1 contrast.
 
 ## 12. Interface contracts (the parallelization backbone — freeze these first)
 
