@@ -261,13 +261,13 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: reusable collapsible trace — shows `summary` collapsed, expands to `steps[]` (PRD §12 `ReasoningTrace`); reused by thesis, subagents, and judges.
 
 ### T-404 — Landing page (`/`) — VISUAL TEMPLATE
-- Status: pending
+- Status: in-progress @Claude 2026-06-03 — porting `web/mockups/index.html` → `app/page.tsx`.
 - Depends-on: T-401
 - Scope: web
 - Acceptance: **built first as the visual reference for the whole app** (PRD §11h). Full motion stack — Lenis smooth scroll + GSAP/ScrollTrigger + Aceternity/Magic UI hero effects + gold/purple atmosphere. Sections: hero + how-it-works (thesis → judge → execute) + on-chain-benchmark pitch + "Launch App" CTA. Reviewed via screenshot/preview and iterated to approval; the approved tokens + motion language become the template the other routes inherit.
 
 ### T-405 — Trade page — chart + execute (`/trade`)
-- Status: pending
+- Status: in-progress @Claude 2026-06-03 — porting `web/mockups/trade.html` → `app/trade/page.tsx` (incl. side AI rail).
 - Depends-on: T-401, T-304
 - Scope: web
 - Acceptance: TradingView embed for the selected pair; manual swap/execute via `packages/wallet`; balances/positions.
@@ -279,7 +279,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: tabbed rail — Quick Thesis (intent → inline thesis + "Refine in Judge Panel" → `/studio`) and Assistant chat (`/api/assistant`); reasoning traces shown.
 
 ### T-407 — Studio Step 1 — Thesis (AI or human) (`/studio`)
-- Status: pending
+- Status: in-progress @Claude 2026-06-03 — porting `web/mockups/studio.html` → `app/studio/page.tsx` (Step 1 + Step 2 Judge Panel).
 - Depends-on: T-401, T-403
 - Scope: web
 - Acceptance: AI mode fires `POST /api/thesis`; human mode posts `/api/thesis/human`; renders risk-tiered option cards + pair suggestion + thesis reasoning trace; per-option branch buttons "Execute" / "Send to Judge Panel".
