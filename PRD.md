@@ -107,17 +107,18 @@ THESIS = { options[]: { direction, asset, sizeMUSD, rationale, predictedReturnPc
 | `packages/wallet/` | Embedded EOA: generate/encrypt/persist/export, spending-limit policy, agent-sign flow |
 | `web/` | React UI: chart, intent+thesis panel, debate visualization, settings, wallet panel, results/history |
 
-## 11a. Information architecture — 5 routes + 1 wallet drawer
+## 11a. Information architecture — 6 routes + 1 wallet drawer
 
 > **Names are placeholders (TBD).** Routes shown are working labels; the user will finalize names later.
 
 | # | Route (label TBD) | Owner-ish | Purpose | Key sections |
 |---|-------|-----------|---------|--------------|
 | 1 | `/` **Landing** | Track D | First impression for judges + submission | Hero, how-it-works (thesis→judge→execute), on-chain-benchmark pitch, "Launch App" CTA, footer |
-| 2 | `/trade` **Trade** | Track D (lead) | Manual trading + execution surface | Chart panel (TradingView), swap/execute, balances/positions, **side AI rail** (see §11c) |
-| 3 | `/studio` **AI Workspace** ⭐ | Track D (lead) | Where theses are created, judged, refined — the signature flow | **Stepped + branchable** (see §11d): Create Thesis (AI **or** human) + pair suggestion → either execute directly or → Judge Panel (Supporter/Discriminator/Judge) → refined options. Every AI output has a **collapsible reasoning trace**. |
-| 4 | `/history` **Benchmark** | Track D | On-chain AI-performance showcase | DecisionLog records, PnL over time, win-rate / per-model performance charts, mantlescan links |
-| 5 | `/settings` **Settings** | Track D + B | Frictionless config (see §11e) | Provider keys + "get free key" links, per-role model dropdowns (auto-populated), data-source toggles |
+| 2 | `/markets` **Markets** | Track D | Binance-style markets overview / discovery (see §11g) | Market-stats header, sortable table of all `mUSD/<asset>` pairs (price, 24h %, 24h volume, sparkline), top gainers/losers strip, click-through to `/trade` |
+| 3 | `/trade` **Trade** | Track D (lead) | Manual trading + execution surface | Chart panel (TradingView), swap/execute, balances/positions, **side AI rail** (see §11c) |
+| 4 | `/studio` **AI Workspace** ⭐ | Track D (lead) | Where theses are created, judged, refined — the signature flow | **Stepped + branchable** (see §11d): Create Thesis (AI **or** human) + pair suggestion → either execute directly or → Judge Panel (Supporter/Discriminator/Judge) → refined options. Every AI output has a **collapsible reasoning trace**. |
+| 5 | `/history` **Benchmark** | Track D | On-chain AI-performance showcase | DecisionLog records, PnL over time, win-rate / per-model performance charts, mantlescan links |
+| 6 | `/settings` **Settings** | Track D + B | Frictionless config (see §11e) | Provider keys + "get free key" links, per-role model dropdowns (auto-populated), data-source toggles |
 | — | **Wallet** (global slide-over drawer, **not** a route) | Track C | Contextual, reachable everywhere | mUSD + asset balances, fund/mint (faucet), export, spending limits |
 
 Wallet is a drawer (not a page) because it's needed in-context while executing on `/trade` and `/studio`.
@@ -171,6 +172,17 @@ Persisted as the source of truth in **`design-system/autonoe/MASTER.md`** (page 
 - **Your-wallet vs agent-wallet clarity**: the UI always visually distinguishes the user's funding wallet (MetaMask) from the autonomous **agent wallet** that holds mUSD and signs swaps — labels, colors, and an explicit "acting wallet" indicator in the drawer and execute flow.
 - **Risk disclaimer + share**: a persistent "testnet · not financial advice" notice, plus a one-click **share** of a thesis/verdict card (image/link) for demo flair and social proof.
 - **Execution is manual-confirm (MVP):** the agent never auto-executes; the user confirms each trade. (Auto-execute within limits is explicitly deferred.)
+
+## 11g. Markets overview page (`/markets`)
+
+A Binance-style markets/discovery surface (modeled on binance.com/markets/overview), scoped to our testnet assets:
+- **Market-stats header:** a few headline figures (number of markets, total mUSD liquidity, biggest 24h mover).
+- **Markets table:** one row per `mUSD/<asset>` pair (WMNT, MockBTC, MockETH) with last price (in mUSD), 24h change %, 24h volume, and a **sparkline** mini-chart; sortable columns; a star/favorite toggle.
+- **Top gainers / losers strip:** small cards above the table.
+- **Click-through:** selecting a row opens `/trade` with that pair preloaded.
+- **Data source:** price/24h/volume from the same market subagent feed used by the thesis agent; sparklines from cached OHLC. No new backend contract — reuses existing price data.
+
+Scope note: with only three assets at MVP this is intentionally light; the layout is built to scale if more pairs are added.
 
 ## 12. Interface contracts (the parallelization backbone — freeze these first)
 

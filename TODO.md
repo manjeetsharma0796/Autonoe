@@ -234,13 +234,13 @@ _(All done — the shared base every track builds on.)_
 
 ## 4 — Frontend UI
 
-> React 19 + Vite. **5 routes + wallet drawer** (PRD §11a–§11e). Build to `design-system/autonoe/MASTER.md`. Use the `frontend-design` skill for polish, `web3-vfx-stack` for the landing. Mock API responses (PRD §12) until endpoints land.
+> React 19 + Vite. **6 routes + wallet drawer** (PRD §11a–§11g). Build to `design-system/autonoe/MASTER.md`. Use the `frontend-design` skill for polish, `web3-vfx-stack` for the landing. Mock API responses (PRD §12) until endpoints land.
 
 ### T-401 — App scaffold + routing + theme
 - Status: pending
 - Depends-on: —
 - Scope: web
-- Acceptance: Vite + React + Router; 5 routes wired (`/`, `/trade`, `/studio`, `/history`, `/settings`); design tokens applied (dark OLED, gold `#F59E0B` + purple `#8B5CF6`, Orbitron/Exo 2); MetaMask connect on Mantle Sepolia. Add `web` to root `workspaces`.
+- Acceptance: Vite + React + Router; 6 routes wired (`/`, `/markets`, `/trade`, `/studio`, `/history`, `/settings`); design tokens applied (dark OLED, gold `#F59E0B` + purple `#8B5CF6`, Orbitron/Exo 2); MetaMask connect on Mantle Sepolia. Add `web` to root `workspaces`.
 
 ### T-402 — Global shell + wallet drawer
 - Status: pending
@@ -313,6 +313,12 @@ _(All done — the shared base every track builds on.)_
 - Depends-on: T-407, T-408
 - Scope: web
 - Acceptance: one-click share of a thesis or verdict as an image/link card.
+
+### T-414 — Markets overview page (`/markets`)
+- Status: pending
+- Depends-on: T-401, T-405
+- Scope: web
+- Acceptance: Binance-style markets overview (PRD §11g) — market-stats header, sortable table of all `mUSD/<asset>` pairs (price, 24h %, 24h volume, sparkline), top gainers/losers strip, favorite toggle; clicking a row opens `/trade` with the pair preloaded. Reuses the market price feed (T-204 / T-405), no new backend contract.
 
 ---
 
