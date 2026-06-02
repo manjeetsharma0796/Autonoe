@@ -204,3 +204,35 @@ Before delivering any UI code, verify:
 - [ ] Responsive: 375px, 768px, 1024px, 1440px
 - [ ] No content hidden behind fixed navbars
 - [ ] No horizontal scroll on mobile
+
+---
+
+## LOCKED LANDING TEMPLATE (approved 2026-06-03) — authoritative
+
+> Reference implementation: **`web/mockups/index.html`** (run via `python -m http.server` / the preview). This refines the generic values above — when they differ, **these win**. The Landing is the visual template all other routes inherit.
+
+### Exact palette (CSS variables used in the mockup)
+```css
+--bg:#080B12; --bg2:#0C111C; --panel:#0F1626; --panel2:#121A2C;
+--ink:#F4F7FB; --muted:#8C9AB3; --faint:#5B6981;
+--gold:#F5A524; --gold2:#FFCC66;      /* primary value/market signal */
+--violet:#8B5CF6; --violet2:#B79CFF;  /* AI accent */
+--green:#3FE0A6;                       /* Supporter */
+--red:#FF6B6B;                         /* Discriminator */
+--line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.045);
+```
+Accent roles: **gold = value/markets/Judge**, **violet = AI/verdict**, **green = Supporter**, **red = Discriminator**. Gold is dominant; violet secondary.
+
+### Fonts (locked)
+- Display: **Orbitron** (700/800 for hero + headings; uppercase wordmark with letter-spacing .22em).
+- Body: **Exo 2** (300 base, 500 emphasis).
+- Numbers/tickers/labels: **JetBrains Mono**.
+
+### Signature pattern — the tribunal flow
+An SVG diagram **Thesis → Supporter / Discriminator → Judge → Verdict** with gradient beams (gold→green, gold→red, →violet) and traveling pulse dots (SMIL `animateMotion`, runs without JS). Sits above the three agent cards on the `/studio` and Landing surfaces. Reuse this component; do not redraw per page.
+
+### Motion stack
+Lenis smooth scroll synced to GSAP ticker; GSAP char-split hero reveal + ScrollTrigger fade-ups + count-up stats; CSS gradient orbs + grain + vignette atmosphere. Tools (Trade / Studio) stay calmer than Landing/Markets. Always honor `prefers-reduced-motion`.
+
+### Signature components
+Gold shimmer CTA button; pill-tagged Verdict bar (predicted return + risk); outlined-numeral steps; bordered stat band; Binance-style markets table with SVG sparklines; floating blurred nav with scroll-condense.
