@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import styles from "@/components/trade/trade.module.css";
+import "@/components/trade/trade.css";
 import { PAIRS } from "@/components/trade/data";
 import { ChartPanel } from "@/components/trade/ChartPanel";
 import { SwapBox } from "@/components/trade/SwapBox";
@@ -13,7 +13,7 @@ export default function TradePage() {
   const pair = PAIRS.find((p) => p.sym === pairSym) ?? PAIRS[0];
 
   return (
-    <main className={styles.root}>
+    <main className="trade-root">
       <div className="terminal wrap">
         <div className="crumbs">
           <span className="tag">Terminal</span>

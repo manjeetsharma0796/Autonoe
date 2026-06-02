@@ -3,14 +3,13 @@
    web/mockups/trade.html. Tokens (--gold, --panel, --mono…)
    come from globals.css; nav/orbs/buttons/tag are global.
 
-   Everything is scoped under the hashed `.root` class, then
-   written as :global descendant selectors so the JSX can use
-   the same plain class names as the original mockup. This keeps
-   styles fully isolated to the trade terminal without leaking,
-   and without touching globals.css.
+   Everything is scoped under the `.trade-root` wrapper class via
+   native CSS nesting so the JSX uses the same plain class names as
+   the original mockup, isolated to the trade terminal without
+   leaking, and without touching globals.css.
    ============================================================ */
 
-.root :global {
+.trade-root {
   /* page head row */
   .terminal {
     padding: 104px 0 64px;

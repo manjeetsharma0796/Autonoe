@@ -261,31 +261,31 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: reusable collapsible trace — shows `summary` collapsed, expands to `steps[]` (PRD §12 `ReasoningTrace`); reused by thesis, subagents, and judges.
 
 ### T-404 — Landing page (`/`) — VISUAL TEMPLATE
-- Status: in-progress @Claude 2026-06-03 — porting `web/mockups/index.html` → `app/page.tsx`.
+- Status: done @Claude 2026-06-03 — `app/page.tsx` + `components/landing/*` (Hero char-split, Tribunal flow, HowItWorks, Benchmark count-up, MarketsPreview, FinalCta); GSAP/useGSAP reveals. `next build` green.
 - Depends-on: T-401
 - Scope: web
 - Acceptance: **built first as the visual reference for the whole app** (PRD §11h). Full motion stack — Lenis smooth scroll + GSAP/ScrollTrigger + Aceternity/Magic UI hero effects + gold/purple atmosphere. Sections: hero + how-it-works (thesis → judge → execute) + on-chain-benchmark pitch + "Launch App" CTA. Reviewed via screenshot/preview and iterated to approval; the approved tokens + motion language become the template the other routes inherit.
 
 ### T-405 — Trade page — chart + execute (`/trade`)
-- Status: in-progress @Claude 2026-06-03 — porting `web/mockups/trade.html` → `app/trade/page.tsx` (incl. side AI rail).
+- Status: done @Claude 2026-06-03 — `app/trade/page.tsx` + `components/trade/*` (SVG chart, pair selector, swap box, balances). **UI only on sample data**; live price feed + real swap wiring tracked in T-409/T-601.
 - Depends-on: T-401, T-304
 - Scope: web
 - Acceptance: TradingView embed for the selected pair; manual swap/execute via `packages/wallet`; balances/positions.
 
 ### T-406 — Trade page — side AI rail
-- Status: pending
+- Status: done @Claude 2026-06-03 — `components/trade/AiRail.tsx`: Quick Thesis (option card + "Show thinking" + "Refine in Judge Panel"→/studio) and Assistant chat tabs. **UI only on sample data**; live `/api/thesis` + `/api/assistant` wiring tracked in T-601.
 - Depends-on: T-405, T-403, T-205, T-208
 - Scope: web
 - Acceptance: tabbed rail — Quick Thesis (intent → inline thesis + "Refine in Judge Panel" → `/studio`) and Assistant chat (`/api/assistant`); reasoning traces shown.
 
 ### T-407 — Studio Step 1 — Thesis (AI or human) (`/studio`)
-- Status: in-progress @Claude 2026-06-03 — porting `web/mockups/studio.html` → `app/studio/page.tsx` (Step 1 + Step 2 Judge Panel).
+- Status: done @Claude 2026-06-03 — `app/studio/page.tsx` + `components/studio/*`: intent input, source toggles, AI/human modes, risk-tiered option cards + "Show thinking". **UI only on sample data**; live `/api/thesis`(`/human`) wiring tracked in T-601.
 - Depends-on: T-401, T-403
 - Scope: web
 - Acceptance: AI mode fires `POST /api/thesis`; human mode posts `/api/thesis/human`; renders risk-tiered option cards + pair suggestion + thesis reasoning trace; per-option branch buttons "Execute" / "Send to Judge Panel".
 
 ### T-408 — Studio Step 2 — Judge Panel
-- Status: pending
+- Status: done @Claude 2026-06-03 — `components/studio/StepJudge.tsx` + `TribunalFlow.tsx`: Supporter/Discriminator/Judge columns with traces, verdict bar, refined options + animated confidence bars. **UI only on sample data**; live `/api/debate` wiring tracked in T-601.
 - Depends-on: T-407, T-403
 - Scope: web
 - Acceptance: Supporter/Discriminator/Judge arguments (each with a reasoning trace), verdict, and refined options with predicted % + risk + caveats graphed; "Execute" per option.
@@ -321,7 +321,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: one-click share of a thesis or verdict as an image/link card.
 
 ### T-414 — Markets overview page (`/markets`)
-- Status: in-progress @Claude 2026-06-03 — **mockup done** (`web/mockups/markets.html`); real React page still to build.
+- Status: done @Claude 2026-06-03 — `app/markets/page.tsx` + `components/markets/*`: stats header (count-up), gainers/losers, sortable table w/ favorites + sparklines, rows→/trade. **UI on sample data**; live feed via T-204 wiring tracked in T-601.
 - Depends-on: T-401, T-405
 - Scope: web
 - Acceptance: Binance-style markets overview (PRD §11g) — market-stats header, sortable table of all `mUSD/<asset>` pairs (price, 24h %, 24h volume, sparkline), top gainers/losers strip, favorite toggle; clicking a row opens `/trade` with the pair preloaded. Reuses the market price feed (T-204 / T-405), no new backend contract.
