@@ -110,9 +110,9 @@ THESIS = { options[]: { direction, asset, sizeMUSD, rationale, predictedReturnPc
 ## 10a. Frontend↔backend boundary (Next.js)
 
 The Next.js app is the UI; the AI/agent layer is the existing `server/` (Express on bun, `bun:sqlite`). Two deployment shapes are possible:
-- **Standalone backend (default):** keep `server/` as its own bun service; the Next app calls it (via `next.config` rewrites of `/api/*` or a base URL env). Note: **`bun:sqlite` won't run on Vercel's Node runtime**, so the backend deploys to a bun-friendly host (Render/Railway/Fly) while the Next UI can go on Vercel.
-- **Consolidated:** migrate the agent endpoints into Next **Route Handlers** (`app/api/*`) and swap `bun:sqlite` for a Vercel-compatible store (Neon Postgres / Upstash). One deployable, fully Vercel-native — more refactor.
-Decision pending; the REST contract (§12) is identical either way, so UI work is unaffected.
+**DECISION (2026-06-03): Standalone backend.** Keep `server/` as its own bun service (deploy to a bun-friendly host — Render/Railway/Fly), and run the **Next.js UI on Vercel**, calling the backend via `next.config` rewrites of `/api/*` (or a `NEXT_PUBLIC_API_BASE` env). Rationale: zero refactor of the already-built+tested server; `bun:sqlite` can't run on Vercel's Node runtime anyway. The REST contract (§12) is identical regardless, so UI work is unaffected.
+
+(Rejected for now: consolidating the agent endpoints into Next Route Handlers `app/api/*` with a Vercel-compatible store like Neon/Upstash — revisit only if a single Vercel deploy becomes a hard requirement.)
 
 ## 11a. Information architecture — 6 routes + 1 wallet drawer
 
