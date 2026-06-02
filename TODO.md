@@ -240,13 +240,13 @@ _(All done — the shared base every track builds on.)_
 
 ## 4 — Frontend UI
 
-> React 19 + Vite. **6 routes + wallet drawer** (PRD §11a–§11g). Build to `design-system/autonoe/MASTER.md`. Use the `frontend-design` skill for polish, `web3-vfx-stack` for the landing. Mock API responses (PRD §12) until endpoints land.
+> **Next.js (App Router, React 19)**. **6 routes + wallet drawer** (PRD §11a–§11g). Build to `design-system/autonoe/MASTER.md`. Use the `frontend-design` skill for polish, `web3-vfx-stack` for the landing. Mock API responses (PRD §12) until endpoints land. Client-only libs (wagmi, Lenis/GSAP, charts) need `'use client'`.
 
 ### T-401 — App scaffold + routing + theme
 - Status: pending
 - Depends-on: —
 - Scope: web
-- Acceptance: Vite + React + Router; 6 routes wired (`/`, `/markets`, `/trade`, `/studio`, `/history`, `/settings`); design tokens applied (dark OLED, gold `#F59E0B` + purple `#8B5CF6`, Orbitron/Exo 2); motion/VFX deps installed via bun (Lenis, gsap + @gsap/react, framer-motion); MetaMask connect on Mantle Sepolia. Add `web` to root `workspaces`. See PRD §11b motion stack + §11h workflow.
+- Acceptance: **Next.js App Router** app scaffolded with bun (`bunx create-next-app`); 6 routes as `app/` segments (`/`, `/markets`, `/trade`, `/studio`, `/history`, `/settings`); design tokens applied (dark OLED, gold `#F59E0B` + purple `#8B5CF6`, Orbitron/Exo 2); motion/VFX deps via bun (Lenis, gsap + @gsap/react, framer-motion); a client Providers wrapper for wagmi/RainbowKit; MetaMask connect on Mantle Sepolia. Add `web` to root `workspaces`. See PRD §10a boundary + §11b motion stack + §11h workflow.
 
 ### T-402 — Global shell + wallet drawer
 - Status: pending

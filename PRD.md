@@ -91,8 +91,8 @@ THESIS = { options[]: { direction, asset, sizeMUSD, rationale, predictedReturnPc
 
 ## 10. Tech stack
 
-- **Unified TypeScript.** React 19 + Vite (UI), wagmi/RainbowKit (external MetaMask connect), viem (agent wallet + swaps).
-- **Node/Express** backend: provider proxy + agent orchestration; SQLite kv (Mono pattern) for keys/config/history.
+- **Unified TypeScript.** **Next.js (App Router, React 19)** for the UI, wagmi/RainbowKit (external MetaMask connect), viem (agent wallet + swaps).
+- **Node/Express** backend (runs on bun): provider proxy + agent orchestration; `bun:sqlite` kv (Mono pattern) for keys/config/history. Runs as a standalone service the Next.js app calls (see §10a).
 - **LangChain.js** for the thesis agent, subagents, and debate graph.
 - **Solidity + Hardhat** for tokens, the Uniswap V2 fork, and `DecisionLog`.
 
@@ -105,7 +105,14 @@ THESIS = { options[]: { direction, asset, sizeMUSD, rationale, predictedReturnPc
 | `packages/shared/` | Canonical TypeScript types (Thesis, Option, DebateResult), REST API contract, role enum |
 | `server/` | Express: provider proxy (Mono), role/model config, subagents, thesis + debate endpoints |
 | `packages/wallet/` | Embedded EOA: generate/encrypt/persist/export, spending-limit policy, agent-sign flow |
-| `web/` | React UI: chart, intent+thesis panel, debate visualization, settings, wallet panel, results/history |
+| `web/` | **Next.js (App Router)** UI: chart, intent+thesis panel, debate visualization, settings, wallet panel, results/history. Routes are `app/` segments; client-only bits (wagmi, Lenis/GSAP, charts) use `'use client'`. |
+
+## 10a. Frontend↔backend boundary (Next.js)
+
+The Next.js app is the UI; the AI/agent layer is the existing `server/` (Express on bun, `bun:sqlite`). Two deployment shapes are possible:
+- **Standalone backend (default):** keep `server/` as its own bun service; the Next app calls it (via `next.config` rewrites of `/api/*` or a base URL env). Note: **`bun:sqlite` won't run on Vercel's Node runtime**, so the backend deploys to a bun-friendly host (Render/Railway/Fly) while the Next UI can go on Vercel.
+- **Consolidated:** migrate the agent endpoints into Next **Route Handlers** (`app/api/*`) and swap `bun:sqlite` for a Vercel-compatible store (Neon Postgres / Upstash). One deployable, fully Vercel-native — more refactor.
+Decision pending; the REST contract (§12) is identical either way, so UI work is unaffected.
 
 ## 11a. Information architecture — 6 routes + 1 wallet drawer
 
