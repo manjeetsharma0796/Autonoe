@@ -1,7 +1,7 @@
 ---
 title: Autonoe team task board
 purpose: Shared async task tracker for the 4-person team — humans and their Claude agents
-last_updated: 2026-06-02
+last_updated: 2026-06-03
 ---
 
 # TODO
@@ -147,49 +147,49 @@ _(All done — the shared base every track builds on.)_
 > Node/Express + LangChain.js. Mock the chain lib (PRD §12) until T-108 lands.
 
 ### T-201 — Server scaffold + SQLite kv
-- Status: pending
+- Status: done @Claude 2026-06-03 — Express app + bun:sqlite kv (`server/src/{app,index,store}.ts`); boots on :8787. Static `web/` serving deferred until the web build exists.
 - Depends-on: —
 - Scope: api
 - Acceptance: `server/` boots Express; SQLite kv (Mono pattern) with get/set/del; serves the `web/` build. Add `server` to root `workspaces`.
 
 ### T-202 — Provider proxy (Mono port)
-- Status: pending
+- Status: done @Claude 2026-06-03 — registry + `/api/providers`, `/api/keys` (AES-GCM at rest), `/api/models` for all 5 providers; LangChain model factory (`server/src/{providers,models,crypto}.ts`). AI calls route through providers via the factory rather than a raw chat passthrough.
 - Depends-on: T-201
 - Scope: api
 - Acceptance: `GET /api/providers`, `POST /api/keys` (encrypted at rest), `GET /api/models`, chat proxy for Groq / Mistral / NVIDIA / Gemini / OpenRouter.
 
 ### T-203 — Role→model config API
-- Status: pending
+- Status: done @Claude 2026-06-03 — `GET/PUT /api/roles` with sensible defaults merged over stored map (`server/src/roles.ts`).
 - Depends-on: T-201
 - Scope: api
 - Acceptance: `GET/PUT /api/roles` persists a `RoleModelMap` (PRD §12) with sensible defaults.
 
 ### T-204 — Data subagents (tools)
-- Status: pending
+- Status: done @Claude 2026-06-03 — 4 gated subagents returning context + `ReasoningTrace` (`server/src/agents/subagents.ts`). Data is mocked deterministically pending the chain lib (T-108) + market APIs; interface is final.
 - Depends-on: —
 - Scope: api
 - Acceptance: `server/agents/subagents/{onchain,market,news,indicators}.ts` — each a callable tool returning structured data, gated by `activeSources`; onchain reads via the chain lib (mock until T-108).
 
 ### T-205 — Thesis agent (+ human thesis)
-- Status: pending
+- Status: done @Claude 2026-06-03 — LangChain agent with zod structured output; `/api/thesis` + `/api/thesis/human`, populates reasoning + per-subagent traces + modelsUsed (`server/src/agents/thesis.ts`). Injectable resolver → unit-tested with a fake model.
 - Depends-on: T-202, T-203, T-204
 - Scope: api
 - Acceptance: `POST /api/thesis` → valid `Thesis` using the `thesis` role's model, orchestrating only active subagents, populating `reasoning` + per-subagent `traces`. `POST /api/thesis/human` structures a user-written thesis (source `human`) into options.
 
 ### T-206 — Debate graph
-- Status: pending
+- Status: done @Claude 2026-06-03 — Supporter → Discriminator → Judge, each on its own model; `/api/debate` returns refined options + per-judge traces (`server/src/agents/debate.ts`). Accepts AI or human thesis.
 - Depends-on: T-202, T-203
 - Scope: api
 - Acceptance: `POST /api/debate` → `DebateResult` (accepts AI or human thesis); Supporter → Discriminator → Judge each use their configured model; returns refined options (predicted % + risk + caveats) plus per-judge `traces`.
 
 ### T-207 — History + leaderboard endpoints
-- Status: pending
+- Status: pending — endpoints exist but stubbed (`GET /api/history` / `/api/leaderboard` return `[]`); wiring needs SQLite records + the chain lib's DecisionLog reader (T-108).
 - Depends-on: T-108, T-201
 - Scope: api
 - Acceptance: `GET /api/history` merges SQLite records + on-chain DecisionLog, storing models used per role; `GET /api/leaderboard` aggregates realized outcomes by model + role.
 
 ### T-208 — Assistant chat endpoint
-- Status: pending
+- Status: done @Claude 2026-06-03 — `/api/assistant` replies via the assistant-role model (`server/src/agents/assistant.ts`). Returns a full message; streaming can be added later.
 - Depends-on: T-202, T-203
 - Scope: api
 - Acceptance: `POST /api/assistant` streams a `ChatMessage` reply using the `assistant` role's model; optional market/position context; can emit a thesis.

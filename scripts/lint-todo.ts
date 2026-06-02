@@ -8,8 +8,9 @@ const FILE = 'TODO.md';
 const md = readFileSync(FILE, 'utf8');
 const lines = md.split('\n');
 
+// Base status, optionally followed by " — <free-text note>".
 const VALID_STATUS =
-  /^(pending|in-progress @\S+ \d{4}-\d{2}-\d{2}|review|blocked — .+|done @\S+ \d{4}-\d{2}-\d{2})$/;
+  /^(pending|in-progress @\S+ \d{4}-\d{2}-\d{2}|review|blocked — .+|done @\S+ \d{4}-\d{2}-\d{2})( —\s.*)?$/;
 
 const errors: string[] = [];
 const ids = new Map<string, number>();

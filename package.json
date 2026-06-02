@@ -5,7 +5,8 @@
   "type": "module",
   "description": "Autonoe — autonomous AI trading thesis & debate copilot on Mantle Sepolia",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "server"
   ],
   "scripts": {
     "build": "tsc -b",

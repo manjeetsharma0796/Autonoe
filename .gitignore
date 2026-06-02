@@ -7,3 +7,5 @@ mono.db.json
 artifacts/
 cache/
 *.tsbuildinfo
+autonoe.db
+*.db
