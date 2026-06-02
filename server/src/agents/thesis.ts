@@ -1,12 +1,15 @@
-// T-205 — the thesis agent. Orchestrates the active subagents, then asks the
-// `thesis`-role model for a structured multi-option thesis. Also structures a
-// human-written thesis into the same shape (source: 'human').
+// T-205 — the thesis agent. A real tool-calling loop: the model decides which
+// market/indicator/on-chain tools to call based on the user's intent, then a
+// structured finalize call turns the gathered evidence into a risk-tiered thesis.
+// Tools actually used become the reasoning traces ("Show thinking").
 
 import { z } from 'zod';
-import type { AIRole, Thesis, ThesisOption } from '@autonoe/shared';
-import { runSubagents } from './subagents.ts';
+import { SystemMessage, HumanMessage, ToolMessage } from '@langchain/core/messages';
+import { SUBAGENT_ROLES, type AIRole, type Thesis, type ThesisOption } from '@autonoe/shared';
 import { defaultResolver, type ModelResolver } from '../models.ts';
 import { resolveRole } from '../roles.ts';
+import { makeRecorder, makeTools } from './tools.ts';
+import type { Fetcher } from '../market/bybit.ts';
 
 const Option = z.object({
   direction: z.enum(['long', 'short', 'hedge', 'hold']),
@@ -19,7 +22,7 @@ const Option = z.object({
 
 const ThesisCore = z.object({
   suggestedPair: z.enum(['WMNT', 'MockBTC', 'MockETH']),
-  reasoning: z.string().describe('overall reasoning, 2-4 sentences'),
+  reasoning: z.string().describe('overall reasoning grounded in the tool evidence, 2-4 sentences'),
   options: z.array(Option).min(2).max(4),
 });
 type ThesisCore = z.infer<typeof ThesisCore>;
@@ -27,8 +30,10 @@ type ThesisCore = z.infer<typeof ThesisCore>;
 const SYSTEM =
   'You are Autonoe, an autonomous crypto trading strategist on the Mantle testnet. ' +
   'Assets tradable against the mUSD stablecoin: WMNT, MockBTC, MockETH. ' +
-  'Given the user intent and research context, produce a concise, risk-tiered thesis with ' +
-  '2-4 concrete, executable options. Be specific and honest about risk. All sizes in mUSD.';
+  'Use the available tools to gather real price, candle, indicator and on-chain evidence for the ' +
+  'assets relevant to the user intent before forming a view. Be specific and honest about risk.';
+
+const MAX_STEPS = 5;
 
 function assemble(core: ThesisCore, intent: string, source: 'ai' | 'human', used: AIRole[]): Thesis {
   const options: ThesisOption[] = core.options.map((o, i) => ({ id: `opt-${i + 1}`, ...o }));
@@ -45,18 +50,58 @@ function assemble(core: ThesisCore, intent: string, source: 'ai' | 'human', used
   };
 }
 
+export interface ThesisOpts {
+  resolve?: ModelResolver;
+  /** Injected fetcher for the market tools (tests supply fixtures). */
+  fetcher?: Fetcher;
+}
+
 export async function generateThesis(
   input: { intent: string; activeSources?: AIRole[] },
-  resolve: ModelResolver = defaultResolver,
+  opts: ThesisOpts = {},
 ): Promise<Thesis> {
-  const { context, traces, used } = await runSubagents(input.intent, input.activeSources);
-  const model = resolve('thesis', { temperature: 0.5 });
-  const structured = model.withStructuredOutput<ThesisCore>(ThesisCore, { name: 'thesis' });
-  const prompt =
-    `${SYSTEM}\n\nUSER INTENT:\n${input.intent}\n\nRESEARCH CONTEXT:\n${context}\n\n` +
-    'Return the thesis now.';
-  const core = await structured.invoke(prompt);
-  const thesis = assemble(core, input.intent, 'ai', used);
+  const resolve = opts.resolve ?? defaultResolver;
+  const active = input.activeSources?.length ? input.activeSources : [...SUBAGENT_ROLES];
+  const rec = makeRecorder();
+  const { tools, byName } = makeTools(rec, active, opts.fetcher);
+
+  const base = resolve('thesis', { temperature: 0.4 });
+  const model = base.bindTools ? base.bindTools(tools) : base;
+
+  const messages: unknown[] = [
+    new SystemMessage(SYSTEM),
+    new HumanMessage(
+      `USER INTENT:\n${input.intent}\n\nCall the tools you need on the relevant assets, then stop.`,
+    ),
+  ];
+
+  for (let step = 0; step < MAX_STEPS; step++) {
+    const ai = await model.invoke(messages);
+    messages.push(ai);
+    const calls = ai.tool_calls ?? [];
+    if (calls.length === 0) break;
+    for (const c of calls) {
+      const t = byName.get(c.name);
+      let out: string;
+      try {
+        out = t ? String(await t.invoke(c.args)) : `unknown tool: ${c.name}`;
+      } catch (e) {
+        out = `tool ${c.name} failed: ${(e as Error).message}`;
+      }
+      messages.push(new ToolMessage({ content: out, tool_call_id: c.id ?? c.name, name: c.name }));
+    }
+  }
+
+  const core = await base
+    .withStructuredOutput<ThesisCore>(ThesisCore, { name: 'thesis' })
+    .invoke([
+      ...messages,
+      new HumanMessage('Now output the final thesis as structured data, grounded strictly in the tool evidence above.'),
+    ]);
+
+  const traces = rec.traces();
+  const used = [...new Set(traces.map((t) => t.role))];
+  const thesis = assemble(core, input.intent, 'ai', used.length ? used : active);
   thesis.traces = traces;
   return thesis;
 }
@@ -72,6 +117,5 @@ export async function structureHumanThesis(
     `risk-tiered options without inventing new directions.\n\nINTENT:\n${input.intent}\n\n` +
     `USER THESIS:\n${input.body}\n\nSuggested pair: ${input.suggestedPair}.`;
   const core = await structured.invoke(prompt);
-  const thesis = assemble({ ...core, suggestedPair: input.suggestedPair }, input.intent, 'human', []);
-  return thesis;
+  return assemble({ ...core, suggestedPair: input.suggestedPair }, input.intent, 'human', []);
 }

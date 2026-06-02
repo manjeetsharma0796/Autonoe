@@ -38,10 +38,18 @@ export function modelForRole(role: AIRole, opts?: { temperature?: number }): Cha
  */
 export type ModelResolver = (role: AIRole, opts?: { temperature?: number }) => ChatModelLike;
 
+/** A tool call requested by the model. */
+export interface ToolCall {
+  name: string;
+  args: Record<string, unknown>;
+  id?: string;
+}
+
 /** Minimal surface the agents rely on (satisfied by ChatOpenAI; fakeable in tests). */
 export interface ChatModelLike {
-  invoke(input: unknown): Promise<{ content: unknown }>;
+  invoke(input: unknown): Promise<{ content: unknown; tool_calls?: ToolCall[] }>;
   withStructuredOutput<T>(schema: unknown, config?: unknown): { invoke(input: unknown): Promise<T> };
+  bindTools?(tools: unknown[]): ChatModelLike;
 }
 
 export const defaultResolver: ModelResolver = (role, opts) =>

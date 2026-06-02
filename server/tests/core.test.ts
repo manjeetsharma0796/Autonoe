@@ -6,7 +6,6 @@ process.env.AUTONOE_SECRET = 'test-secret';
 const { encrypt, decrypt } = await import('../src/crypto.ts');
 const { listProviders } = await import('../src/providers.ts');
 const { defaultRoles, resolveRole } = await import('../src/roles.ts');
-const { runSubagents } = await import('../src/agents/subagents.ts');
 const { AI_ROLES } = await import('@autonoe/shared');
 
 test('crypto round-trips and ciphertext is not plaintext', () => {
@@ -27,15 +26,4 @@ test('default roles cover every AI role', () => {
   const roles = defaultRoles();
   for (const r of AI_ROLES) expect(roles[r]).toBeDefined();
   expect(resolveRole('judge').provider).toBe('groq');
-});
-
-test('runSubagents returns combined context + a trace per active source', async () => {
-  const all = await runSubagents('long WMNT');
-  expect(all.used).toHaveLength(4);
-  expect(all.traces).toHaveLength(4);
-  expect(all.context.length).toBeGreaterThan(0);
-
-  const subset = await runSubagents('x', ['subagent.indicators']);
-  expect(subset.used).toEqual(['subagent.indicators']);
-  expect(subset.traces[0]!.role).toBe('subagent.indicators');
 });

@@ -164,14 +164,14 @@ _(All done — the shared base every track builds on.)_
 - Scope: api
 - Acceptance: `GET/PUT /api/roles` persists a `RoleModelMap` (PRD §12) with sensible defaults.
 
-### T-204 — Data subagents (tools)
-- Status: done @Claude 2026-06-03 — 4 gated subagents returning context + `ReasoningTrace` (`server/src/agents/subagents.ts`). Data is mocked deterministically pending the chain lib (T-108) + market APIs; interface is final.
+### T-204 — Data subagents (now real LangChain tools)
+- Status: done @Claude 2026-06-03 — real tools in `server/src/agents/tools.ts` over **Bybit v5 public market data** (`server/src/market/bybit.ts`, no key) + **computed indicators** RSI/SMA/EMA/MACD (`server/src/market/indicators.ts`), gated by the active-source allow-list, each recording a reasoning trace. WMNT analysis maps to Bybit `MNTUSDT`; the on-chain tool stays placeholder pending T-108; news/web-search deferred (T-209).
 - Depends-on: —
 - Scope: api
 - Acceptance: `server/agents/subagents/{onchain,market,news,indicators}.ts` — each a callable tool returning structured data, gated by `activeSources`; onchain reads via the chain lib (mock until T-108).
 
 ### T-205 — Thesis agent (+ human thesis)
-- Status: done @Claude 2026-06-03 — LangChain agent with zod structured output; `/api/thesis` + `/api/thesis/human`, populates reasoning + per-subagent traces + modelsUsed (`server/src/agents/thesis.ts`). Injectable resolver → unit-tested with a fake model.
+- Status: done @Claude 2026-06-03 — **tool-calling loop**: the model picks Bybit/indicator/on-chain tools per intent, then a structured finalize emits a zod-validated thesis (`server/src/agents/thesis.ts`). `/api/thesis` + `/api/thesis/human`; tools actually called become the reasoning traces. Injectable resolver + fetcher → unit-tested with a fake model + fixture candles.
 - Depends-on: T-202, T-203, T-204
 - Scope: api
 - Acceptance: `POST /api/thesis` → valid `Thesis` using the `thesis` role's model, orchestrating only active subagents, populating `reasoning` + per-subagent `traces`. `POST /api/thesis/human` structures a user-written thesis (source `human`) into options.
@@ -192,7 +192,13 @@ _(All done — the shared base every track builds on.)_
 - Status: done @Claude 2026-06-03 — `/api/assistant` replies via the assistant-role model (`server/src/agents/assistant.ts`). Returns a full message; streaming can be added later.
 - Depends-on: T-202, T-203
 - Scope: api
-- Acceptance: `POST /api/assistant` streams a `ChatMessage` reply using the `assistant` role's model; optional market/position context; can emit a thesis.
+- Acceptance: `POST /api/assistant` replies via the assistant-role model with optional market/position context; can spin off a thesis.
+
+### T-209 — Web search / news tool (deferred)
+- Status: pending — deferred per scope decision; theses are currently grounded in price + indicators + on-chain only.
+- Depends-on: T-202, T-205
+- Scope: api
+- Acceptance: a Tavily (or Brave/Exa) web-search tool registered for `subagent.news` and surfaced to the thesis agent's tool loop, so theses can cite news/sentiment.
 
 ---
 
@@ -319,6 +325,12 @@ _(All done — the shared base every track builds on.)_
 - Depends-on: T-401, T-405
 - Scope: web
 - Acceptance: Binance-style markets overview (PRD §11g) — market-stats header, sortable table of all `mUSD/<asset>` pairs (price, 24h %, 24h volume, sparkline), top gainers/losers strip, favorite toggle; clicking a row opens `/trade` with the pair preloaded. Reuses the market price feed (T-204 / T-405), no new backend contract.
+
+### T-415 — Interactive prediction chart
+- Status: pending
+- Depends-on: T-405, T-204
+- Scope: web
+- Acceptance: real candles via TradingView **lightweight-charts** fed by Bybit data (through the server/market layer), with the Judge's **predicted-return band** + entry/target markers overlaid on the selected option, and hover tooltips. Used on `/trade` and the `/studio` verdict view to visualize the thesis prediction. Add a server endpoint to expose candles (or reuse the market tool output) so the UI doesn't call Bybit directly.
 
 ---
 
