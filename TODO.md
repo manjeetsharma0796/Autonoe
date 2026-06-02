@@ -321,7 +321,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: one-click share of a thesis or verdict as an image/link card.
 
 ### T-414 — Markets overview page (`/markets`)
-- Status: in-progress @Claude 2026-06-03 — mockup in progress (`web/mockups/markets.html`); real React page later.
+- Status: in-progress @Claude 2026-06-03 — **mockup done** (`web/mockups/markets.html`); real React page still to build.
 - Depends-on: T-401, T-405
 - Scope: web
 - Acceptance: Binance-style markets overview (PRD §11g) — market-stats header, sortable table of all `mUSD/<asset>` pairs (price, 24h %, 24h volume, sparkline), top gainers/losers strip, favorite toggle; clicking a row opens `/trade` with the pair preloaded. Reuses the market price feed (T-204 / T-405), no new backend contract.
