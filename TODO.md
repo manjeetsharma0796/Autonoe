@@ -1,0 +1,407 @@
+---
+title: Autonoe team task board
+purpose: Shared async task tracker for the 4-person team — humans and their Claude agents
+last_updated: 2026-06-02
+---
+
+# TODO
+
+Single source of truth for what's in flight on **Autonoe** (see [PRD.md](PRD.md)). Anyone — human or Claude agent — can pick pending tasks, add new ones, or release stale ones.
+
+## How to use this file (90-second version)
+
+1. **Find a pickable task** — `Status: pending` AND every entry in `Depends-on` is `done`.
+2. **Claim** — change `Status: pending` → `Status: in-progress @your-handle YYYY-MM-DD`. Commit *only that line* on a branch `claim/T-XXX-<slug>`, push, open a PR titled `claim: T-XXX`. **Merging that claim PR is the lock** (we don't run auto-merge — merge it yourself once CI is green; it's a one-line diff).
+3. **Work** — branch from `main` into `feat/T-XXX-<slug>` (or `fix/`, `docs/`). Reference `T-XXX` in every commit and the implementation PR title.
+4. **Finish** — the same PR that merges the work flips the line to `Status: done @your-handle YYYY-MM-DD` and moves the task block to the **Done** section at the bottom.
+5. **Stuck** — change to `Status: blocked — <one-line reason>` and ping the Telegram channel. Keep the entry; don't delete it.
+6. **Add a task** — append a block under the right section using the next free ID. State `Acceptance` clearly so anyone can pick it up cold.
+7. **Drop a claim** — flip back to `Status: pending`. PR title `unclaim: T-XXX`.
+
+### Stale-claim rule
+
+If a task is `in-progress` for **more than 5 days with zero commits referencing its ID**, anyone may revert it to `pending` and re-claim. Add a `Reverted: <date> by @you — reason` line for the paper trail. You may also `override:` a claim earlier with concrete reason (conflict / blocking your work).
+
+### Solo / no-review fast path
+
+Working alone with no reviewer? Edit `TODO.md` directly on `main`, push (the push is the lock), then start the implementation branch. Don't skip the visible status change — teammates watch the Telegram feed.
+
+## Conventions
+
+| Thing | Convention |
+|---|---|
+| Branch | `feat/T-XXX-<slug>` / `fix/T-XXX-<slug>` / `docs/T-XXX-<slug>` / `claim/T-XXX-<slug>` |
+| Commit | `T-XXX: <verb> <object>` (e.g. `T-102: add mUSD faucet with cooldown`) |
+| PR title | `T-XXX — <task title>` (claim/unclaim/override PRs use the `claim:`/`unclaim:`/`override:` prefix) |
+| PR body | Link the TODO line; check off Acceptance criteria |
+| Scope per PR | One task = one PR. If it balloons, stop and split — the new thing gets its own T-XXX |
+| Package manager | **bun** only (`bun install`, `bun --filter '*' test`). Never npm/yarn/pnpm |
+| Network | All on-chain work targets **Mantle Sepolia (chain 5003)** |
+
+## Team
+
+> **Team channel:** Telegram group (bot token + chat id live as repo secrets `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`). Notification workflow: [`.github/workflows/telegram-notify.yml`](.github/workflows/telegram-notify.yml) — posts on PR open / conflict / merge / push to main, plus a "today's tally" leaderboard. CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+| Handle | OS | Preferred area | Status |
+|---|---|---|---|
+| `@____` | TBD | Contracts & chain (Track 1) | fill before first claim |
+| `@____` | TBD | Backend + agents (Track 2) | fill before first claim |
+| `@____` | TBD | Wallet + execution (Track 3) | fill before first claim |
+| `@____` | TBD | Frontend UI (Track 4) | fill before first claim |
+
+## Active claims
+
+`grep "Status: in-progress" TODO.md` to see who's on what.
+
+## Sections
+
+0. [Foundations](#0--foundations) — `T-0xx` — monorepo, shared contracts (done)
+1. [Contracts & Chain](#1--contracts--chain) — `T-1xx` — Solidity/Hardhat + viem
+2. [Backend, Proxy & Agents](#2--backend-proxy--agents) — `T-2xx` — Express, provider proxy, LangChain.js
+3. [Wallet & Execution](#3--wallet--execution) — `T-3xx` — embedded EOA, swaps
+4. [Frontend UI](#4--frontend-ui) — `T-4xx` — 5 routes + wallet drawer
+5. [Infra / DevOps / Docs](#5--infra--devops--docs) — `T-5xx`
+6. [Integration & Demo](#6--integration--demo) — `T-6xx`
+7. [Done](#done)
+8. [Blocked](#blocked)
+
+### Status legend
+- `pending` — anyone with deps cleared can pick
+- `in-progress @handle YYYY-MM-DD` — locked
+- `review` — implementation PR open, awaiting review
+- `blocked — <reason>` — stuck
+- `done @handle YYYY-MM-DD` — completed; move block to Done
+
+> **Interface contracts are frozen in [PRD.md §12](PRD.md).** Build against them and mock what isn't ready, so all four tracks run in parallel.
+
+---
+
+## 0 — Foundations
+
+_(All done — the shared base every track builds on.)_
+
+---
+
+## 1 — Contracts & Chain
+
+> Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
+
+### T-101 — Hardhat project + Mantle Sepolia config
+- Status: pending
+- Depends-on: —
+- Scope: contracts
+- Acceptance: `contracts/` with `hardhat.config.ts`; `npx hardhat compile` passes; network `mantleSepolia` (5003) configured from `DEPLOYER_PRIVATE_KEY` + RPC env. Add `contracts` to root `workspaces`.
+
+### T-102 — `mUSD` stablecoin
+- Status: pending
+- Depends-on: T-101
+- Scope: contracts
+- Acceptance: `contracts/contracts/mUSD.sol` — ERC-20, 6 decimals; `faucet()` mints a fixed amount with per-address cooldown + cap; `ownerMint()` for seeding. Hardhat tests pass.
+
+### T-103 — Asset tokens (WMNT / MockBTC / MockETH)
+- Status: pending
+- Depends-on: T-101
+- Scope: contracts
+- Acceptance: `WMNT.sol` (WETH-style deposit/withdraw wrapper) + `MockBTC.sol` + `MockETH.sol` (18-dec mintable ERC-20). Tests pass.
+
+### T-104 — Uniswap V2 fork
+- Status: pending
+- Depends-on: T-103
+- Scope: contracts
+- Acceptance: canonical Uniswap V2 core + periphery (Factory, Router02) compiled with WMNT as WETH; `createPair` + quote works in a Hardhat test.
+
+### T-105 — `DecisionLog` contract
+- Status: pending
+- Depends-on: T-101
+- Scope: contracts
+- Acceptance: `DecisionLog.sol` with `logDecision(thesisHash, verdictHash, asset, amountIn, amountOut, pnl, optionRef)` emitting an event + storing a per-user history; getters; tests pass.
+
+### T-106 — Deploy + seed script
+- Status: pending
+- Depends-on: T-102, T-103, T-104, T-105
+- Scope: contracts
+- Acceptance: `contracts/scripts/deploy.ts` deploys all tokens + factory + router + DecisionLog, creates the `mUSD/WMNT` pair, seeds liquidity, and prints all addresses.
+
+### T-107 — Export addresses + ABIs
+- Status: pending
+- Depends-on: T-106
+- Scope: chain
+- Acceptance: live Mantle Sepolia addresses written to `packages/chain/addresses.json` (replacing the placeholder) and ABIs to `packages/chain/abis/`; contracts verified on mantlescan.
+
+### T-108 — viem chain library
+- Status: pending
+- Depends-on: T-107
+- Scope: chain
+- Acceptance: `packages/chain/src/{clients,swapExecutor,decisionLog}.ts` — `getQuote()`, `swap()` (approve + `swapExactTokensForTokens` + slippage), `writeDecision()`, `readHistory()`. An integration test executes a real swap on testnet.
+
+### T-109 — Extra pools (stretch)
+- Status: pending
+- Depends-on: T-106
+- Scope: contracts
+- Acceptance: `mUSD/MockBTC` and `mUSD/MockETH` pairs created + seeded via a `seedExtra.ts` script.
+
+---
+
+## 2 — Backend, Proxy & Agents
+
+> Node/Express + LangChain.js. Mock the chain lib (PRD §12) until T-108 lands.
+
+### T-201 — Server scaffold + SQLite kv
+- Status: pending
+- Depends-on: —
+- Scope: api
+- Acceptance: `server/` boots Express; SQLite kv (Mono pattern) with get/set/del; serves the `web/` build. Add `server` to root `workspaces`.
+
+### T-202 — Provider proxy (Mono port)
+- Status: pending
+- Depends-on: T-201
+- Scope: api
+- Acceptance: `GET /api/providers`, `POST /api/keys` (encrypted at rest), `GET /api/models`, chat proxy for Groq / Mistral / NVIDIA / Gemini / OpenRouter.
+
+### T-203 — Role→model config API
+- Status: pending
+- Depends-on: T-201
+- Scope: api
+- Acceptance: `GET/PUT /api/roles` persists a `RoleModelMap` (PRD §12) with sensible defaults.
+
+### T-204 — Data subagents (tools)
+- Status: pending
+- Depends-on: —
+- Scope: api
+- Acceptance: `server/agents/subagents/{onchain,market,news,indicators}.ts` — each a callable tool returning structured data, gated by `activeSources`; onchain reads via the chain lib (mock until T-108).
+
+### T-205 — Thesis agent (+ human thesis)
+- Status: pending
+- Depends-on: T-202, T-203, T-204
+- Scope: api
+- Acceptance: `POST /api/thesis` → valid `Thesis` using the `thesis` role's model, orchestrating only active subagents, populating `reasoning` + per-subagent `traces`. `POST /api/thesis/human` structures a user-written thesis (source `human`) into options.
+
+### T-206 — Debate graph
+- Status: pending
+- Depends-on: T-202, T-203
+- Scope: api
+- Acceptance: `POST /api/debate` → `DebateResult` (accepts AI or human thesis); Supporter → Discriminator → Judge each use their configured model; returns refined options (predicted % + risk + caveats) plus per-judge `traces`.
+
+### T-207 — History + leaderboard endpoints
+- Status: pending
+- Depends-on: T-108, T-201
+- Scope: api
+- Acceptance: `GET /api/history` merges SQLite records + on-chain DecisionLog, storing models used per role; `GET /api/leaderboard` aggregates realized outcomes by model + role.
+
+### T-208 — Assistant chat endpoint
+- Status: pending
+- Depends-on: T-202, T-203
+- Scope: api
+- Acceptance: `POST /api/assistant` streams a `ChatMessage` reply using the `assistant` role's model; optional market/position context; can emit a thesis.
+
+---
+
+## 3 — Wallet & Execution
+
+> In-browser embedded wallet (viem). Build against the chain-lib interface; mock `swap()` until T-108.
+
+### T-301 — Wallet generate + encrypt + persist
+- Status: pending
+- Depends-on: —
+- Scope: wallet
+- Acceptance: `packages/wallet/src/wallet.ts` generates an EOA (viem), encrypts the key with a passphrase (WebCrypto), persists in IndexedDB; unlock round-trip test passes. Add `packages/wallet` to root `workspaces`.
+
+### T-302 — Export wallet
+- Status: pending
+- Depends-on: T-301
+- Scope: wallet
+- Acceptance: reveal private key + download a MetaMask-importable keystore JSON; re-import verified in a test.
+
+### T-303 — Spending-limit policy
+- Status: pending
+- Depends-on: T-301
+- Scope: wallet
+- Acceptance: enforces max trade size + token allowlist before signing; rejects over-limit with a clear error; tested.
+
+### T-304 — Agent-sign + execute
+- Status: pending
+- Depends-on: T-301, T-303, T-108
+- Scope: wallet
+- Acceptance: given a chosen option, builds + signs + submits a swap via the chain lib; returns `SwapResult`; triggers the DecisionLog write. Execution is manual-confirm (no auto-execute).
+
+### T-305 — Funding helpers
+- Status: pending
+- Depends-on: T-107
+- Scope: wallet
+- Acceptance: auto-seed mUSD on wallet creation + faucet re-mint call; native MNT faucet link surfaced.
+
+---
+
+## 4 — Frontend UI
+
+> React 19 + Vite. **5 routes + wallet drawer** (PRD §11a–§11e). Build to `design-system/autonoe/MASTER.md`. Use the `frontend-design` skill for polish, `web3-vfx-stack` for the landing. Mock API responses (PRD §12) until endpoints land.
+
+### T-401 — App scaffold + routing + theme
+- Status: pending
+- Depends-on: —
+- Scope: web
+- Acceptance: Vite + React + Router; 5 routes wired (`/`, `/trade`, `/studio`, `/history`, `/settings`); design tokens applied (dark OLED, gold `#F59E0B` + purple `#8B5CF6`, Orbitron/Exo 2); MetaMask connect on Mantle Sepolia. Add `web` to root `workspaces`.
+
+### T-402 — Global shell + wallet drawer
+- Status: pending
+- Depends-on: T-401, T-301
+- Scope: web
+- Acceptance: persistent nav + a global slide-over wallet drawer reachable from every route; balances/fund/export/limits (calls `packages/wallet`); clearly distinguishes funding wallet (MetaMask) vs autonomous agent wallet with an "acting wallet" indicator; persistent "testnet · not financial advice" disclaimer.
+
+### T-403 — ReasoningTrace component ("Show thinking")
+- Status: pending
+- Depends-on: T-401
+- Scope: web
+- Acceptance: reusable collapsible trace — shows `summary` collapsed, expands to `steps[]` (PRD §12 `ReasoningTrace`); reused by thesis, subagents, and judges.
+
+### T-404 — Landing page (`/`)
+- Status: pending
+- Depends-on: T-401
+- Scope: web
+- Acceptance: hero + how-it-works (thesis → judge → execute) + on-chain-benchmark pitch + "Launch App" CTA; passes a design review.
+
+### T-405 — Trade page — chart + execute (`/trade`)
+- Status: pending
+- Depends-on: T-401, T-304
+- Scope: web
+- Acceptance: TradingView embed for the selected pair; manual swap/execute via `packages/wallet`; balances/positions.
+
+### T-406 — Trade page — side AI rail
+- Status: pending
+- Depends-on: T-405, T-403, T-205, T-208
+- Scope: web
+- Acceptance: tabbed rail — Quick Thesis (intent → inline thesis + "Refine in Judge Panel" → `/studio`) and Assistant chat (`/api/assistant`); reasoning traces shown.
+
+### T-407 — Studio Step 1 — Thesis (AI or human) (`/studio`)
+- Status: pending
+- Depends-on: T-401, T-403
+- Scope: web
+- Acceptance: AI mode fires `POST /api/thesis`; human mode posts `/api/thesis/human`; renders risk-tiered option cards + pair suggestion + thesis reasoning trace; per-option branch buttons "Execute" / "Send to Judge Panel".
+
+### T-408 — Studio Step 2 — Judge Panel
+- Status: pending
+- Depends-on: T-407, T-403
+- Scope: web
+- Acceptance: Supporter/Discriminator/Judge arguments (each with a reasoning trace), verdict, and refined options with predicted % + risk + caveats graphed; "Execute" per option.
+
+### T-409 — Execute flow (shared)
+- Status: pending
+- Depends-on: T-407, T-408, T-304
+- Scope: web
+- Acceptance: from a chosen option (direct from thesis OR from judge) → confirm → tx status + PnL + mantlescan link (calls `packages/wallet` execute).
+
+### T-410 — Settings page (`/settings`)
+- Status: pending
+- Depends-on: T-401, T-203
+- Scope: web
+- Acceptance: per-provider paste field + "Get free key" link + free-tier note; auto-populate models on paste; per-role model dropdowns (incl. `assistant`); data-source toggles; persists via `/api/keys`, `/api/roles`.
+
+### T-411 — History / Benchmark page (`/history`)
+- Status: pending
+- Depends-on: T-401, T-207
+- Scope: web
+- Acceptance: DecisionLog records + PnL-over-time / win-rate charts + mantlescan links; reads `/api/history`.
+
+### T-412 — Model performance leaderboard
+- Status: pending
+- Depends-on: T-411, T-207
+- Scope: web
+- Acceptance: on the Benchmark page, ranks models per role (thesis/supporter/discriminator/judge) by realized outcome; reads `/api/leaderboard`.
+
+### T-413 — Share thesis/verdict card
+- Status: pending
+- Depends-on: T-407, T-408
+- Scope: web
+- Acceptance: one-click share of a thesis or verdict as an image/link card.
+
+---
+
+## 5 — Infra / DevOps / Docs
+
+### T-503 — Push repo to GitHub + secrets + branch protection
+- Status: pending
+- Depends-on: —
+- Scope: infra
+- Acceptance: create the GitHub remote and push; add repo secrets `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` (Settings → Secrets → Actions); confirm CI runs on PRs and the Telegram bot posts to the team chat; enable branch protection on `main` requiring the CI check. **This unblocks the entire claim/PR + notification workflow.**
+
+---
+
+## 6 — Integration & Demo
+
+### T-601 — Wire UI ↔ server (real endpoints)
+- Status: pending
+- Depends-on: T-205, T-206, T-401
+- Scope: integration
+- Acceptance: thesis + debate render from the live API, no mocks.
+
+### T-602 — Wire wallet ↔ chain lib (real swap)
+- Status: pending
+- Depends-on: T-304, T-108
+- Scope: integration
+- Acceptance: a real `mUSD/WMNT` swap executes from the agent wallet on testnet.
+
+### T-603 — On-chain logging live
+- Status: pending
+- Depends-on: T-304, T-105, T-207
+- Scope: integration
+- Acceptance: each executed option writes to DecisionLog; the history page shows the on-chain record.
+
+### T-604 — E2E happy path
+- Status: pending
+- Depends-on: T-601, T-602, T-603
+- Scope: integration
+- Acceptance: intent → thesis → debate → swap → on-chain log passes end-to-end (local fork or live Mantle Sepolia).
+
+### T-605 — Demo polish + script
+- Status: pending
+- Depends-on: T-604
+- Scope: docs
+- Acceptance: UI passes a design review; the demo narrative (PRD §16) is rehearsed; mantlescan links work.
+
+---
+
+## Done
+
+_(newest first)_
+
+### T-502 — Workflow helper scripts (lint-todo + leaderboard)
+- Status: done @Claude 2026-06-02
+- Depends-on: T-001
+- Scope: infra
+- Acceptance: `scripts/lint-todo.ts` (validates this file's structure — unique ids, valid Status, Acceptance present; CI-gated) and `scripts/leaderboard.ts` (git-log tally for the Telegram "today's tally" post). Both run under bun.
+
+### T-501 — CI + Telegram-notify workflows (bun)
+- Status: done @Claude 2026-06-02
+- Depends-on: T-001
+- Scope: infra
+- Acceptance: `.github/workflows/ci.yml` (bun install --frozen-lockfile → lint-todo → `bun --filter '*' typecheck` → `bun --filter '*' test`) and `.github/workflows/telegram-notify.yml` (Telegram-only: PR opened/conflict/merged + push to main, tagged CLAIM/REVIEW/DONE/CONFLICT/MERGED, plus a leaderboard post). Goes live once T-503 sets the secrets.
+
+### T-004 — Env + network config
+- Status: done @Claude 2026-06-02
+- Depends-on: T-001
+- Scope: chain
+- Acceptance: `.env.example` (provider keys, RPC, deployer key); `packages/chain/src/network.ts` exports `mantleSepolia` (viem-shaped, chain 5003), `txUrl`/`addressUrl`, faucet/explorer constants; placeholder `packages/chain/addresses.json` (Track 1 fills via T-107).
+
+### T-003 — Freeze REST API contract
+- Status: done @Claude 2026-06-02
+- Depends-on: T-001
+- Scope: shared
+- Acceptance: `packages/shared/src/api.ts` — `API` route map + typed request/response for all 10 endpoints (PRD §12).
+
+### T-002 — Freeze shared types
+- Status: done @Claude 2026-06-02
+- Depends-on: T-001
+- Scope: shared
+- Acceptance: `packages/shared/src/types.ts` — all PRD §12 domain types exported as `@autonoe/shared` (incl. `ReasoningTrace`, `assistant` role, `Thesis.source/suggestedPair/reasoning/traces/modelsUsed`, role/asset const arrays). Smoke-tested via `bun test`.
+
+### T-001 — Monorepo scaffold (bun)
+- Status: done @Claude 2026-06-02
+- Depends-on: —
+- Scope: setup
+- Acceptance: bun workspaces (`packages/*`), `tsconfig.base.json` + project references, `bun install` + `bun run build` + `bun --filter '*' typecheck`/`test` all green. Track owners add `web`/`server`/`contracts`/`packages/wallet` to root `workspaces` when they scaffold.
+
+---
+
+## Blocked
+
+_(none)_
