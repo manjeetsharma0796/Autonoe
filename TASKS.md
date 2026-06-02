@@ -69,9 +69,10 @@ Node/Express + LangChain.js. Can mock Track A's chain lib via PRD §12 until A8 
 | B2 | Provider proxy (Mono port) | `server/providers.ts`, `server/routes/providers.ts` | `GET /api/providers`, `POST /api/keys` (encrypted at rest), `GET /api/models`, chat proxy for Groq/Mistral/NVIDIA/Gemini/OpenRouter | | ☐ | depends B1 |
 | B3 | Role→model config API | `server/routes/roles.ts` | `GET/PUT /api/roles` persists a `RoleModelMap`; defaults provided | | ☐ | depends B1, 0.2 |
 | B4 | Data subagents (tools) | `server/agents/subagents/{onchain,market,news,indicators}.ts` | Each is a callable tool returning structured data; each gated by `activeSources`; onchain reads via chain lib (mock until A8) | | ☐ | depends 0.2 |
-| B5 | Thesis agent | `server/agents/thesis.ts`, `server/routes/thesis.ts` | `POST /api/thesis` → valid `Thesis` (PRD §12) using the role's model; orchestrates only active subagents | | ☐ | depends B2–B4 |
-| B6 | Debate graph | `server/agents/debate.ts`, `server/routes/debate.ts` | `POST /api/debate` → `DebateResult`; Supporter→Discriminator→Judge each use their configured model; returns refined options w/ predicted % + risk + caveats | | ☐ | depends B2,B3 |
+| B5 | Thesis agent (+ human thesis) | `server/agents/thesis.ts`, `server/routes/thesis.ts` | `POST /api/thesis` → valid `Thesis` (PRD §12) using the role's model, orchestrating only active subagents; **populates `reasoning` + per-subagent `traces`**; `POST /api/thesis/human` structures a user-written thesis (source:'human') into options | | ☐ | depends B2–B4 |
+| B6 | Debate graph | `server/agents/debate.ts`, `server/routes/debate.ts` | `POST /api/debate` → `DebateResult` (accepts AI **or** human thesis); Supporter→Discriminator→Judge each use their configured model; returns refined options w/ predicted % + risk + caveats **plus per-judge `traces`** | | ☐ | depends B2,B3 |
 | B7 | History endpoint | `server/routes/history.ts` | `GET /api/history` merges SQLite records + on-chain DecisionLog (via chain lib) | | ☐ | depends A8,B1 |
+| B8 | Assistant chat endpoint | `server/agents/assistant.ts`, `server/routes/assistant.ts` | `POST /api/assistant` streams a `ChatMessage` reply using the `assistant` role's model; optional market/position context; can emit a thesis | | ☐ | depends B2,B3 |
 
 ---
 
@@ -91,20 +92,22 @@ In-browser embedded wallet with viem. Builds against chain lib interface; mock `
 
 ## Track D — Frontend UI (Best UI/UX target)
 
-React 19 + Vite. **4 routes + 1 wallet drawer** (PRD §11a). Renders against PRD §12 types; mock API responses until server endpoints land.
+React 19 + Vite. **5 routes + 1 wallet drawer** (PRD §11a–§11e; route names TBD). Renders against PRD §12 types; mock API responses until server endpoints land.
 **Build to the design system in `design-system/autonoe/MASTER.md`** (page overrides in `design-system/autonoe/pages/`). Use the `frontend-design` skill for polish and `web3-vfx-stack` for the landing visual wow. Dark OLED · gold `#F59E0B` + purple `#8B5CF6` on `#0F172A` · Orbitron/Exo 2.
 
 | ID | Task | Files | Acceptance criteria | Owner | Status | Notes |
 |----|------|-------|---------------------|-------|--------|-------|
-| D1 | App scaffold + routing + theme | `web/` (Vite+React+Router), `web/src/App.tsx`, `web/src/theme.css`, wagmi/RainbowKit | App runs; 4 routes wired (`/`,`/app`,`/history`,`/settings`); design tokens (colors/fonts) applied; MetaMask connect works on Mantle Sepolia | | ☐ | depends 0.1 |
-| D2 | Global shell + wallet drawer | `web/src/components/{AppShell,WalletDrawer}.tsx` | Persistent nav + a global slide-over wallet drawer reachable from every route; balances/fund/export/limits controls (calls `packages/wallet`) | | ☐ | depends D1, C-track |
-| D3 | `/` Landing page | `web/src/pages/Landing.tsx` | Hero + how-it-works (thesis→debate→execute) + on-chain-benchmark pitch + "Launch App" CTA; passes design review | | ☐ | depends D1 |
-| D4 | `/app` Terminal — chart + intent | `web/src/pages/Terminal.tsx`, `web/src/components/{ChartPanel,IntentBar,SourceToggles}.tsx` | TradingView embed for selected pair; intent input + data-source toggles fire `POST /api/thesis` | | ☐ | depends D1,0.2 |
-| D5 | `/app` Terminal — thesis options | `web/src/components/ThesisOptions.tsx` | Renders multi-option thesis as cards (direction/asset/size/rationale/predicted return/risk); "Execute" + "Send to debate" actions | | ☐ | depends D4 |
-| D6 | `/app` Terminal — debate panel | `web/src/components/DebatePanel.tsx` | Shows Supporter/Discriminator/Judge arguments, verdict, and refined options with predicted % + risk + caveats; visual/graph explanation | | ☐ | depends D4,0.2 |
-| D7 | `/app` Terminal — execute flow | `web/src/components/ExecuteModal.tsx` | Select option → confirm → tx status + PnL + mantlescan link (calls `packages/wallet` execute) | | ☐ | depends D5,D6,C4 |
-| D8 | `/settings` page | `web/src/pages/Settings.tsx` | Provider key entry (Mono UX) + per-role model dropdowns + source toggles; persists via `/api/keys`,`/api/roles` | | ☐ | depends D1,0.3 |
-| D9 | `/history` Benchmark page | `web/src/pages/History.tsx` | DecisionLog records + PnL-over-time / win-rate charts + mantlescan links; reads `/api/history` | | ☐ | depends D1,B7 |
+| D1 | App scaffold + routing + theme | `web/` (Vite+React+Router), `web/src/App.tsx`, `web/src/theme.css`, wagmi/RainbowKit | App runs; 5 routes wired (`/`,`/trade`,`/studio`,`/history`,`/settings`); design tokens applied; MetaMask connect on Mantle Sepolia | | ☐ | depends 0.1 |
+| D2 | Global shell + wallet drawer | `web/src/components/{AppShell,WalletDrawer}.tsx` | Persistent nav + global slide-over wallet drawer reachable from every route; balances/fund/export/limits (calls `packages/wallet`) | | ☐ | depends D1, C-track |
+| D3 | **ReasoningTrace component** (shared "Show thinking") | `web/src/components/ReasoningTrace.tsx` | Reusable collapsible trace: shows `summary` collapsed, expands to `steps[]` (PRD §12 `ReasoningTrace`); used by thesis, subagents, and judges | | ☐ | depends D1,0.2 |
+| D4 | `/` Landing page | `web/src/pages/Landing.tsx` | Hero + how-it-works (thesis→judge→execute) + on-chain-benchmark pitch + "Launch App" CTA; passes design review | | ☐ | depends D1 |
+| D5 | `/trade` chart + execute | `web/src/pages/Trade.tsx`, `web/src/components/{ChartPanel,SwapBox,Positions}.tsx` | TradingView embed for selected pair; manual swap/execute via `packages/wallet`; balances/positions | | ☐ | depends D1,C4 |
+| D6 | `/trade` side AI rail | `web/src/components/{AIRail,QuickThesis,AssistantChat}.tsx` | Tabbed rail: Quick Thesis (intent→inline thesis + "Refine in Judge Panel" → `/studio`) and Assistant chat (`/api/assistant`); reasoning traces shown | | ☐ | depends D5,D3,B5,B8 |
+| D7 | `/studio` Step 1 — Thesis (AI or human) | `web/src/pages/Studio.tsx`, `web/src/components/{IntentBar,SourceToggles,HumanThesisEditor,ThesisOptions}.tsx` | AI mode fires `POST /api/thesis`; human mode posts `/api/thesis/human`; renders risk-tiered option cards + pair suggestion + thesis reasoning trace; per-option branch buttons "Execute" / "Send to Judge Panel" | | ☐ | depends D1,D3,0.2 |
+| D8 | `/studio` Step 2 — Judge Panel | `web/src/components/DebatePanel.tsx` | Supporter/Discriminator/Judge arguments (each with reasoning trace), verdict, refined options with predicted % + risk + caveats graphed; "Execute" per option | | ☐ | depends D7,D3 |
+| D9 | Execute flow (shared) | `web/src/components/ExecuteModal.tsx` | From a chosen option (direct from thesis OR from judge) → confirm → tx status + PnL + mantlescan link (calls `packages/wallet` execute) | | ☐ | depends D7,D8,C4 |
+| D10 | `/settings` page | `web/src/pages/Settings.tsx` | Per-provider paste field + "Get free key" link + free-tier note; **auto-populate models on paste**; per-role model dropdowns (incl. `assistant`); data-source toggles; persists via `/api/keys`,`/api/roles` | | ☐ | depends D1,0.3 |
+| D11 | `/history` Benchmark page | `web/src/pages/History.tsx` | DecisionLog records + PnL-over-time / win-rate charts + mantlescan links; reads `/api/history` | | ☐ | depends D1,B7 |
 
 ---
 
@@ -124,6 +127,6 @@ React 19 + Vite. **4 routes + 1 wallet drawer** (PRD §11a). Renders against PRD
 
 - **Person 1 → Track A** (Solidity/viem) — the critical path; start immediately.
 - **Person 2 → Track B** (backend + LangChain agents).
-- **Person 3 → Track C + wallet UX glue** (wallet) — pairs with Person 4 on D2 (wallet drawer) and D8 (settings).
+- **Person 3 → Track C + wallet UX glue** (wallet) — pairs with Person 4 on D2 (wallet drawer) and D10 (settings).
 - **Person 4 → Track D** (frontend/UX) — owns the Best UI/UX target.
 - Everyone does **Phase 0 together first**, then splits. Integration phase is shared.

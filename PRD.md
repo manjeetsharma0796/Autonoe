@@ -107,19 +107,53 @@ THESIS = { options[]: { direction, asset, sizeMUSD, rationale, predictedReturnPc
 | `packages/wallet/` | Embedded EOA: generate/encrypt/persist/export, spending-limit policy, agent-sign flow |
 | `web/` | React UI: chart, intent+thesis panel, debate visualization, settings, wallet panel, results/history |
 
-## 11a. Information architecture — 4 routes + 1 wallet drawer
+## 11a. Information architecture — 5 routes + 1 wallet drawer
 
-Kept deliberately small for a 13-day, 4-person build; each route is a clean surface one contributor can own.
+> **Names are placeholders (TBD).** Routes shown are working labels; the user will finalize names later.
 
-| # | Route | Owner-ish | Purpose | Key sections |
+| # | Route (label TBD) | Owner-ish | Purpose | Key sections |
 |---|-------|-----------|---------|--------------|
-| 1 | `/` **Landing** | Track D | First impression for judges + submission | Hero, how-it-works (thesis→debate→execute), on-chain-benchmark pitch, "Launch App" CTA, footer |
-| 2 | `/app` **Terminal** ⭐ | Track D (lead) | The core product — ~50% of UI effort | Chart panel (TradingView), intent bar + data-source toggles, thesis option cards, debate panel (Supporter/Discriminator/Judge + refined options), execute action |
-| 3 | `/history` **Benchmark** | Track D | On-chain AI-performance showcase | DecisionLog records, PnL over time, win-rate / per-model performance charts, mantlescan links |
-| 4 | `/settings` **Settings** | Track D + C | Low-friction config | Provider keys (Mono UX), per-role model dropdowns, data-source toggles |
-| — | **Wallet** (global slide-over drawer, **not** a route) | Track C | Contextual, reachable everywhere | mUSD + asset balances, fund/mint, export, spending limits |
+| 1 | `/` **Landing** | Track D | First impression for judges + submission | Hero, how-it-works (thesis→judge→execute), on-chain-benchmark pitch, "Launch App" CTA, footer |
+| 2 | `/trade` **Trade** | Track D (lead) | Manual trading + execution surface | Chart panel (TradingView), swap/execute, balances/positions, **side AI rail** (see §11c) |
+| 3 | `/studio` **AI Workspace** ⭐ | Track D (lead) | Where theses are created, judged, refined — the signature flow | **Stepped + branchable** (see §11d): Create Thesis (AI **or** human) + pair suggestion → either execute directly or → Judge Panel (Supporter/Discriminator/Judge) → refined options. Every AI output has a **collapsible reasoning trace**. |
+| 4 | `/history` **Benchmark** | Track D | On-chain AI-performance showcase | DecisionLog records, PnL over time, win-rate / per-model performance charts, mantlescan links |
+| 5 | `/settings` **Settings** | Track D + B | Frictionless config (see §11e) | Provider keys + "get free key" links, per-role model dropdowns (auto-populated), data-source toggles |
+| — | **Wallet** (global slide-over drawer, **not** a route) | Track C | Contextual, reachable everywhere | mUSD + asset balances, fund/mint (faucet), export, spending limits |
 
-Wallet is a drawer (not a page) because it's needed in-context while executing on `/app`.
+Wallet is a drawer (not a page) because it's needed in-context while executing on `/trade` and `/studio`.
+
+## 11c. Trade-page side AI rail
+
+A tabbed rail beside the chart so a trader never has to leave the terminal:
+- **Quick Thesis** — type an intent → fast thesis + pair suggestion inline, with a "Refine in Judge Panel" button (jumps to `/studio` with the thesis loaded).
+- **Assistant** — a conversational AI chat about the market / current position; can spin off a thesis. Uses the configured model for the `assistant` role.
+
+## 11d. AI Workspace flow (stepped + branchable)
+
+```
+        ┌─────────────────────────── Step 1: THESIS ───────────────────────────┐
+        │  Create with AI   ──or──   Write your own (human-authored)            │
+        │  → multi-option thesis (risk-tiered) + pair/asset suggestion          │
+        └───────────────┬───────────────────────────────────┬──────────────────┘
+                        │ pick an option (choose risk level) │ send thesis to panel
+                        ▼                                     ▼
+                 EXECUTE on /trade                  Step 2: JUDGE PANEL
+                 (skip the panel)                   Supporter → Discriminator → Judge
+                                                    → refined options (predicted % + risk + caveats)
+                                                                  │
+                                                                  ▼
+                                                         EXECUTE on /trade
+```
+- **Two valid paths:** thesis → execute directly, OR thesis → judge → execute. The user chooses per their risk appetite.
+- **Human-authored thesis:** Step 1 accepts a user-written thesis as an alternate input, which can then go to the Judge Panel.
+- **Collapsible reasoning ("Show thinking"):** every AI output — overall thesis reasoning, each subagent's findings, and each judge's argument — exposes an expandable trace, collapsed by default.
+
+## 11e. Frictionless provider keys
+
+- Per provider (Groq / Mistral / NVIDIA / OpenRouter / Gemini): paste field + **"Get a free key →"** deep link + a one-line free-tier note.
+- **Auto-detect models** the instant a key is pasted (live model list) so per-role dropdowns self-populate.
+- Keys stored **locally + encrypted, no account required**; proxied server-side so they never touch a third-party origin.
+- Inline "pick a model" prompts wherever a role lacks one — no forced trip to Settings first.
 
 ## 11b. Design system (Track D builds to this)
 
@@ -136,16 +170,24 @@ Persisted as the source of truth in **`design-system/autonoe/MASTER.md`** (page 
 These shared shapes let the four tracks build independently against stable interfaces. They live in `packages/shared/types.ts`.
 
 ```ts
-// Roles that have a configurable model
+// Roles that have a configurable model (every place AI runs)
 export type AIRole =
   | 'thesis' | 'subagent.onchain' | 'subagent.market'
   | 'subagent.news' | 'subagent.indicators'
+  | 'assistant'                                   // Trade-page conversational rail
   | 'supporter' | 'discriminator' | 'judge';
 
 export type ProviderId = 'groq' | 'mistral' | 'nvidia' | 'openrouter' | 'gemini';
 
 export interface ModelChoice { provider: ProviderId; model: string; }
 export type RoleModelMap = Record<AIRole, ModelChoice>;
+
+// Collapsible "Show thinking" trace attached to every AI output.
+export interface ReasoningTrace {
+  role: AIRole;
+  summary: string;                  // one-line headline shown collapsed
+  steps: { label: string; detail: string }[];   // expanded view
+}
 
 export type Direction = 'long' | 'short' | 'hedge' | 'hold';
 export type AssetSymbol = 'WMNT' | 'MockBTC' | 'MockETH';
@@ -163,8 +205,12 @@ export interface ThesisOption {
 export interface Thesis {
   id: string;                       // uuid
   intent: string;                   // user's original ask
-  activeSources: AIRole[];          // which subagents ran
+  source: 'ai' | 'human';           // AI-generated or human-authored
+  suggestedPair: AssetSymbol;       // pair/asset suggestion
+  activeSources: AIRole[];          // which subagents ran (empty if human)
   options: ThesisOption[];
+  reasoning?: string;               // overall thesis reasoning (collapsed by default)
+  traces?: ReasoningTrace[];        // per-subagent "show thinking"
   createdAt: string;                // ISO
 }
 
@@ -182,7 +228,10 @@ export interface DebateResult {
   discriminatorArgument: string;
   judgeSummary: string;
   refinedOptions: RefinedOption[];
+  traces?: ReasoningTrace[];        // per-judge "show thinking" (supporter/discriminator/judge)
 }
+
+export interface ChatMessage { role: 'user' | 'assistant'; content: string; }
 
 export interface SwapResult {
   txHash: `0x${string}`;
@@ -200,8 +249,10 @@ export interface SwapResult {
 | POST | `/api/keys` | `{provider, apiKey}` → `{ok}` (stored encrypted) |
 | GET | `/api/models?provider=` | → normalized model list |
 | GET/PUT | `/api/roles` | `RoleModelMap` |
-| POST | `/api/thesis` | `{intent, activeSources}` → `Thesis` |
-| POST | `/api/debate` | `{thesis: Thesis}` → `DebateResult` |
+| POST | `/api/thesis` | `{intent, activeSources}` → `Thesis` (AI-generated, with `reasoning`/`traces`) |
+| POST | `/api/thesis/human` | `{intent, body, suggestedPair}` → `Thesis` (source:'human', structured into options) |
+| POST | `/api/debate` | `{thesis: Thesis}` → `DebateResult` (accepts AI- or human-authored thesis; includes per-judge `traces`) |
+| POST | `/api/assistant` | `{messages: ChatMessage[], context?}` → streamed `ChatMessage` (Trade-page chat) |
 | GET | `/api/history` | → past theses/verdicts/outcomes (from SQLite + DecisionLog) |
 
 **On-chain artifacts contract:** Track A writes deployed addresses to `packages/chain/addresses.json` and ABIs to `packages/chain/abis/`. All other tracks import from there — never hard-code addresses.
