@@ -243,7 +243,7 @@ _(All done — the shared base every track builds on.)_
 > **Next.js (App Router, React 19)**. **6 routes + wallet drawer** (PRD §11a–§11g). Build to `design-system/autonoe/MASTER.md`. Use the `frontend-design` skill for polish, `web3-vfx-stack` for the landing. Mock API responses (PRD §12) until endpoints land. Client-only libs (wagmi, Lenis/GSAP, charts) need `'use client'`.
 
 ### T-401 — App scaffold + routing + theme
-- Status: in-progress @Claude 2026-06-03
+- Status: done @Claude 2026-06-03 — Next.js 16 App Router (Tailwind v4, Turbopack) in `web/`; ported design tokens/atmosphere to `app/globals.css`, fonts via next/font, wagmi Providers (injected/MetaMask, Mantle Sepolia), AppShell nav + wallet-drawer stub, Lenis smooth-scroll, 6 route stubs, `next.config` rewrites `/api/*`→bun backend. `tsc` + `next build` green.
 - Depends-on: —
 - Scope: web
 - Acceptance: **Next.js App Router** app scaffolded with bun (`bunx create-next-app`); 6 routes as `app/` segments (`/`, `/markets`, `/trade`, `/studio`, `/history`, `/settings`); design tokens applied (dark OLED, gold `#F59E0B` + purple `#8B5CF6`, Orbitron/Exo 2); motion/VFX deps via bun (Lenis, gsap + @gsap/react, framer-motion); a client Providers wrapper for wagmi/RainbowKit; MetaMask connect on Mantle Sepolia. Add `web` to root `workspaces`. See PRD §10a boundary + §11b motion stack + §11h workflow.

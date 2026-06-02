@@ -6,7 +6,8 @@
   "description": "Autonoe — autonomous AI trading thesis & debate copilot on Mantle Sepolia",
   "workspaces": [
     "packages/*",
-    "server"
+    "server",
+    "web"
   ],
   "scripts": {
     "build": "tsc -b",
