@@ -55,6 +55,7 @@ build + mock around it so nothing is blocked.)_
 ---
 
 ## 📓 Progress log (most recent first)
+- 2026-06-05 (cont.) — **bun installed**; ran ALL suites green (4 shared + 5 chain + 14 wallet + 19 server + 16 contracts). Booted the server and **smoke-tested live**: `/api/price/sign` returns a real signed BTC price; **ran the full execute path** (wallet `executeOption` → live server oracle → chain `openSynthetic` → `DecisionLog` → `/api/history` shows the record) — **T-602/T-603 verified end-to-end on Mantle Sepolia**. Fixed a stale-read id bug (now parses ids from receipt events). T-601/403 web wiring + AssetSymbol reconcile committed. T-410 settings done (agent). Web drawer+execute (T-402/409) agent finishing.
 - 2026-06-05 — **T-108 chain lib** done (live swap + synthetic verified). **T-210 oracle endpoint** done. **T-207 history/leaderboard** done (Sonnet agent). **T-304/305 wallet execute+funding** implemented (under Opus adversarial review). **T-601/T-403 web wiring** in progress (Sonnet agent). All committed except wallet (awaiting review) + web (in progress).
 - 2026-06-05 — Contracts track T-101→T-107 done; deployed + Sourcify-verified on Mantle Sepolia. Branch `feat/T-101-contracts-hybrid` pushed.
 

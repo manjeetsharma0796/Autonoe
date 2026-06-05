@@ -315,7 +315,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: from a chosen option (direct from thesis OR from judge) → confirm → tx status + PnL + mantlescan link (calls `packages/wallet` execute).
 
 ### T-410 — Settings page (`/settings`)
-- Status: pending
+- Status: done @manjeet_s 2026-06-05 — `web/app/settings/page.tsx` + `components/settings/{ProviderCard,RoleModelPanel,DataSourcePanel}.tsx`: per-provider key paste + "Get free key" link + note (→ `/api/keys` then `/api/models`), per-role model dropdowns (incl. assistant) via `/api/roles`, data-source toggles persisted to localStorage (`getActiveSources()` for the thesis call). tsc clean. (Sonnet agent; committed with the web batch.)
 - Depends-on: T-401, T-203
 - Scope: web
 - Acceptance: per-provider paste field + "Get free key" link + free-tier note; auto-populate models on paste; per-role model dropdowns (incl. `assistant`); data-source toggles; persists via `/api/keys`, `/api/roles`.
