@@ -1,3 +1,0 @@
-# Solidity sources land here from T-102 onward (mUSD, asset tokens, Uniswap V2
-# fork, DecisionLog). Empty for T-101 — `hardhat compile` reports "Nothing to
-# compile" and exits 0. Keep this file so the sources dir is tracked.
