@@ -278,12 +278,6 @@ _(All done — the shared base every track builds on.)_
 - Scope: web
 - Acceptance: on the Benchmark page, ranks models per role (thesis/supporter/discriminator/judge) by realized outcome; reads `/api/leaderboard`.
 
-### T-413 — Share thesis/verdict card
-- Status: in-progress @prithwish 2026-06-05
-- Depends-on: T-407, T-408
-- Scope: web
-- Acceptance: one-click share of a thesis or verdict as an image/link card.
-
 ### T-414 — Markets overview page (`/markets`)
 - Status: done @Claude 2026-06-03 — `app/markets/page.tsx` + `components/markets/*`: stats header (count-up), gainers/losers, sortable table w/ favorites + sparklines, rows→/trade. **UI on sample data**; live feed via T-204 wiring tracked in T-601.
 - Depends-on: T-401, T-405
@@ -345,6 +339,12 @@ _(All done — the shared base every track builds on.)_
 ## Done
 
 _(newest first)_
+
+### T-413 — Share thesis/verdict card
+- Status: done @prithwish 2026-06-05 — reusable `web/components/share/ShareCard.tsx` `ShareButton` (client): one-click popover with a live canvas preview, **Copy link** (encodes the card into a `/studio#card=<base64>` deep link → clipboard) and **Download image** (renders a 1200×630 branded PNG via canvas). Closes on outside-click/Escape. Wired into the Judge verdict (`StepJudge`) and the thesis options header (`StepThesis`). `next build` + `tsc` green.
+- Depends-on: T-407, T-408
+- Scope: web
+- Acceptance: one-click share of a thesis or verdict as an image/link card.
 
 ### T-403 — ReasoningTrace component ("Show thinking")
 - Status: done @prithwish 2026-06-05 — canonical reusable `web/components/ReasoningTrace.tsx` (+ `.module.css`): collapsible native `<details>` (no client JS → works in any Server/Client Component), shows `summary` collapsed, expands to the `steps[]` timeline (PRD §12 `ReasoningTrace`), optional role badge + label. The studio `ThinkingTrace` is now a thin wrapper over it, so thesis (`StepThesis`) + judge (`StepJudge`) + subagent traces share one implementation with no changes to those callers. `next build` + `tsc` green.

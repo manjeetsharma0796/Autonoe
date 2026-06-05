@@ -1,0 +1,95 @@
+/* Share thesis/verdict card (T-413). A trigger button + a small popover with
+   copy-link / download-image actions and a live card preview. */
+
+.wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--violet2);
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.btn:hover {
+  background: rgba(139, 92, 246, 0.14);
+  border-color: var(--violet);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--violet2);
+  outline-offset: 2px;
+}
+.ic {
+  width: 14px;
+  height: 14px;
+}
+
+.pop {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 320px;
+  max-width: 86vw;
+  padding: 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.preview {
+  width: 100%;
+  aspect-ratio: 1200 / 630;
+  border-radius: 9px;
+  border: 1px solid var(--line2);
+  display: block;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+.action {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--text, #e9eefb);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 9px 10px;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.action:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+.action:focus-visible {
+  outline: 2px solid var(--violet2);
+  outline-offset: 1px;
+}
+.copied {
+  color: var(--gold2);
+  border-color: var(--gold);
+}

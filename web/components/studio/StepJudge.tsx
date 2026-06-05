@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import styles from "./studio.module.css";
 import { ThinkingTrace } from "./ThinkingTrace";
 import { TribunalFlow } from "./TribunalFlow";
+import { ShareButton } from "../share/ShareCard";
 import { ArrowRightIcon, WarnIcon } from "./icons";
 import { JUDGES, REFINED_OPTIONS, type RefinedOption } from "./data";
 
@@ -110,6 +111,18 @@ export function StepJudge({ active }: { active: boolean }) {
         <span className={`${styles.pill} ${styles.pillRet}`}>predicted +7.5%</span>
         <span className={`${styles.pill} ${styles.pillRisk}`}>risk: medium</span>
         <span className={`${styles.pill} ${styles.pillRisk}`}>confidence 0.62</span>
+        <ShareButton
+          data={{
+            kind: "verdict",
+            title: "Long WMNT — scaled, reclaim-gated",
+            subtitle: "Judge Panel verdict · preferred option · mUSD/WMNT",
+            stats: [
+              { label: "predicted", value: "+7.5%" },
+              { label: "risk", value: "medium" },
+              { label: "confidence", value: "0.62" },
+            ],
+          }}
+        />
       </div>
 
       <div className={`${styles.opthead} reveal`} style={{ marginTop: 44 }}>
