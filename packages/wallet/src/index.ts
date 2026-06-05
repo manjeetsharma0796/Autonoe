@@ -9,7 +9,7 @@ export {
   memoryStore,
   type Keystore,
   type WalletStore,
-} from './wallet.ts';
+} from './wallet.js';
 
 export {
   POLICY_KEY,
@@ -21,9 +21,9 @@ export {
   type SpendingPolicy,
   type PolicyCheckInput,
   type PolicyCheckResult,
-} from './policy.ts';
+} from './policy.js';
 
-export { exportPrivateKey, exportKeystoreJSON } from './export.ts';
+export { exportPrivateKey, exportKeystoreJSON } from './export.js';
 
 export {
   executeOption,
@@ -33,11 +33,11 @@ export {
   type ExecuteResult,
   type CloseSyntheticInput,
   type CloseResult,
-} from './execute.ts';
+} from './execute.js';
 
 export {
   MNT_FAUCET_URL,
   getAgentBalances,
   fundMUSD,
   type AgentBalances,
-} from './funding.ts';
+} from './funding.js';

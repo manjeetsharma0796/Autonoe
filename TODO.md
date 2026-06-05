@@ -267,7 +267,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: **Next.js App Router** app scaffolded with bun (`bunx create-next-app`); 6 routes as `app/` segments (`/`, `/markets`, `/trade`, `/studio`, `/history`, `/settings`); design tokens applied (dark OLED, gold `#F59E0B` + purple `#8B5CF6`, Orbitron/Exo 2); motion/VFX deps via bun (Lenis, gsap + @gsap/react, framer-motion); a client Providers wrapper for wagmi/RainbowKit; MetaMask connect on Mantle Sepolia. Add `web` to root `workspaces`. See PRD §10a boundary + §11b motion stack + §11h workflow.
 
 ### T-402 — Global shell + wallet drawer
-- Status: pending
+- Status: done @manjeet_s 2026-06-05 — `web/components/wallet/WalletProvider.tsx` (privateKey in a ref only, never persisted) + drawer in `AppShell.tsx`: agent address, MNT/mUSD/WMNT balances, fund mUSD (faucet) + MNT gas faucet link, export (reveal key behind passphrase / download keystore), spending-policy editor, create/unlock forms, and an explicit "acting wallet" indicator distinguishing the MetaMask funding wallet from the agent wallet. Persistent testnet disclaimer. `localStorage` `WalletStore` (`web/lib/walletStore.ts`). tsc clean. (Sonnet agent + Opus review.)
 - Depends-on: T-401, T-301
 - Scope: web
 - Acceptance: persistent nav + a global slide-over wallet drawer reachable from every route; balances/fund/export/limits (calls `packages/wallet`); clearly distinguishes funding wallet (MetaMask) vs autonomous agent wallet with an "acting wallet" indicator; persistent "testnet · not financial advice" disclaimer.
@@ -309,7 +309,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: Supporter/Discriminator/Judge arguments (each with a reasoning trace), verdict, and refined options with predicted % + risk + caveats graphed; "Execute" per option.
 
 ### T-409 — Execute flow (shared)
-- Status: pending
+- Status: done @manjeet_s 2026-06-05 — `web/components/wallet/ExecuteModal.tsx`: manual-confirm modal (never auto-executes) → unlock if needed → `executeOption` → tx status + mantlescan links for the trade + decision log; non-blocking `logError` "do NOT retry" warning. Wired into StepThesis (zero verdictHash) + StepJudge refined options (matches `ThesisOption` by `optionRef`, derives verdictHash). **Opus-reviewed** (manual-confirm, policy gate, correct params, key only in ref). tsc clean.
 - Depends-on: T-407, T-408, T-304
 - Scope: web
 - Acceptance: from a chosen option (direct from thesis OR from judge) → confirm → tx status + PnL + mantlescan link (calls `packages/wallet` execute).

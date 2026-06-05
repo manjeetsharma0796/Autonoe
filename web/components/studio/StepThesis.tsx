@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { AIRole, AssetSymbol, Thesis, ThesisOption } from "@autonoe/shared";
 import { SUBAGENT_ROLES } from "@autonoe/shared";
+import { keccak256, stringToHex } from "viem";
+import type { ExecuteResult } from "@autonoe/wallet";
 import styles from "./studio.module.css";
 import { ThinkingTrace } from "./ThinkingTrace";
 import {
@@ -26,6 +28,8 @@ import {
   type DataSourceKey,
 } from "./data";
 import { postThesis, postThesisHuman } from "@/lib/api";
+import { useWallet } from "@/components/wallet/WalletProvider";
+import { ExecuteModal } from "@/components/wallet/ExecuteModal";
 
 type Mode = "ai" | "human";
 
@@ -54,50 +58,101 @@ function formatRange(low: number, high: number): string {
   return `${fmt(low)} to ${fmt(high)}`;
 }
 
+// ── ThesisOptionCard ──────────────────────────────────────────────────────────
+
 function ThesisOptionCard({
   opt,
+  thesis,
   onSendToJudge,
 }: {
   opt: ThesisOption;
+  thesis: Thesis;
   onSendToJudge: () => void;
 }) {
+  const wallet = useWallet();
+  const [modalOpen, setModalOpen] = useState(false);
   const dir = opt.direction;
+
+  async function handleConfirm(passphrase: string | null): Promise<ExecuteResult> {
+    // If locked and passphrase provided, unlock first then execute.
+    if (!wallet.isUnlocked && passphrase) {
+      await wallet.unlock(passphrase);
+    }
+    // Zero verdictHash for direct execution (not judged).
+    const zeroHash = `0x${"0".repeat(64)}` as `0x${string}`;
+    const thesisHash = keccak256(stringToHex(thesis.id));
+
+    return wallet.execute(
+      {
+        direction: opt.direction,
+        asset: opt.asset,
+        sizeMUSD: opt.sizeMUSD,
+        optionRef: opt.id,
+        apiBase: "",
+      },
+      { thesisHash, verdictHash: zeroHash },
+    );
+  }
+
   return (
-    <article className={`${styles.opt} ${styles[opt.risk]}`}>
-      <div className={styles.otop}>
-        <span className={`${styles.dir} ${styles[dir]}`}>
-          <TrendUpIcon /> {directionLabel(dir)}
-        </span>
-        <span className={`${styles.riskpill} ${styles[opt.risk]}`}>
-          {opt.risk} risk
-        </span>
-      </div>
-      <div className={styles.asset}>{opt.asset}</div>
-      <div className={styles.size}>
-        Size <b>{opt.sizeMUSD.toLocaleString()} mUSD</b> · {opt.id}
-      </div>
-      <p className={styles.rat}>{opt.rationale}</p>
-      <div className={styles.ret}>
-        <span className={styles.rk}>Predicted</span>
-        <span className={styles.rv}>
-          {formatRange(opt.predictedReturnPct.low, opt.predictedReturnPct.high)}
-        </span>
-      </div>
-      <div className={styles.acts}>
-        {/* TODO: T-wallet — wire execute once the wallet execute flow is ready */}
-        <button className={`btn btn-ghost ${styles.btnSm}`} type="button" disabled title="Execute: coming soon">
-          Execute
-        </button>
-        <button
-          className={`btn btn-gold ${styles.btnSm}`}
-          type="button"
-          onClick={onSendToJudge}
-        >
-          <ArrowRightIcon />
-          To Judge
-        </button>
-      </div>
-    </article>
+    <>
+      <article className={`${styles.opt} ${styles[opt.risk]}`}>
+        <div className={styles.otop}>
+          <span className={`${styles.dir} ${styles[dir]}`}>
+            <TrendUpIcon /> {directionLabel(dir)}
+          </span>
+          <span className={`${styles.riskpill} ${styles[opt.risk]}`}>
+            {opt.risk} risk
+          </span>
+        </div>
+        <div className={styles.asset}>{opt.asset}</div>
+        <div className={styles.size}>
+          Size <b>{opt.sizeMUSD.toLocaleString()} mUSD</b> · {opt.id}
+        </div>
+        <p className={styles.rat}>{opt.rationale}</p>
+        <div className={styles.ret}>
+          <span className={styles.rk}>Predicted</span>
+          <span className={styles.rv}>
+            {formatRange(opt.predictedReturnPct.low, opt.predictedReturnPct.high)}
+          </span>
+        </div>
+        <div className={styles.acts}>
+          <button
+            className={`btn btn-ghost ${styles.btnSm}`}
+            type="button"
+            disabled={opt.direction === "hold" || !wallet.isCreated}
+            title={!wallet.isCreated ? "Create an agent wallet to execute" : opt.direction === "hold" ? "Hold — no trade" : "Execute this option"}
+            onClick={() => setModalOpen(true)}
+          >
+            Execute
+          </button>
+          <button
+            className={`btn btn-gold ${styles.btnSm}`}
+            type="button"
+            onClick={onSendToJudge}
+          >
+            <ArrowRightIcon />
+            To Judge
+          </button>
+        </div>
+      </article>
+
+      {modalOpen && (
+        <ExecuteModal
+          option={{
+            id: opt.id,
+            direction: opt.direction,
+            asset: opt.asset,
+            sizeMUSD: opt.sizeMUSD,
+            predictedReturnLabel: formatRange(opt.predictedReturnPct.low, opt.predictedReturnPct.high),
+            risk: opt.risk,
+          }}
+          onConfirm={handleConfirm}
+          onClose={() => setModalOpen(false)}
+          isUnlocked={wallet.isUnlocked}
+        />
+      )}
+    </>
   );
 }
 
@@ -327,6 +382,7 @@ export function StepThesis({ onSendToJudge }: StepThesisProps) {
               <div className="reveal" key={opt.id}>
                 <ThesisOptionCard
                   opt={opt}
+                  thesis={thesis}
                   onSendToJudge={() => onSendToJudge(thesis)}
                 />
               </div>

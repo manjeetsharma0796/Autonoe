@@ -16,7 +16,7 @@ import {
   writeDecision,
   type PriceAttestation,
 } from '@autonoe/chain';
-import { checkPolicy, type SpendingPolicy } from './policy.ts';
+import { checkPolicy, type SpendingPolicy } from './policy.js';
 
 export type Direction = 'long' | 'short' | 'hedge' | 'hold';
 

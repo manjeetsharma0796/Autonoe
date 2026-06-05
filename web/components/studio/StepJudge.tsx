@@ -2,16 +2,30 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { DebateResult, RefinedOption, Thesis } from "@autonoe/shared";
+import { keccak256, stringToHex } from "viem";
+import type { ExecuteResult } from "@autonoe/wallet";
 import styles from "./studio.module.css";
 import { ThinkingTrace } from "./ThinkingTrace";
 import { TribunalFlow } from "./TribunalFlow";
 import { ArrowRightIcon, WarnIcon } from "./icons";
 import { postDebate } from "@/lib/api";
+import { useWallet } from "@/components/wallet/WalletProvider";
+import { ExecuteModal } from "@/components/wallet/ExecuteModal";
 
 // ── Refined option card ───────────────────────────────────────────────────────
 
-function RefinedCard({ opt, animate }: { opt: RefinedOption; animate: boolean }) {
+function RefinedCard({
+  opt,
+  thesis,
+  animate,
+}: {
+  opt: RefinedOption;
+  thesis: Thesis | null;
+  animate: boolean;
+}) {
   const barRef = useRef<HTMLDivElement>(null);
+  const wallet = useWallet();
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     const bar = barRef.current;
@@ -30,47 +44,97 @@ function RefinedCard({ opt, animate }: { opt: RefinedOption; animate: boolean })
     return () => cancelAnimationFrame(raf);
   }, [animate, opt.confidence]);
 
+  // Find the matching ThesisOption to get direction/asset/sizeMUSD.
+  const matchingOpt = thesis?.options.find((o) => o.id === opt.optionRef);
+
+  async function handleConfirm(passphrase: string | null): Promise<ExecuteResult> {
+    if (!wallet.isUnlocked && passphrase) {
+      await wallet.unlock(passphrase);
+    }
+    if (!thesis) throw new Error("No thesis available");
+    if (!matchingOpt) throw new Error(`No matching thesis option for ref "${opt.optionRef}"`);
+
+    const thesisHash = keccak256(stringToHex(thesis.id));
+    const verdictHash = keccak256(stringToHex(thesis.id + "|verdict"));
+
+    return wallet.execute(
+      {
+        direction: matchingOpt.direction,
+        asset: matchingOpt.asset,
+        sizeMUSD: matchingOpt.sizeMUSD,
+        optionRef: opt.optionRef,
+        apiBase: "",
+      },
+      { thesisHash, verdictHash },
+    );
+  }
+
+  const canExecute = !!matchingOpt && matchingOpt.direction !== "hold" && wallet.isCreated;
+
   return (
-    <article className={styles.ref}>
-      <div className={styles.rtop}>
-        <div className={styles.rasset}>
-          Long {/* direction always shown as "Long" for the refined view */}
-          <small>{opt.optionRef}</small>
+    <>
+      <article className={styles.ref}>
+        <div className={styles.rtop}>
+          <div className={styles.rasset}>
+            {matchingOpt ? `${matchingOpt.direction.charAt(0).toUpperCase() + matchingOpt.direction.slice(1)} ${matchingOpt.asset}` : "Option"}
+            <small>{opt.optionRef}</small>
+          </div>
+          <span className={`${styles.riskpill} ${styles[opt.risk]}`}>
+            {opt.risk.charAt(0).toUpperCase() + opt.risk.slice(1)}
+          </span>
         </div>
-        <span className={`${styles.riskpill} ${styles[opt.risk]}`}>
-          {opt.risk.charAt(0).toUpperCase() + opt.risk.slice(1)}
-        </span>
-      </div>
-      <div className={styles.pct}>
-        <span className={styles.pv}>
-          {opt.predictedOutputPct >= 0 ? "+" : ""}
-          {opt.predictedOutputPct.toFixed(1)}%
-        </span>
-        <span className={styles.pl}>predicted outcome</span>
-      </div>
-      <div className={styles.caveats}>
-        <div className={styles.cl}>Caveats</div>
-        <ul>
-          {opt.caveats.map((c, i) => (
-            <li key={i}>{c}</li>
-          ))}
-        </ul>
-      </div>
-      <div className={styles.conf}>
-        <div className={styles.ch}>
-          <span className={styles.ck}>Confidence</span>
-          <span className={styles.cv}>{opt.confidence.toFixed(2)}</span>
+        <div className={styles.pct}>
+          <span className={styles.pv}>
+            {opt.predictedOutputPct >= 0 ? "+" : ""}
+            {opt.predictedOutputPct.toFixed(1)}%
+          </span>
+          <span className={styles.pl}>predicted outcome</span>
         </div>
-        <div className={styles.track}>
-          <div className={styles.bar} ref={barRef} />
+        <div className={styles.caveats}>
+          <div className={styles.cl}>Caveats</div>
+          <ul>
+            {opt.caveats.map((c, i) => (
+              <li key={i}>{c}</li>
+            ))}
+          </ul>
         </div>
-      </div>
-      {/* TODO: T-wallet — wire execute once the wallet execute flow is ready */}
-      <button className="btn btn-gold" type="button" disabled title="Execute: coming soon">
-        <ArrowRightIcon />
-        Execute
-      </button>
-    </article>
+        <div className={styles.conf}>
+          <div className={styles.ch}>
+            <span className={styles.ck}>Confidence</span>
+            <span className={styles.cv}>{opt.confidence.toFixed(2)}</span>
+          </div>
+          <div className={styles.track}>
+            <div className={styles.bar} ref={barRef} />
+          </div>
+        </div>
+        <button
+          className="btn btn-gold"
+          type="button"
+          disabled={!canExecute}
+          title={!wallet.isCreated ? "Create an agent wallet to execute" : !matchingOpt ? "No matching thesis option found" : matchingOpt.direction === "hold" ? "Hold — no trade" : "Execute this option"}
+          onClick={() => setModalOpen(true)}
+        >
+          <ArrowRightIcon />
+          Execute
+        </button>
+      </article>
+
+      {modalOpen && matchingOpt && (
+        <ExecuteModal
+          option={{
+            id: opt.optionRef,
+            direction: matchingOpt.direction,
+            asset: matchingOpt.asset,
+            sizeMUSD: matchingOpt.sizeMUSD,
+            predictedReturnLabel: `${opt.predictedOutputPct >= 0 ? "+" : ""}${opt.predictedOutputPct.toFixed(1)}%`,
+            risk: opt.risk,
+          }}
+          onConfirm={handleConfirm}
+          onClose={() => setModalOpen(false)}
+          isUnlocked={wallet.isUnlocked}
+        />
+      )}
+    </>
   );
 }
 
@@ -251,7 +315,7 @@ export function StepJudge({ active, thesis }: StepJudgeProps) {
               <div className={styles.refgrid}>
                 {result.refinedOptions.map((opt) => (
                   <div className="reveal" key={opt.optionRef}>
-                    <RefinedCard opt={opt} animate={active} />
+                    <RefinedCard opt={opt} thesis={thesis} animate={active} />
                   </div>
                 ))}
               </div>

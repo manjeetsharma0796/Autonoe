@@ -5,6 +5,7 @@ import { WagmiProvider, createConfig, http } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { mantleSepolia } from "@autonoe/chain";
+import { WalletProvider } from "@/components/wallet/WalletProvider";
 
 // viem's `Chain` type is structurally compatible with the object exported by
 // @autonoe/chain; cast keeps wagmi's stricter typing happy without redefining it.
@@ -22,7 +23,9 @@ export function Providers({ children }: { children: ReactNode }) {
 
   return (
     <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <WalletProvider>{children}</WalletProvider>
+      </QueryClientProvider>
     </WagmiProvider>
   );
 }
