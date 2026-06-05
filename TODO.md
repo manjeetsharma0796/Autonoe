@@ -86,12 +86,6 @@ _(All done — the shared base every track builds on.)_
 
 > Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
 
-### T-103 — Asset tokens (WMNT / MockBTC / MockETH)
-- Status: in-progress @prithwish 2026-06-05
-- Depends-on: T-101
-- Scope: contracts
-- Acceptance: `WMNT.sol` (WETH-style deposit/withdraw wrapper) + `MockBTC.sol` + `MockETH.sol` (18-dec mintable ERC-20). Tests pass.
-
 ### T-104 — Uniswap V2 fork
 - Status: pending
 - Depends-on: T-103
@@ -369,6 +363,12 @@ _(All done — the shared base every track builds on.)_
 ## Done
 
 _(newest first)_
+
+### T-103 — Asset tokens (WMNT / MockBTC / MockETH)
+- Status: done @prithwish 2026-06-05 — `WMNT.sol` (OZ ERC-20, 18-dec WETH-style wrapper: `deposit()`/`receive()` wrap native MNT 1:1, `withdraw()` redeems; `totalSupply` 1:1-backed; Deposit/Withdrawal events — router-ready for T-104). `MockBTC.sol` (mBTC) + `MockETH.sol` (mETH) extend a shared `MockERC20.sol` base (18-dec, open `mint()` for seeding/tests). 6 Hardhat 3 + viem tests pass (11 total in the suite).
+- Depends-on: T-101
+- Scope: contracts
+- Acceptance: `WMNT.sol` (WETH-style deposit/withdraw wrapper) + `MockBTC.sol` + `MockETH.sol` (18-dec mintable ERC-20). Tests pass.
 
 ### T-102 — `mUSD` stablecoin
 - Status: done @prithwish 2026-06-05 — `contracts/contracts/mUSD.sol`: OpenZeppelin ERC-20 + Ownable, 6 decimals; `faucet()` mints a fixed 1,000 mUSD with an 8h per-address cooldown + a 10,000 lifetime cap (emits `FaucetClaimed`); `ownerMint()` for seeding (T-106). 5 Hardhat 3 + viem tests pass (decimals/name, faucet mint, cooldown revert, cap revert, owner-only mint). Hardhat node:test files live in `contracts/test/` (run via `bun run test:hardhat`); the offline bun smoke suite moved to `contracts/test-unit/` (CI gate, no runner collision).
