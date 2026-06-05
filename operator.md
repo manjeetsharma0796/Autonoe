@@ -55,4 +55,16 @@ build + mock around it so nothing is blocked.)_
 ---
 
 ## 📓 Progress log (most recent first)
-- 2026-06-05 — Contracts track T-101→T-107 done; deployed + Sourcify-verified on Mantle Sepolia. Branch `feat/T-101-contracts-hybrid` pushed. Starting T-108 (viem chain lib) next.
+- 2026-06-05 — **T-108 chain lib** done (live swap + synthetic verified). **T-210 oracle endpoint** done. **T-207 history/leaderboard** done (Sonnet agent). **T-304/305 wallet execute+funding** implemented (under Opus adversarial review). **T-601/T-403 web wiring** in progress (Sonnet agent). All committed except wallet (awaiting review) + web (in progress).
+- 2026-06-05 — Contracts track T-101→T-107 done; deployed + Sourcify-verified on Mantle Sepolia. Branch `feat/T-101-contracts-hybrid` pushed.
+
+## ✅ Done so far (this session)
+Contracts (T-101→107) · chain lib (T-108) · oracle endpoint (T-210) · history/leaderboard (T-207) ·
+**wallet execute+funding (T-304/305) — Opus-reviewed, C1/H1 fixed, committed**.
+Remaining to E2E demo: web wiring (T-601/403, agent finishing) → commit · wallet drawer (T-402) ·
+execute flow UI (T-409) · settings (T-410) · history page (T-411) · integration+E2E (T-602/603/604) · polish (T-605).
+
+## 🧹 Known cleanup (non-blocking, I'll handle)
+- `AssetSymbol` in `@autonoe/shared` still says `MockBTC/MockETH`; the live system uses `BTC/ETH/SUI/SOL`.
+  `server/src/market/bybit.ts` `BYBIT_SYMBOL` still keyed by the old set. I'll reconcile this across
+  shared+server+web in one careful pass after the web-wiring agent finishes (avoids mid-flight type churn).
