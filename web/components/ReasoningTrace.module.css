@@ -1,0 +1,104 @@
+/* Canonical "Show thinking" reasoning trace (T-403). Self-contained — uses the
+   global design tokens (app/globals.css) so it renders consistently on every
+   route (studio thesis/subagents/judges, trade rail). No JS: native <details>. */
+
+.think {
+  margin-top: 18px;
+  border: 1px solid var(--line2);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.018);
+  overflow: hidden;
+}
+
+.think > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--violet2);
+  transition: background 0.2s;
+}
+.think > summary::-webkit-details-marker {
+  display: none;
+}
+.think > summary:hover {
+  background: rgba(139, 92, 246, 0.06);
+}
+.think > summary:focus-visible {
+  outline: 2px solid var(--violet2);
+  outline-offset: -2px;
+}
+
+.chev {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  transition: transform 0.25s;
+  color: var(--violet);
+}
+.think[open] .chev {
+  transform: rotate(90deg);
+}
+
+/* Optional uppercase role badge (thesis / supporter / discriminator / judge…). */
+.role {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--violet);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+
+.sumline {
+  flex: 1;
+  min-width: 0;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trace {
+  padding: 4px 18px 18px 18px;
+  border-top: 1px solid var(--line2);
+}
+
+.tstep {
+  position: relative;
+  padding: 11px 0 11px 22px;
+  border-left: 1px solid var(--line);
+  margin-left: 6px;
+}
+.tstep:last-child {
+  border-left-color: transparent;
+}
+.tstep::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 16px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--violet);
+  box-shadow: 0 0 10px var(--violet);
+}
+.tl {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--violet2);
+}
+.td {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 4px;
+}

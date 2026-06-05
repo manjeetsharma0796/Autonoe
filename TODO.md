@@ -224,12 +224,6 @@ _(All done — the shared base every track builds on.)_
 - Scope: web
 - Acceptance: persistent nav + a global slide-over wallet drawer reachable from every route; balances/fund/export/limits (calls `packages/wallet`); clearly distinguishes funding wallet (MetaMask) vs autonomous agent wallet with an "acting wallet" indicator; persistent "testnet · not financial advice" disclaimer.
 
-### T-403 — ReasoningTrace component ("Show thinking")
-- Status: in-progress @prithwish 2026-06-05
-- Depends-on: T-401
-- Scope: web
-- Acceptance: reusable collapsible trace — shows `summary` collapsed, expands to `steps[]` (PRD §12 `ReasoningTrace`); reused by thesis, subagents, and judges.
-
 ### T-404 — Landing page (`/`) — VISUAL TEMPLATE
 - Status: done @Claude 2026-06-03 — `app/page.tsx` + `components/landing/*` (Hero char-split, Tribunal flow, HowItWorks, Benchmark count-up, MarketsPreview, FinalCta); GSAP/useGSAP reveals. `next build` green.
 - Depends-on: T-401
@@ -351,6 +345,12 @@ _(All done — the shared base every track builds on.)_
 ## Done
 
 _(newest first)_
+
+### T-403 — ReasoningTrace component ("Show thinking")
+- Status: done @prithwish 2026-06-05 — canonical reusable `web/components/ReasoningTrace.tsx` (+ `.module.css`): collapsible native `<details>` (no client JS → works in any Server/Client Component), shows `summary` collapsed, expands to the `steps[]` timeline (PRD §12 `ReasoningTrace`), optional role badge + label. The studio `ThinkingTrace` is now a thin wrapper over it, so thesis (`StepThesis`) + judge (`StepJudge`) + subagent traces share one implementation with no changes to those callers. `next build` + `tsc` green.
+- Depends-on: T-401
+- Scope: web
+- Acceptance: reusable collapsible trace — shows `summary` collapsed, expands to `steps[]` (PRD §12 `ReasoningTrace`); reused by thesis, subagents, and judges.
 
 ### T-104 — Uniswap V2 fork
 - Status: done @prithwish 2026-06-05 — canonical Uniswap V2 vendored into `contracts/contracts/uniswap/` (core `@1.0.1` @ solc 0.5.16, periphery `@1.1.0-beta.0` @ 0.6.6) via a 3-compiler Hardhat config (0.5.16/0.6.6/0.8.28). Router02 deploys with WMNT as WETH. One modification: `UniswapV2Library.pairFor()` resolves via `factory.getPair()` instead of the mainnet-pinned CREATE2 init-code hash (won't match a locally compiled pair) — see `contracts/uniswap/README.md`. 2 Hardhat 3 + viem tests pass: `createPair` registers mUSD/WMNT; addLiquidity seeds reserves + router `getAmountsOut` quotes a swap (16 in the suite).
