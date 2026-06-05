@@ -87,7 +87,7 @@ _(All done — the shared base every track builds on.)_
 > Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
 
 ### T-101 — Hardhat project + Mantle Sepolia config
-- Status: pending
+- Status: in-progress @prithwish 2026-06-05
 - Depends-on: —
 - Scope: contracts
 - Acceptance: `contracts/` with `hardhat.config.ts`; `npx hardhat compile` passes; network `mantleSepolia` (5003) configured from `DEPLOYER_PRIVATE_KEY` + RPC env. Add `contracts` to root `workspaces`.
