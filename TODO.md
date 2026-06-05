@@ -87,7 +87,7 @@ _(All done — the shared base every track builds on.)_
 > Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
 
 ### T-104 — Uniswap V2 fork
-- Status: pending
+- Status: in-progress @prithwish 2026-06-05
 - Depends-on: T-103
 - Scope: contracts
 - Acceptance: canonical Uniswap V2 core + periphery (Factory, Router02) compiled with WMNT as WETH; `createPair` + quote works in a Hardhat test.
