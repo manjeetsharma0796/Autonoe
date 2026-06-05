@@ -141,7 +141,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: live Mantle Sepolia addresses written to `packages/chain/addresses.json` (incl. `oracle`, `syntheticExchange`, `oracleSigner`, `pools.mUSD_WMNT`, `syntheticMarkets`; no `MockBTC`/`MockETH`) and ABIs to `packages/chain/abis/`; contracts verified.
 
 ### T-108 — viem chain library
-- Status: pending
+- Status: done @manjeet_s 2026-06-05 — `packages/chain/src/{clients,abis,addresses,swapExecutor,syntheticExecutor,decisionLog}.ts`. AMM `getQuote`/`swap` (approve+slippage+receipt check); synthetic `openSynthetic`/`closeSynthetic`/`signPriceAttestation`/`priceToX18`/`getOracleConfig`; `writeDecision`/`readHistory`. **Live integration verified on testnet**: real 500 mUSD→WMNT swap + synthetic BTC long open→close (pnl +100 mUSD / payout 1100). Offline unit test (`sign.test.ts`) covers attestation recovery. tsc -b green.
 - Depends-on: T-107
 - Scope: chain
 - Acceptance: `packages/chain/src/{clients,swapExecutor,syntheticExecutor,decisionLog}.ts` — AMM: `getQuote()`, `swap()` (approve + `swapExactTokensForTokens` + slippage). Synthetic: `openSynthetic()` / `closeSynthetic()` (submit signed price attestation), `getOraclePrice()`. Plus `writeDecision()`, `readHistory()`. Integration tests execute a real `mUSD/WMNT` swap **and** a synthetic open/close on testnet.
