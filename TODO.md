@@ -1,12 +1,12 @@
 ---
 title: Autonoe team task board
-purpose: Shared async task tracker for the 4-person team — humans and their Claude agents
+purpose: Shared async task tracker for the 4-person team — humans and their AI agents
 last_updated: 2026-06-03
 ---
 
 # TODO
 
-Single source of truth for what's in flight on **Autonoe** (see [PRD.md](PRD.md)). Anyone — human or Claude agent — can pick pending tasks, add new ones, or release stale ones.
+Single source of truth for what's in flight on **Autonoe** (see [PRD.md](PRD.md)). Anyone — human or AI agent — can pick pending tasks, add new ones, or release stale ones.
 
 ## How to use this file (90-second version)
 
@@ -87,58 +87,70 @@ _(All done — the shared base every track builds on.)_
 > Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
 
 ### T-101 — Hardhat project + Mantle Sepolia config
-- Status: pending
+- Status: done @manjeet_s 2026-06-05 — `contracts/` Hardhat (solc 0.8.24, viaIR, evmVersion paris for L2), `mantleSepolia` (5003) network from env; `npx hardhat compile` green. `contracts` added to root workspaces.
 - Depends-on: —
 - Scope: contracts
 - Acceptance: `contracts/` with `hardhat.config.ts`; `npx hardhat compile` passes; network `mantleSepolia` (5003) configured from `DEPLOYER_PRIVATE_KEY` + RPC env. Add `contracts` to root `workspaces`.
 
 ### T-102 — `mUSD` stablecoin
-- Status: pending
+- Status: done @manjeet_s 2026-06-05 — `contracts/contracts/mUSD.sol` (6-dec ERC-20, `faucet()` cooldown+cap, `ownerMint`); tests pass.
 - Depends-on: T-101
 - Scope: contracts
 - Acceptance: `contracts/contracts/mUSD.sol` — ERC-20, 6 decimals; `faucet()` mints a fixed amount with per-address cooldown + cap; `ownerMint()` for seeding. Hardhat tests pass.
 
-### T-103 — Asset tokens (WMNT / MockBTC / MockETH)
-- Status: pending
+### T-103 — `WMNT` wrapper (hybrid: real AMM asset only)
+- Status: done @manjeet_s 2026-06-05 — `WMNT.sol` (WETH-style deposit/withdraw); wrap/unwrap test passes.
 - Depends-on: T-101
 - Scope: contracts
-- Acceptance: `WMNT.sol` (WETH-style deposit/withdraw wrapper) + `MockBTC.sol` + `MockETH.sol` (18-dec mintable ERC-20). Tests pass.
+- Acceptance: `WMNT.sol` (WETH-style deposit/withdraw wrapper), 18-dec. Tests pass. (Hybrid decision 2026-06-05 — `MockBTC`/`MockETH` are **no longer deployed**; all non-WMNT assets are oracle-priced synthetics, see T-110/T-111.)
 
-### T-104 — Uniswap V2 fork
-- Status: pending
+### T-104 — Uniswap V2 fork (single `mUSD/WMNT` pool)
+- Status: done @manjeet_s 2026-06-05 — `contracts/contracts/amm/{AmmFactory,AmmPair,AmmRouter}.sol`: V2-style constant-product AMM (0.30% fee, `addLiquidity`/`swapExactTokensForTokens`/`getAmountsOut`/`quote`). Note: a faithful **V2-style minimal** impl (not the canonical 0.5.16 fork) for a clean 0.8.24/paris compile + to avoid the init-code-hash pitfall — same external surface the chain lib (T-108) expects. createPair + addLiquidity + swap tested.
 - Depends-on: T-103
 - Scope: contracts
-- Acceptance: canonical Uniswap V2 core + periphery (Factory, Router02) compiled with WMNT as WETH; `createPair` + quote works in a Hardhat test.
+- Acceptance: canonical Uniswap V2 core + periphery (Factory, Router02) compiled with WMNT as WETH; the `mUSD/WMNT` `createPair` + quote works in a Hardhat test.
 
 ### T-105 — `DecisionLog` contract
-- Status: pending
+- Status: done @manjeet_s 2026-06-05 — `DecisionLog.sol` (`logDecision` with signed `pnl`, per-user history, getters, event); tested incl. negative pnl.
 - Depends-on: T-101
 - Scope: contracts
 - Acceptance: `DecisionLog.sol` with `logDecision(thesisHash, verdictHash, asset, amountIn, amountOut, pnl, optionRef)` emitting an event + storing a per-user history; getters; tests pass.
 
-### T-106 — Deploy + seed script
-- Status: pending
-- Depends-on: T-102, T-103, T-104, T-105
+### T-110 — `PriceOracle` (signed-pull) — NEW (hybrid)
+- Status: done @manjeet_s 2026-06-05 — `PriceOracle.sol` (ECDSA `ecrecover`, chainid+address-bound digest, maxAge freshness, owner signer rotation); tests cover valid / wrong-signer / stale / tampered.
+- Depends-on: T-101
 - Scope: contracts
-- Acceptance: `contracts/scripts/deploy.ts` deploys all tokens + factory + router + DecisionLog, creates the `mUSD/WMNT` pair, seeds liquidity, and prints all addresses.
+- Acceptance: `PriceOracle.sol` verifies a server-signed price attestation `{symbol, price, timestamp}` via `ecrecover` against a configurable trusted signer; rejects stale (beyond a max-age) or wrong-signer attestations; owner can rotate the signer. Tests cover valid/stale/forged cases. (Pyth-style pull oracle — no standing keeper; price is supplied with the trade.)
+
+### T-111 — `SyntheticExchange` (mUSD clearing house) — NEW (hybrid)
+- Status: done @manjeet_s 2026-06-05 — `SyntheticExchange.sol` (open/close long+short, oracle-verified entry/close, house reserve payout, market registry); tests: long profit, short profit, long loss, insufficient-reserve revert, unknown-market revert.
+- Depends-on: T-102, T-110
+- Scope: contracts
+- Acceptance: `SyntheticExchange.sol` — `openPosition(symbol, direction, sizeMUSD, priceAttestation)` pulls mUSD from the trader and stamps entry price (verified via `PriceOracle`); `closePosition(id, priceAttestation)` settles `pnl = sizeMUSD × Δprice × directionSign` in mUSD from a treasury-funded **house reserve**; supports `long`/`short`; per-user position storage + getters; guards (house solvency, position ownership). Hybrid tests: long profit, short profit, loss, insufficient-reserve revert.
+
+### T-106 — Deploy + seed script
+- Status: done @manjeet_s 2026-06-05 — `contracts/scripts/deploy.ts` deploys all 7 contracts, seeds `mUSD/WMNT`, funds house reserve, registers BTC/ETH/SUI/SOL, writes `packages/chain/addresses.json`. Validated end-to-end on the local Hardhat network. **Live Mantle Sepolia run + ABI export + verify lands in T-107 (needs a faucet-funded `DEPLOYER_PRIVATE_KEY`).**
+- Depends-on: T-102, T-103, T-104, T-105, T-110, T-111
+- Scope: contracts
+- Acceptance: `contracts/scripts/deploy.ts` deploys mUSD + WMNT + factory + router + DecisionLog + PriceOracle + SyntheticExchange, creates **and seeds** the `mUSD/WMNT` pair, **funds the SyntheticExchange house reserve** with mUSD, sets the oracle trusted signer, registers the synthetic market list (BTC/ETH/SUI/SOL), and prints all addresses.
 
 ### T-107 — Export addresses + ABIs
-- Status: pending
+- Status: done @manjeet_s 2026-06-05 — **deployed live to Mantle Sepolia (5003)**: all 7 contracts + the `mUSD/WMNT` pool. On-chain state verified (pool 2000 mUSD/2 WMNT, 100k mUSD house reserve, BTC/ETH/SUI/SOL registered); all contracts **verified on Sourcify**. Helper scripts: `scripts/{check,verify-state,export-abis}.ts`. Note: mantlescan's Etherscan-style verify now needs a paid V2 API key — Sourcify used instead (keyless); set `MANTLESCAN_API_KEY` later for a mantlescan badge.
 - Depends-on: T-106
 - Scope: chain
-- Acceptance: live Mantle Sepolia addresses written to `packages/chain/addresses.json` (replacing the placeholder) and ABIs to `packages/chain/abis/`; contracts verified on mantlescan.
+- Acceptance: live Mantle Sepolia addresses written to `packages/chain/addresses.json` (incl. `oracle`, `syntheticExchange`, `oracleSigner`, `pools.mUSD_WMNT`, `syntheticMarkets`; no `MockBTC`/`MockETH`) and ABIs to `packages/chain/abis/`; contracts verified.
 
 ### T-108 — viem chain library
 - Status: pending
 - Depends-on: T-107
 - Scope: chain
-- Acceptance: `packages/chain/src/{clients,swapExecutor,decisionLog}.ts` — `getQuote()`, `swap()` (approve + `swapExactTokensForTokens` + slippage), `writeDecision()`, `readHistory()`. An integration test executes a real swap on testnet.
+- Acceptance: `packages/chain/src/{clients,swapExecutor,syntheticExecutor,decisionLog}.ts` — AMM: `getQuote()`, `swap()` (approve + `swapExactTokensForTokens` + slippage). Synthetic: `openSynthetic()` / `closeSynthetic()` (submit signed price attestation), `getOraclePrice()`. Plus `writeDecision()`, `readHistory()`. Integration tests execute a real `mUSD/WMNT` swap **and** a synthetic open/close on testnet.
 
-### T-109 — Extra pools (stretch)
+### T-109 — Register synthetic markets (was: extra pools)
 - Status: pending
 - Depends-on: T-106
 - Scope: contracts
-- Acceptance: `mUSD/MockBTC` and `mUSD/MockETH` pairs created + seeded via a `seedExtra.ts` script.
+- Acceptance: a config-driven `registerMarkets.ts` adds synthetic markets (BTC/ETH/SUI/SOL, extendable) to `SyntheticExchange` + the exported `syntheticMarkets` list — no per-asset contract or liquidity seeding. (Trivial now; this is the "trade whatever pairs" lever.)
 
 ---
 
@@ -147,37 +159,37 @@ _(All done — the shared base every track builds on.)_
 > Node/Express + LangChain.js. Mock the chain lib (PRD §12) until T-108 lands.
 
 ### T-201 — Server scaffold + SQLite kv
-- Status: done @Claude 2026-06-03 — Express app + bun:sqlite kv (`server/src/{app,index,store}.ts`); boots on :8787. Static `web/` serving deferred until the web build exists.
+- Status: done @manjeet_s 2026-06-03 — Express app + bun:sqlite kv (`server/src/{app,index,store}.ts`); boots on :8787. Static `web/` serving deferred until the web build exists.
 - Depends-on: —
 - Scope: api
 - Acceptance: `server/` boots Express; SQLite kv (Mono pattern) with get/set/del; serves the `web/` build. Add `server` to root `workspaces`.
 
 ### T-202 — Provider proxy (Mono port)
-- Status: done @Claude 2026-06-03 — registry + `/api/providers`, `/api/keys` (AES-GCM at rest), `/api/models` for all 5 providers; LangChain model factory (`server/src/{providers,models,crypto}.ts`). AI calls route through providers via the factory rather than a raw chat passthrough.
+- Status: done @manjeet_s 2026-06-03 — registry + `/api/providers`, `/api/keys` (AES-GCM at rest), `/api/models` for all 5 providers; LangChain model factory (`server/src/{providers,models,crypto}.ts`). AI calls route through providers via the factory rather than a raw chat passthrough.
 - Depends-on: T-201
 - Scope: api
 - Acceptance: `GET /api/providers`, `POST /api/keys` (encrypted at rest), `GET /api/models`, chat proxy for Groq / Mistral / NVIDIA / Gemini / OpenRouter.
 
 ### T-203 — Role→model config API
-- Status: done @Claude 2026-06-03 — `GET/PUT /api/roles` with sensible defaults merged over stored map (`server/src/roles.ts`).
+- Status: done @manjeet_s 2026-06-03 — `GET/PUT /api/roles` with sensible defaults merged over stored map (`server/src/roles.ts`).
 - Depends-on: T-201
 - Scope: api
 - Acceptance: `GET/PUT /api/roles` persists a `RoleModelMap` (PRD §12) with sensible defaults.
 
 ### T-204 — Data subagents (now real LangChain tools)
-- Status: done @Claude 2026-06-03 — real tools in `server/src/agents/tools.ts` over **Bybit v5 public market data** (`server/src/market/bybit.ts`, no key) + **computed indicators** RSI/SMA/EMA/MACD (`server/src/market/indicators.ts`), gated by the active-source allow-list, each recording a reasoning trace. WMNT analysis maps to Bybit `MNTUSDT`; the on-chain tool stays placeholder pending T-108; news/web-search deferred (T-209).
+- Status: done @manjeet_s 2026-06-03 — real tools in `server/src/agents/tools.ts` over **Bybit v5 public market data** (`server/src/market/bybit.ts`, no key) + **computed indicators** RSI/SMA/EMA/MACD (`server/src/market/indicators.ts`), gated by the active-source allow-list, each recording a reasoning trace. WMNT analysis maps to Bybit `MNTUSDT`; the on-chain tool stays placeholder pending T-108; news/web-search deferred (T-209).
 - Depends-on: —
 - Scope: api
 - Acceptance: `server/agents/subagents/{onchain,market,news,indicators}.ts` — each a callable tool returning structured data, gated by `activeSources`; onchain reads via the chain lib (mock until T-108).
 
 ### T-205 — Thesis agent (+ human thesis)
-- Status: done @Claude 2026-06-03 — **tool-calling loop**: the model picks Bybit/indicator/on-chain tools per intent, then a structured finalize emits a zod-validated thesis (`server/src/agents/thesis.ts`). `/api/thesis` + `/api/thesis/human`; tools actually called become the reasoning traces. Injectable resolver + fetcher → unit-tested with a fake model + fixture candles.
+- Status: done @manjeet_s 2026-06-03 — **tool-calling loop**: the model picks Bybit/indicator/on-chain tools per intent, then a structured finalize emits a zod-validated thesis (`server/src/agents/thesis.ts`). `/api/thesis` + `/api/thesis/human`; tools actually called become the reasoning traces. Injectable resolver + fetcher → unit-tested with a fake model + fixture candles.
 - Depends-on: T-202, T-203, T-204
 - Scope: api
 - Acceptance: `POST /api/thesis` → valid `Thesis` using the `thesis` role's model, orchestrating only active subagents, populating `reasoning` + per-subagent `traces`. `POST /api/thesis/human` structures a user-written thesis (source `human`) into options.
 
 ### T-206 — Debate graph
-- Status: done @Claude 2026-06-03 — Supporter → Discriminator → Judge, each on its own model; `/api/debate` returns refined options + per-judge traces (`server/src/agents/debate.ts`). Accepts AI or human thesis.
+- Status: done @manjeet_s 2026-06-03 — Supporter → Discriminator → Judge, each on its own model; `/api/debate` returns refined options + per-judge traces (`server/src/agents/debate.ts`). Accepts AI or human thesis.
 - Depends-on: T-202, T-203
 - Scope: api
 - Acceptance: `POST /api/debate` → `DebateResult` (accepts AI or human thesis); Supporter → Discriminator → Judge each use their configured model; returns refined options (predicted % + risk + caveats) plus per-judge `traces`.
@@ -189,7 +201,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: `GET /api/history` merges SQLite records + on-chain DecisionLog, storing models used per role; `GET /api/leaderboard` aggregates realized outcomes by model + role.
 
 ### T-208 — Assistant chat endpoint
-- Status: done @Claude 2026-06-03 — `/api/assistant` replies via the assistant-role model (`server/src/agents/assistant.ts`). Returns a full message; streaming can be added later.
+- Status: done @manjeet_s 2026-06-03 — `/api/assistant` replies via the assistant-role model (`server/src/agents/assistant.ts`). Returns a full message; streaming can be added later.
 - Depends-on: T-202, T-203
 - Scope: api
 - Acceptance: `POST /api/assistant` replies via the assistant-role model with optional market/position context; can spin off a thesis.
@@ -200,6 +212,12 @@ _(All done — the shared base every track builds on.)_
 - Scope: api
 - Acceptance: a Tavily (or Brave/Exa) web-search tool registered for `subagent.news` and surfaced to the thesis agent's tool loop, so theses can cite news/sentiment.
 
+### T-210 — Signed-price oracle endpoint — NEW (hybrid)
+- Status: pending
+- Depends-on: T-204
+- Scope: api
+- Acceptance: `GET /api/price/sign?symbol=` returns a server-signed attestation `{symbol, price, timestamp, signature}` for a synthetic market, signing the live market price (Bybit feed, T-204) with the `ORACLE_SIGNER_PRIVATE_KEY`; the signer address matches the one set in `PriceOracle` (T-110). Unit-tested: signature recovers to the expected signer. Consumed by the wallet execute flow (T-304) when opening/closing a synthetic position.
+
 ---
 
 ## 3 — Wallet & Execution
@@ -207,28 +225,28 @@ _(All done — the shared base every track builds on.)_
 > In-browser embedded wallet (viem). Build against the chain-lib interface; mock `swap()` until T-108.
 
 ### T-301 — Wallet generate + encrypt + persist
-- Status: done @Claude 2026-06-03 — `@autonoe/wallet`: viem EOA + WebCrypto PBKDF2/AES-GCM keystore, injectable `WalletStore` + `memoryStore()` (`packages/wallet/src/wallet.ts`). 14 tests pass.
+- Status: done @manjeet_s 2026-06-03 — `@autonoe/wallet`: viem EOA + WebCrypto PBKDF2/AES-GCM keystore, injectable `WalletStore` + `memoryStore()` (`packages/wallet/src/wallet.ts`). 14 tests pass.
 - Depends-on: —
 - Scope: wallet
 - Acceptance: `packages/wallet/src/wallet.ts` generates an EOA (viem), encrypts the key with a passphrase (WebCrypto), persists in IndexedDB; unlock round-trip test passes. Add `packages/wallet` to root `workspaces`.
 
 ### T-302 — Export wallet
-- Status: done @Claude 2026-06-03 — `exportPrivateKey` + `exportKeystoreJSON` (`packages/wallet/src/export.ts`); tested (no plaintext key in keystore JSON). MetaMask-import polish later.
+- Status: done @manjeet_s 2026-06-03 — `exportPrivateKey` + `exportKeystoreJSON` (`packages/wallet/src/export.ts`); tested (no plaintext key in keystore JSON). MetaMask-import polish later.
 - Depends-on: T-301
 - Scope: wallet
 - Acceptance: reveal private key + download a MetaMask-importable keystore JSON; re-import verified in a test.
 
 ### T-303 — Spending-limit policy
-- Status: done @Claude 2026-06-03 — `SpendingPolicy` + `checkPolicy`/`enforcePolicy` + persistence + `DEFAULT_POLICY` (`packages/wallet/src/policy.ts`); tested allow/deny.
+- Status: done @manjeet_s 2026-06-03 — `SpendingPolicy` + `checkPolicy`/`enforcePolicy` + persistence + `DEFAULT_POLICY` (`packages/wallet/src/policy.ts`); tested allow/deny.
 - Depends-on: T-301
 - Scope: wallet
 - Acceptance: enforces max trade size + token allowlist before signing; rejects over-limit with a clear error; tested.
 
-### T-304 — Agent-sign + execute
+### T-304 — Agent-sign + execute (AMM **or** synthetic)
 - Status: pending
-- Depends-on: T-301, T-303, T-108
+- Depends-on: T-301, T-303, T-108, T-210
 - Scope: wallet
-- Acceptance: given a chosen option, builds + signs + submits a swap via the chain lib; returns `SwapResult`; triggers the DecisionLog write. Execution is manual-confirm (no auto-execute).
+- Acceptance: given a chosen option, **branches by asset** — `WMNT` → AMM `swap()`; any other symbol → fetch a signed price attestation (`/api/price/sign`, T-210) then `openSynthetic()`/`closeSynthetic()` via the chain lib. Returns `SwapResult`; triggers the DecisionLog write. Execution is manual-confirm (no auto-execute).
 
 ### T-305 — Funding helpers
 - Status: pending
@@ -243,7 +261,7 @@ _(All done — the shared base every track builds on.)_
 > **Next.js (App Router, React 19)**. **6 routes + wallet drawer** (PRD §11a–§11g). Build to `design-system/autonoe/MASTER.md`. Use the `frontend-design` skill for polish, `web3-vfx-stack` for the landing. Mock API responses (PRD §12) until endpoints land. Client-only libs (wagmi, Lenis/GSAP, charts) need `'use client'`.
 
 ### T-401 — App scaffold + routing + theme
-- Status: done @Claude 2026-06-03 — Next.js 16 App Router (Tailwind v4, Turbopack) in `web/`; ported design tokens/atmosphere to `app/globals.css`, fonts via next/font, wagmi Providers (injected/MetaMask, Mantle Sepolia), AppShell nav + wallet-drawer stub, Lenis smooth-scroll, 6 route stubs, `next.config` rewrites `/api/*`→bun backend. `tsc` + `next build` green.
+- Status: done @manjeet_s 2026-06-03 — Next.js 16 App Router (Tailwind v4, Turbopack) in `web/`; ported design tokens/atmosphere to `app/globals.css`, fonts via next/font, wagmi Providers (injected/MetaMask, Mantle Sepolia), AppShell nav + wallet-drawer stub, Lenis smooth-scroll, 6 route stubs, `next.config` rewrites `/api/*`→bun backend. `tsc` + `next build` green.
 - Depends-on: —
 - Scope: web
 - Acceptance: **Next.js App Router** app scaffolded with bun (`bunx create-next-app`); 6 routes as `app/` segments (`/`, `/markets`, `/trade`, `/studio`, `/history`, `/settings`); design tokens applied (dark OLED, gold `#F59E0B` + purple `#8B5CF6`, Orbitron/Exo 2); motion/VFX deps via bun (Lenis, gsap + @gsap/react, framer-motion); a client Providers wrapper for wagmi/RainbowKit; MetaMask connect on Mantle Sepolia. Add `web` to root `workspaces`. See PRD §10a boundary + §11b motion stack + §11h workflow.
@@ -261,31 +279,31 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: reusable collapsible trace — shows `summary` collapsed, expands to `steps[]` (PRD §12 `ReasoningTrace`); reused by thesis, subagents, and judges.
 
 ### T-404 — Landing page (`/`) — VISUAL TEMPLATE
-- Status: done @Claude 2026-06-03 — `app/page.tsx` + `components/landing/*` (Hero char-split, Tribunal flow, HowItWorks, Benchmark count-up, MarketsPreview, FinalCta); GSAP/useGSAP reveals. `next build` green.
+- Status: done @manjeet_s 2026-06-03 — `app/page.tsx` + `components/landing/*` (Hero char-split, Tribunal flow, HowItWorks, Benchmark count-up, MarketsPreview, FinalCta); GSAP/useGSAP reveals. `next build` green.
 - Depends-on: T-401
 - Scope: web
 - Acceptance: **built first as the visual reference for the whole app** (PRD §11h). Full motion stack — Lenis smooth scroll + GSAP/ScrollTrigger + Aceternity/Magic UI hero effects + gold/purple atmosphere. Sections: hero + how-it-works (thesis → judge → execute) + on-chain-benchmark pitch + "Launch App" CTA. Reviewed via screenshot/preview and iterated to approval; the approved tokens + motion language become the template the other routes inherit.
 
 ### T-405 — Trade page — chart + execute (`/trade`)
-- Status: done @Claude 2026-06-03 — `app/trade/page.tsx` + `components/trade/*` (SVG chart, pair selector, swap box, balances). **UI only on sample data**; live price feed + real swap wiring tracked in T-409/T-601.
+- Status: done @manjeet_s 2026-06-03 — `app/trade/page.tsx` + `components/trade/*` (SVG chart, pair selector, swap box, balances). **UI only on sample data**; live price feed + real swap wiring tracked in T-409/T-601.
 - Depends-on: T-401, T-304
 - Scope: web
 - Acceptance: TradingView embed for the selected pair; manual swap/execute via `packages/wallet`; balances/positions.
 
 ### T-406 — Trade page — side AI rail
-- Status: done @Claude 2026-06-03 — `components/trade/AiRail.tsx`: Quick Thesis (option card + "Show thinking" + "Refine in Judge Panel"→/studio) and Assistant chat tabs. **UI only on sample data**; live `/api/thesis` + `/api/assistant` wiring tracked in T-601.
+- Status: done @manjeet_s 2026-06-03 — `components/trade/AiRail.tsx`: Quick Thesis (option card + "Show thinking" + "Refine in Judge Panel"→/studio) and Assistant chat tabs. **UI only on sample data**; live `/api/thesis` + `/api/assistant` wiring tracked in T-601.
 - Depends-on: T-405, T-403, T-205, T-208
 - Scope: web
 - Acceptance: tabbed rail — Quick Thesis (intent → inline thesis + "Refine in Judge Panel" → `/studio`) and Assistant chat (`/api/assistant`); reasoning traces shown.
 
 ### T-407 — Studio Step 1 — Thesis (AI or human) (`/studio`)
-- Status: done @Claude 2026-06-03 — `app/studio/page.tsx` + `components/studio/*`: intent input, source toggles, AI/human modes, risk-tiered option cards + "Show thinking". **UI only on sample data**; live `/api/thesis`(`/human`) wiring tracked in T-601.
+- Status: done @manjeet_s 2026-06-03 — `app/studio/page.tsx` + `components/studio/*`: intent input, source toggles, AI/human modes, risk-tiered option cards + "Show thinking". **UI only on sample data**; live `/api/thesis`(`/human`) wiring tracked in T-601.
 - Depends-on: T-401, T-403
 - Scope: web
 - Acceptance: AI mode fires `POST /api/thesis`; human mode posts `/api/thesis/human`; renders risk-tiered option cards + pair suggestion + thesis reasoning trace; per-option branch buttons "Execute" / "Send to Judge Panel".
 
 ### T-408 — Studio Step 2 — Judge Panel
-- Status: done @Claude 2026-06-03 — `components/studio/StepJudge.tsx` + `TribunalFlow.tsx`: Supporter/Discriminator/Judge columns with traces, verdict bar, refined options + animated confidence bars. **UI only on sample data**; live `/api/debate` wiring tracked in T-601.
+- Status: done @manjeet_s 2026-06-03 — `components/studio/StepJudge.tsx` + `TribunalFlow.tsx`: Supporter/Discriminator/Judge columns with traces, verdict bar, refined options + animated confidence bars. **UI only on sample data**; live `/api/debate` wiring tracked in T-601.
 - Depends-on: T-407, T-403
 - Scope: web
 - Acceptance: Supporter/Discriminator/Judge arguments (each with a reasoning trace), verdict, and refined options with predicted % + risk + caveats graphed; "Execute" per option.
@@ -321,7 +339,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: one-click share of a thesis or verdict as an image/link card.
 
 ### T-414 — Markets overview page (`/markets`)
-- Status: done @Claude 2026-06-03 — `app/markets/page.tsx` + `components/markets/*`: stats header (count-up), gainers/losers, sortable table w/ favorites + sparklines, rows→/trade. **UI on sample data**; live feed via T-204 wiring tracked in T-601.
+- Status: done @manjeet_s 2026-06-03 — `app/markets/page.tsx` + `components/markets/*`: stats header (count-up), gainers/losers, sortable table w/ favorites + sparklines, rows→/trade. **UI on sample data**; live feed via T-204 wiring tracked in T-601.
 - Depends-on: T-401, T-405
 - Scope: web
 - Acceptance: Binance-style markets overview (PRD §11g) — market-stats header, sortable table of all `mUSD/<asset>` pairs (price, 24h %, 24h volume, sparkline), top gainers/losers strip, favorite toggle; clicking a row opens `/trade` with the pair preloaded. Reuses the market price feed (T-204 / T-405), no new backend contract.
@@ -383,37 +401,37 @@ _(All done — the shared base every track builds on.)_
 _(newest first)_
 
 ### T-502 — Workflow helper scripts (lint-todo + leaderboard)
-- Status: done @Claude 2026-06-02
+- Status: done @manjeet_s 2026-06-02
 - Depends-on: T-001
 - Scope: infra
 - Acceptance: `scripts/lint-todo.ts` (validates this file's structure — unique ids, valid Status, Acceptance present; CI-gated) and `scripts/leaderboard.ts` (git-log tally for the Telegram "today's tally" post). Both run under bun.
 
 ### T-501 — CI + Telegram-notify workflows (bun)
-- Status: done @Claude 2026-06-02
+- Status: done @manjeet_s 2026-06-02
 - Depends-on: T-001
 - Scope: infra
 - Acceptance: `.github/workflows/ci.yml` (bun install --frozen-lockfile → lint-todo → `bun --filter '*' typecheck` → `bun --filter '*' test`) and `.github/workflows/telegram-notify.yml` (Telegram-only: PR opened/conflict/merged + push to main, tagged CLAIM/REVIEW/DONE/CONFLICT/MERGED, plus a leaderboard post). Goes live once T-503 sets the secrets.
 
 ### T-004 — Env + network config
-- Status: done @Claude 2026-06-02
+- Status: done @manjeet_s 2026-06-02
 - Depends-on: T-001
 - Scope: chain
 - Acceptance: `.env.example` (provider keys, RPC, deployer key); `packages/chain/src/network.ts` exports `mantleSepolia` (viem-shaped, chain 5003), `txUrl`/`addressUrl`, faucet/explorer constants; placeholder `packages/chain/addresses.json` (Track 1 fills via T-107).
 
 ### T-003 — Freeze REST API contract
-- Status: done @Claude 2026-06-02
+- Status: done @manjeet_s 2026-06-02
 - Depends-on: T-001
 - Scope: shared
 - Acceptance: `packages/shared/src/api.ts` — `API` route map + typed request/response for all 10 endpoints (PRD §12).
 
 ### T-002 — Freeze shared types
-- Status: done @Claude 2026-06-02
+- Status: done @manjeet_s 2026-06-02
 - Depends-on: T-001
 - Scope: shared
 - Acceptance: `packages/shared/src/types.ts` — all PRD §12 domain types exported as `@autonoe/shared` (incl. `ReasoningTrace`, `assistant` role, `Thesis.source/suggestedPair/reasoning/traces/modelsUsed`, role/asset const arrays). Smoke-tested via `bun test`.
 
 ### T-001 — Monorepo scaffold (bun)
-- Status: done @Claude 2026-06-02
+- Status: done @manjeet_s 2026-06-02
 - Depends-on: —
 - Scope: setup
 - Acceptance: bun workspaces (`packages/*`), `tsconfig.base.json` + project references, `bun install` + `bun run build` + `bun --filter '*' typecheck`/`test` all green. Track owners add `web`/`server`/`contracts`/`packages/wallet` to root `workspaces` when they scaffold.

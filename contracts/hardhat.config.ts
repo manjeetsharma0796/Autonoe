@@ -2,11 +2,14 @@ import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import * as dotenv from "dotenv";
 
-// Shared root .env (provider keys, RPC, deployer/treasury/oracle keys).
+// Shared root env (provider keys, RPC, deployer/oracle keys). .env.local overrides .env.
 dotenv.config({ path: "../.env" });
+dotenv.config({ path: "../.env.local", override: true });
 
 const RPC = process.env.MANTLE_SEPOLIA_RPC || "https://rpc.sepolia.mantle.xyz";
-const DEPLOYER = process.env.DEPLOYER_PRIVATE_KEY;
+// Accept keys with or without the 0x prefix.
+const norm = (k?: string) => (k ? (k.startsWith("0x") ? k : `0x${k}`) : undefined);
+const DEPLOYER = norm(process.env.DEPLOYER_PRIVATE_KEY);
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -29,18 +32,10 @@ const config: HardhatUserConfig = {
       accounts: DEPLOYER ? [DEPLOYER] : [],
     },
   },
-  etherscan: {
-    apiKey: { mantleSepolia: process.env.MANTLESCAN_API_KEY || "no-key-needed" },
-    customChains: [
-      {
-        network: "mantleSepolia",
-        chainId: 5003,
-        urls: {
-          apiURL: "https://api-sepolia.mantlescan.xyz/api",
-          browserURL: "https://sepolia.mantlescan.xyz",
-        },
-      },
-    ],
+  // Keyless source verification via Sourcify. (Mantlescan's Etherscan-style
+  // verify now needs a paid V2 API key; Sourcify covers chain 5003 for free.)
+  sourcify: {
+    enabled: true,
   },
 };
 
