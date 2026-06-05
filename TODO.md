@@ -225,7 +225,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: persistent nav + a global slide-over wallet drawer reachable from every route; balances/fund/export/limits (calls `packages/wallet`); clearly distinguishes funding wallet (MetaMask) vs autonomous agent wallet with an "acting wallet" indicator; persistent "testnet · not financial advice" disclaimer.
 
 ### T-403 — ReasoningTrace component ("Show thinking")
-- Status: pending
+- Status: in-progress @prithwish 2026-06-05
 - Depends-on: T-401
 - Scope: web
 - Acceptance: reusable collapsible trace — shows `summary` collapsed, expands to `steps[]` (PRD §12 `ReasoningTrace`); reused by thesis, subagents, and judges.
