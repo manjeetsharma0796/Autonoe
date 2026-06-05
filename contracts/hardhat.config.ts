@@ -17,10 +17,28 @@ import {
 // deploying. Use a throwaway testnet account funded from the faucet.
 export default defineConfig({
   plugins: [hardhatToolboxViem],
+  // Three solc versions: 0.8.28 for Autonoe's own contracts, plus the canonical
+  // Uniswap V2 fork (T-104) — core at =0.5.16, periphery at =0.6.6. Hardhat
+  // selects the compiler per file from its pragma; the Uniswap profiles use the
+  // upstream optimizer setting (999999 runs).
   solidity: {
-    version: "0.8.28",
-    settings: {
-      optimizer: { enabled: true, runs: 200 },
+    profiles: {
+      default: {
+        compilers: [
+          {
+            version: "0.8.28",
+            settings: { optimizer: { enabled: true, runs: 200 } },
+          },
+          {
+            version: "0.6.6",
+            settings: { optimizer: { enabled: true, runs: 999999 } },
+          },
+          {
+            version: "0.5.16",
+            settings: { optimizer: { enabled: true, runs: 999999 } },
+          },
+        ],
+      },
     },
   },
   networks: {
