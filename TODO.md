@@ -92,12 +92,6 @@ _(All done — the shared base every track builds on.)_
 - Scope: contracts
 - Acceptance: canonical Uniswap V2 core + periphery (Factory, Router02) compiled with WMNT as WETH; `createPair` + quote works in a Hardhat test.
 
-### T-105 — `DecisionLog` contract
-- Status: in-progress @prithwish 2026-06-05
-- Depends-on: T-101
-- Scope: contracts
-- Acceptance: `DecisionLog.sol` with `logDecision(thesisHash, verdictHash, asset, amountIn, amountOut, pnl, optionRef)` emitting an event + storing a per-user history; getters; tests pass.
-
 ### T-106 — Deploy + seed script
 - Status: pending
 - Depends-on: T-102, T-103, T-104, T-105
@@ -363,6 +357,12 @@ _(All done — the shared base every track builds on.)_
 ## Done
 
 _(newest first)_
+
+### T-105 — `DecisionLog` contract
+- Status: done @prithwish 2026-06-05 — `contracts/contracts/DecisionLog.sol`: `logDecision(thesisHash, verdictHash, asset, amountIn, amountOut, pnl, optionRef)` appends a `Decision` (signed `int256` pnl, `string` optionRef matching the off-chain `RefinedOption.optionRef`, `asset` token address), indexes it per-user, and emits `DecisionLogged`. Getters: `totalDecisions`, `getDecision`, `getUserDecisionCount`, `getUserDecisionIds`, `getUserDecisions` (T-108 `readHistory` reads these for `/api/history`). 3 Hardhat 3 + viem tests pass (log+event+by-id, independent per-user histories, out-of-range revert) — 14 in the suite.
+- Depends-on: T-101
+- Scope: contracts
+- Acceptance: `DecisionLog.sol` with `logDecision(thesisHash, verdictHash, asset, amountIn, amountOut, pnl, optionRef)` emitting an event + storing a per-user history; getters; tests pass.
 
 ### T-103 — Asset tokens (WMNT / MockBTC / MockETH)
 - Status: done @prithwish 2026-06-05 — `WMNT.sol` (OZ ERC-20, 18-dec WETH-style wrapper: `deposit()`/`receive()` wrap native MNT 1:1, `withdraw()` redeems; `totalSupply` 1:1-backed; Deposit/Withdrawal events — router-ready for T-104). `MockBTC.sol` (mBTC) + `MockETH.sol` (mETH) extend a shared `MockERC20.sol` base (18-dec, open `mint()` for seeding/tests). 6 Hardhat 3 + viem tests pass (11 total in the suite).
