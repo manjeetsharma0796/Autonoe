@@ -213,7 +213,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: a Tavily (or Brave/Exa) web-search tool registered for `subagent.news` and surfaced to the thesis agent's tool loop, so theses can cite news/sentiment.
 
 ### T-210 — Signed-price oracle endpoint — NEW (hybrid)
-- Status: pending
+- Status: done @manjeet_s 2026-06-05 — `server/src/oracle.ts` + `GET /api/price/sign?symbol=`: fetches live Bybit price, signs `{chainId, oracle, symbol, priceX18, timestamp}` (EIP-191) with `ORACLE_SIGNER_PRIVATE_KEY` (falls back to `DEPLOYER_PRIVATE_KEY` = on-chain signer). Verified offline: signature recovers to signer, digest matches PriceOracle. `tsc --noEmit` green. Unit test `server/tests/oracle.test.ts`.
 - Depends-on: T-204
 - Scope: api
 - Acceptance: `GET /api/price/sign?symbol=` returns a server-signed attestation `{symbol, price, timestamp, signature}` for a synthetic market, signing the live market price (Bybit feed, T-204) with the `ORACLE_SIGNER_PRIVATE_KEY`; the signer address matches the one set in `PriceOracle` (T-110). Unit-tested: signature recovers to the expected signer. Consumed by the wallet execute flow (T-304) when opening/closing a synthetic position.

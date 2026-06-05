@@ -9,9 +9,19 @@
 
 ---
 
+## 🎯 Definition of Done (locked 2026-06-05)
+**Working E2E demo, local** — `intent → thesis → debate → swap → on-chain log → history`
+runs end-to-end on localhost with the UI on live APIs. No hosting this run.
+Design: **keep current gold/purple system** (Binance blend deferred).
+Orchestration: **fan out to Sonnet subagents** for routine/independent work
+(UI pages, wiring, funding helpers); **Opus (me)** keeps money/security-critical
+work (oracle signing, wallet execute) + integration verification + adversarial review.
+
 ## 🔴 Blocking (a task is stuck until you act)
 
-_(none right now — I have everything I need to keep building)_
+_(none right now — I have everything I need to keep building. The only thing
+needed before the FULL live demo is an AI provider key — see 🟡 #1 — but I'll
+build + mock around it so nothing is blocked.)_
 
 ---
 

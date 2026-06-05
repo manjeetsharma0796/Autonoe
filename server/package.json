@@ -11,10 +11,12 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@autonoe/chain": "0.1.0",
     "@autonoe/shared": "0.1.0",
     "@langchain/core": "^0.3.40",
     "@langchain/openai": "^0.3.17",
     "express": "^4.21.2",
+    "viem": "^2.21.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

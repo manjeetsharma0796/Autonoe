@@ -9,6 +9,7 @@ import { getRoleMap, setRoleMap } from './roles.ts';
 import { generateThesis, structureHumanThesis } from './agents/thesis.ts';
 import { runDebate } from './agents/debate.ts';
 import { chat } from './agents/assistant.ts';
+import { signPrice } from './oracle.ts';
 
 type Handler = (req: Request, res: Response) => Promise<void> | void;
 const wrap = (h: Handler) => (req: Request, res: Response, next: NextFunction) =>
@@ -83,6 +84,16 @@ export function createApp() {
       const { messages, context } = req.body ?? {};
       if (!Array.isArray(messages)) throw httpError(400, 'messages[] required');
       res.json(await chat({ messages, context }));
+    }),
+  );
+
+  // Signed-pull price oracle (T-210): live price + signature for SyntheticExchange.
+  app.get(
+    '/api/price/sign',
+    wrap(async (req, res) => {
+      const symbol = req.query.symbol;
+      if (!symbol || typeof symbol !== 'string') throw httpError(400, 'symbol query param required');
+      res.json(await signPrice(symbol));
     }),
   );
 
