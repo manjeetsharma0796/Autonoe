@@ -10,6 +10,7 @@ import { generateThesis, structureHumanThesis } from './agents/thesis.ts';
 import { runDebate } from './agents/debate.ts';
 import { chat } from './agents/assistant.ts';
 import { signPrice } from './oracle.ts';
+import { getHistory, getLeaderboard } from './history.ts';
 
 type Handler = (req: Request, res: Response) => Promise<void> | void;
 const wrap = (h: Handler) => (req: Request, res: Response, next: NextFunction) =>
@@ -97,9 +98,9 @@ export function createApp() {
     }),
   );
 
-  // T-207 will back these with SQLite + on-chain DecisionLog.
-  app.get(API.history, (_req, res) => res.json([]));
-  app.get(API.leaderboard, (_req, res) => res.json([]));
+  // T-207: backed by on-chain DecisionLog + off-chain TradeMeta store.
+  app.get(API.history, wrap(async (_req, res) => { res.json(await getHistory()); }));
+  app.get(API.leaderboard, wrap(async (_req, res) => { res.json(await getLeaderboard()); }));
 
   // error handler
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

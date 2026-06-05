@@ -195,7 +195,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: `POST /api/debate` → `DebateResult` (accepts AI or human thesis); Supporter → Discriminator → Judge each use their configured model; returns refined options (predicted % + risk + caveats) plus per-judge `traces`.
 
 ### T-207 — History + leaderboard endpoints
-- Status: pending — endpoints exist but stubbed (`GET /api/history` / `/api/leaderboard` return `[]`); wiring needs SQLite records + the chain lib's DecisionLog reader (T-108).
+- Status: done @manjeet_s 2026-06-05 — `server/src/history.ts` + `store.ts` (`TradeMeta`/`recordTrade`/`listTrades`). `/api/history` joins on-chain DecisionLog (`@autonoe/chain` `readHistory`) with off-chain trade metadata → `HistoryRecord[]` (guards `isDeployed()`); `/api/leaderboard` aggregates realized PnL per role+provider+model. `tsc --noEmit` green. (txHash per-record filled once the execute flow calls `recordTrade` — T-409 wiring.)
 - Depends-on: T-108, T-201
 - Scope: api
 - Acceptance: `GET /api/history` merges SQLite records + on-chain DecisionLog, storing models used per role; `GET /api/leaderboard` aggregates realized outcomes by model + role.

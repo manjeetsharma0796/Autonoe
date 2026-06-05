@@ -3,7 +3,7 @@
 
 import { Database } from 'bun:sqlite';
 import { encrypt, decrypt } from './crypto.ts';
-import type { ProviderId, RoleModelMap } from '@autonoe/shared';
+import type { AIRole, ProviderId, RoleModelMap } from '@autonoe/shared';
 
 const db = new Database(process.env.AUTONOE_DB ?? 'autonoe.db');
 db.exec('CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT)');
@@ -60,4 +60,32 @@ export function getRoles(): RoleModelMap | null {
 
 export function setRoles(map: RoleModelMap): void {
   kv.setJSON(ROLES_KEY, map);
+}
+
+// ── Trade metadata (off-chain complement to on-chain DecisionLog) ─────────────
+
+/** Off-chain metadata keyed by thesisHash, joined onto on-chain DecisionRecord. */
+export interface TradeMeta {
+  thesisId: string;
+  thesisHash: `0x${string}`;
+  source: 'ai' | 'human';
+  judged: boolean;
+  chosenOptionRef: string;
+  modelsUsed: Partial<Record<AIRole, { provider: ProviderId; model: string }>>;
+  asset: string;
+  createdAt: string;
+}
+
+const TRADES_KEY = 'trades';
+
+/** Append a new TradeMeta record to the kv list. */
+export function recordTrade(meta: TradeMeta): void {
+  const list = kv.getJSON<TradeMeta[]>(TRADES_KEY) ?? [];
+  list.push(meta);
+  kv.setJSON(TRADES_KEY, list);
+}
+
+/** Return all stored TradeMeta records. */
+export function listTrades(): TradeMeta[] {
+  return kv.getJSON<TradeMeta[]>(TRADES_KEY) ?? [];
 }
