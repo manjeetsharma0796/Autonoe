@@ -12,6 +12,7 @@ import { postDebate, getCandles, type Candle } from "@/lib/api";
 import { useWallet } from "@/components/wallet/WalletProvider";
 import { ExecuteModal } from "@/components/wallet/ExecuteModal";
 import { PredictionChart } from "@/components/charts/PredictionChart";
+import { ShareButton } from "@/components/share/ShareCard";
 
 // ── Refined option card ───────────────────────────────────────────────────────
 
@@ -19,10 +20,12 @@ function RefinedCard({
   opt,
   thesis,
   animate,
+  judgeSummary,
 }: {
   opt: RefinedOption;
   thesis: Thesis | null;
   animate: boolean;
+  judgeSummary?: string;
 }) {
   const barRef = useRef<HTMLDivElement>(null);
   const wallet = useWallet();
@@ -138,16 +141,35 @@ function RefinedCard({
           </div>
         )}
 
-        <button
-          className="btn btn-gold"
-          type="button"
-          disabled={!canExecute}
-          title={!wallet.isCreated ? "Create an agent wallet to execute" : !matchingOpt ? "No matching thesis option found" : matchingOpt.direction === "hold" ? "Hold — no trade" : "Execute this option"}
-          onClick={() => setModalOpen(true)}
-        >
-          <ArrowRightIcon />
-          Execute
-        </button>
+        <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+          <button
+            className="btn btn-gold"
+            type="button"
+            disabled={!canExecute}
+            title={!wallet.isCreated ? "Create an agent wallet to execute" : !matchingOpt ? "No matching thesis option found" : matchingOpt.direction === "hold" ? "Hold — no trade" : "Execute this option"}
+            onClick={() => setModalOpen(true)}
+            style={{ flex: 1, justifyContent: "center", marginTop: 0 }}
+          >
+            <ArrowRightIcon />
+            Execute
+          </button>
+          {matchingOpt && (
+            <ShareButton
+              label="Share"
+              data={{
+                intent: thesis?.intent ?? opt.optionRef,
+                direction: matchingOpt.direction,
+                asset: matchingOpt.asset,
+                sizeMUSD: matchingOpt.sizeMUSD,
+                predictedReturnLabel: `${opt.predictedOutputPct >= 0 ? "+" : ""}${opt.predictedOutputPct.toFixed(1)}%`,
+                risk: opt.risk,
+                verdict: judgeSummary
+                  ? { summary: judgeSummary, confidence: opt.confidence }
+                  : undefined,
+              }}
+            />
+          )}
+        </div>
       </article>
 
       {modalOpen && matchingOpt && (
@@ -346,7 +368,12 @@ export function StepJudge({ active, thesis }: StepJudgeProps) {
               <div className={styles.refgrid}>
                 {result.refinedOptions.map((opt) => (
                   <div className="reveal" key={opt.optionRef}>
-                    <RefinedCard opt={opt} thesis={thesis} animate={active} />
+                    <RefinedCard
+                      opt={opt}
+                      thesis={thesis}
+                      animate={active}
+                      judgeSummary={result.judgeSummary}
+                    />
                   </div>
                 ))}
               </div>

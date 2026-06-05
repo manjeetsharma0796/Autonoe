@@ -333,7 +333,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: on the Benchmark page, ranks models per role (thesis/supporter/discriminator/judge) by realized outcome; reads `/api/leaderboard`.
 
 ### T-413 — Share thesis/verdict card
-- Status: pending
+- Status: done @manjeet_s 2026-06-05 — `web/components/share/ShareCard.tsx`: a `ShareButton` on each thesis option (StepThesis) and the verdict (StepJudge) opens a preview modal → **Download PNG** (dependency-free SVG→canvas export, 1200×630 branded card) + **Copy summary** (clipboard). Verdict variant shows the judge summary + confidence. tsc + next build green.
 - Depends-on: T-407, T-408
 - Scope: web
 - Acceptance: one-click share of a thesis or verdict as an image/link card.

@@ -30,6 +30,7 @@ import {
 import { postThesis, postThesisHuman } from "@/lib/api";
 import { useWallet } from "@/components/wallet/WalletProvider";
 import { ExecuteModal } from "@/components/wallet/ExecuteModal";
+import { ShareButton } from "@/components/share/ShareCard";
 
 type Mode = "ai" | "human";
 
@@ -63,10 +64,12 @@ function formatRange(low: number, high: number): string {
 function ThesisOptionCard({
   opt,
   thesis,
+  intent,
   onSendToJudge,
 }: {
   opt: ThesisOption;
   thesis: Thesis;
+  intent: string;
   onSendToJudge: () => void;
 }) {
   const wallet = useWallet();
@@ -134,6 +137,18 @@ function ThesisOptionCard({
             <ArrowRightIcon />
             To Judge
           </button>
+          <ShareButton
+            className={styles.btnSm}
+            label="Share"
+            data={{
+              intent,
+              direction: opt.direction,
+              asset: opt.asset,
+              sizeMUSD: opt.sizeMUSD,
+              predictedReturnLabel: formatRange(opt.predictedReturnPct.low, opt.predictedReturnPct.high),
+              risk: opt.risk,
+            }}
+          />
         </div>
       </article>
 
@@ -383,6 +398,7 @@ export function StepThesis({ onSendToJudge }: StepThesisProps) {
                 <ThesisOptionCard
                   opt={opt}
                   thesis={thesis}
+                  intent={intent}
                   onSendToJudge={() => onSendToJudge(thesis)}
                 />
               </div>
