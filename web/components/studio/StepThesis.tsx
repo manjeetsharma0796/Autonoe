@@ -1,6 +1,7 @@
 import { useState } from "react";
 import styles from "./studio.module.css";
 import { ThinkingTrace } from "./ThinkingTrace";
+import { ShareButton } from "../share/ShareCard";
 import {
   ArrowRightIcon,
   ClockIcon,
@@ -208,6 +209,17 @@ export function StepThesis({ onSendToJudge }: { onSendToJudge: () => void }) {
         <span className={styles.cnt}>
           3 risk-tiered candidates · suggested pair mUSD/WMNT
         </span>
+        <ShareButton
+          data={{
+            kind: "thesis",
+            title: "WMNT oversold-reclaim — 3 risk-tiered options",
+            subtitle: "Autonoe thesis · suggested pair mUSD/WMNT",
+            stats: [
+              { label: "pair", value: "mUSD/WMNT" },
+              { label: "options", value: "3" },
+            ],
+          }}
+        />
       </div>
       <div className={styles.optgrid}>
         {THESIS_OPTIONS.map((opt) => (
