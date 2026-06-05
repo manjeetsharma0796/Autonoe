@@ -12,5 +12,6 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "include": ["hardhat.config.ts", "config/**/*.ts", "test/**/*.ts", "scripts/**/*.ts"]
+  "comment": "test/ holds Hardhat node:test files that reference compile-generated viem contract types; they're typechecked + run by `hardhat test`, not tsc/bun. test-unit/ holds the offline bun smoke suite (CI gate).",
+  "include": ["hardhat.config.ts", "config/**/*.ts", "test-unit/**/*.ts", "scripts/**/*.ts"]
 }

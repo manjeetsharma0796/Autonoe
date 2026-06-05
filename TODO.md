@@ -86,12 +86,6 @@ _(All done — the shared base every track builds on.)_
 
 > Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
 
-### T-102 — `mUSD` stablecoin
-- Status: in-progress @prithwish 2026-06-05
-- Depends-on: T-101
-- Scope: contracts
-- Acceptance: `contracts/contracts/mUSD.sol` — ERC-20, 6 decimals; `faucet()` mints a fixed amount with per-address cooldown + cap; `ownerMint()` for seeding. Hardhat tests pass.
-
 ### T-103 — Asset tokens (WMNT / MockBTC / MockETH)
 - Status: pending
 - Depends-on: T-101
@@ -375,6 +369,12 @@ _(All done — the shared base every track builds on.)_
 ## Done
 
 _(newest first)_
+
+### T-102 — `mUSD` stablecoin
+- Status: done @prithwish 2026-06-05 — `contracts/contracts/mUSD.sol`: OpenZeppelin ERC-20 + Ownable, 6 decimals; `faucet()` mints a fixed 1,000 mUSD with an 8h per-address cooldown + a 10,000 lifetime cap (emits `FaucetClaimed`); `ownerMint()` for seeding (T-106). 5 Hardhat 3 + viem tests pass (decimals/name, faucet mint, cooldown revert, cap revert, owner-only mint). Hardhat node:test files live in `contracts/test/` (run via `bun run test:hardhat`); the offline bun smoke suite moved to `contracts/test-unit/` (CI gate, no runner collision).
+- Depends-on: T-101
+- Scope: contracts
+- Acceptance: `contracts/contracts/mUSD.sol` — ERC-20, 6 decimals; `faucet()` mints a fixed amount with per-address cooldown + cap; `ownerMint()` for seeding. Hardhat tests pass.
 
 ### T-101 — Hardhat project + Mantle Sepolia config
 - Status: done @prithwish 2026-06-05 — Hardhat 3 (ESM + viem) scaffold in `contracts/`: `hardhat.config.ts` (solc 0.8.28; `hardhat` edr-simulated + `mantleSepolia` http networks, both chain 5003), `config/networks.ts` (frozen chain constants shared with the config + a `bun test` smoke suite), empty `contracts/` sources dir. `hardhat compile` → "Nothing to compile", exit 0. RPC from `MANTLE_SEPOLIA_RPC` (public default), deployer from `DEPLOYER_PRIVATE_KEY` via lazy `configVariable` (compile/edr tests need no key). Added `contracts` to root `workspaces`. Unblocks T-102/103/105.

@@ -7,7 +7,10 @@
     "compile": "HARDHAT_DISABLE_TELEMETRY_PROMPT=true hardhat compile",
     "test:hardhat": "HARDHAT_DISABLE_TELEMETRY_PROMPT=true hardhat test",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test test-unit"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.1.0"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-viem": "^5.0.0",
