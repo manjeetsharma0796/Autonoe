@@ -42,6 +42,7 @@ export const syntheticAbi = [
   { type: 'function', name: 'positionsLength', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
   { type: 'function', name: 'getTraderPositions', stateMutability: 'view', inputs: [{ name: 'trader', type: 'address' }], outputs: [{ type: 'uint256[]' }] },
   { type: 'function', name: 'getPosition', stateMutability: 'view', inputs: [{ name: 'id', type: 'uint256' }], outputs: [{ components: [{ name: 'trader', type: 'address' }, { name: 'symbol', type: 'string' }, { name: 'isLong', type: 'bool' }, { name: 'sizeMUSD', type: 'uint256' }, { name: 'entryPriceX18', type: 'uint256' }, { name: 'open', type: 'bool' }], type: 'tuple' }] },
+  { type: 'event', name: 'PositionOpened', inputs: [{ name: 'id', type: 'uint256', indexed: true }, { name: 'trader', type: 'address', indexed: true }, { name: 'symbol', type: 'string', indexed: false }, { name: 'isLong', type: 'bool', indexed: false }, { name: 'sizeMUSD', type: 'uint256', indexed: false }, { name: 'entryPriceX18', type: 'uint256', indexed: false }] },
 ] as const;
 
 export const decisionLogAbi = [
@@ -49,4 +50,5 @@ export const decisionLogAbi = [
   { type: 'function', name: 'decisionsLength', stateMutability: 'view', inputs: [], outputs: [{ type: 'uint256' }] },
   { type: 'function', name: 'getUserDecisions', stateMutability: 'view', inputs: [{ name: 'user', type: 'address' }], outputs: [{ type: 'uint256[]' }] },
   { type: 'function', name: 'getDecision', stateMutability: 'view', inputs: [{ name: 'id', type: 'uint256' }], outputs: [{ components: [{ name: 'user', type: 'address' }, { name: 'thesisHash', type: 'bytes32' }, { name: 'verdictHash', type: 'bytes32' }, { name: 'asset', type: 'string' }, { name: 'amountIn', type: 'uint256' }, { name: 'amountOut', type: 'uint256' }, { name: 'pnl', type: 'int256' }, { name: 'optionRef', type: 'string' }, { name: 'timestamp', type: 'uint256' }], type: 'tuple' }] },
+  { type: 'event', name: 'DecisionLogged', inputs: [{ name: 'id', type: 'uint256', indexed: true }, { name: 'user', type: 'address', indexed: true }, { name: 'thesisHash', type: 'bytes32', indexed: false }, { name: 'verdictHash', type: 'bytes32', indexed: false }, { name: 'asset', type: 'string', indexed: false }, { name: 'amountIn', type: 'uint256', indexed: false }, { name: 'amountOut', type: 'uint256', indexed: false }, { name: 'pnl', type: 'int256', indexed: false }, { name: 'optionRef', type: 'string', indexed: false }] },
 ] as const;

@@ -1,4 +1,4 @@
-import { encodeAbiParameters, keccak256, parseUnits, type Account } from 'viem';
+import { encodeAbiParameters, keccak256, parseEventLogs, parseUnits, type Account } from 'viem';
 import { readContract, writeContract, simulateContract, waitForTransactionReceipt } from 'viem/actions';
 import { erc20Abi, oracleAbi, syntheticAbi } from './abis.js';
 import { addresses } from './addresses.js';
@@ -99,13 +99,10 @@ export async function openSynthetic(
   const hash = await writeContract(walletClient, request);
   const receipt = await waitForTransactionReceipt(publicClient, { hash });
   if (receipt.status !== 'success') throw new Error(`openPosition reverted: ${txUrl(hash)}`);
-  // The new position's id = positionsLength - 1 (single-actor demo; reliable).
-  const len = await readContract(publicClient, {
-    address: addresses.syntheticExchange,
-    abi: syntheticAbi,
-    functionName: 'positionsLength',
-  });
-  return { id: len - 1n, txHash: hash, explorerUrl: txUrl(hash) };
+  // Authoritative id from the PositionOpened event (avoids stale read-after-write).
+  const events = parseEventLogs({ abi: syntheticAbi, eventName: 'PositionOpened', logs: receipt.logs });
+  const id = events[0]?.args.id ?? -1n;
+  return { id, txHash: hash, explorerUrl: txUrl(hash) };
 }
 
 /** Close a position; returns realized pnl + payout (both mUSD base units). */

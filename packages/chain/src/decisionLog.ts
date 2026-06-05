@@ -1,3 +1,4 @@
+import { parseEventLogs } from 'viem';
 import { readContract, writeContract, simulateContract, waitForTransactionReceipt } from 'viem/actions';
 import { decisionLogAbi } from './abis.js';
 import { addresses } from './addresses.js';
@@ -36,12 +37,11 @@ export async function writeDecision(
   const hash = await writeContract(walletClient, request);
   const receipt = await waitForTransactionReceipt(publicClient, { hash });
   if (receipt.status !== 'success') throw new Error(`logDecision reverted: ${txUrl(hash)}`);
-  const len = await readContract(publicClient, {
-    address: addresses.decisionLog,
-    abi: decisionLogAbi,
-    functionName: 'decisionsLength',
-  });
-  return { id: len - 1n, txHash: hash, explorerUrl: txUrl(hash) };
+  // Authoritative id from the emitted event (a post-tx length read can hit a
+  // stale RPC node and return the wrong index).
+  const events = parseEventLogs({ abi: decisionLogAbi, eventName: 'DecisionLogged', logs: receipt.logs });
+  const id = events[0]?.args.id ?? -1n;
+  return { id, txHash: hash, explorerUrl: txUrl(hash) };
 }
 
 /** Read one decision by id. */
