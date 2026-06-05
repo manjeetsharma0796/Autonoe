@@ -64,7 +64,6 @@ Contracts (T-101→107) · chain lib (T-108) · oracle endpoint (T-210) · histo
 Remaining to E2E demo: web wiring (T-601/403, agent finishing) → commit · wallet drawer (T-402) ·
 execute flow UI (T-409) · settings (T-410) · history page (T-411) · integration+E2E (T-602/603/604) · polish (T-605).
 
-## 🧹 Known cleanup (non-blocking, I'll handle)
-- `AssetSymbol` in `@autonoe/shared` still says `MockBTC/MockETH`; the live system uses `BTC/ETH/SUI/SOL`.
-  `server/src/market/bybit.ts` `BYBIT_SYMBOL` still keyed by the old set. I'll reconcile this across
-  shared+server+web in one careful pass after the web-wiring agent finishes (avoids mid-flight type churn).
+## 🧹 Known cleanup
+- ~~`AssetSymbol` MockBTC/MockETH → WMNT/BTC/ETH/SUI/SOL~~ **DONE** — reconciled across shared types,
+  server agents (thesis/tools/assistant enums + prompts), bybit map, and web sample data. tsc green everywhere.

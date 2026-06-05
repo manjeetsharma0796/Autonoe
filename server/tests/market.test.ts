@@ -63,7 +63,7 @@ test('getKline returns candles oldest→newest', async () => {
 });
 
 test('getTicker parses price + 24h percent', async () => {
-  const t = await getTicker('MockBTC', fakeFetch);
+  const t = await getTicker('BTC', fakeFetch);
   expect(t.price).toBe(1.2843);
   expect(t.change24hPct).toBeCloseTo(4.21, 5);
 });

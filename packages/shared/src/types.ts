@@ -67,9 +67,10 @@ export interface ReasoningTrace {
 // ── Trading domain ───────────────────────────────────────────────────────────
 
 export type Direction = 'long' | 'short' | 'hedge' | 'hold';
-export type AssetSymbol = 'WMNT' | 'MockBTC' | 'MockETH';
+// 'WMNT' settles via the real AMM; the rest are oracle-priced synthetics (PRD §8).
+export type AssetSymbol = 'WMNT' | 'BTC' | 'ETH' | 'SUI' | 'SOL';
 
-export const ASSET_SYMBOLS: readonly AssetSymbol[] = ['WMNT', 'MockBTC', 'MockETH'] as const;
+export const ASSET_SYMBOLS: readonly AssetSymbol[] = ['WMNT', 'BTC', 'ETH', 'SUI', 'SOL'] as const;
 
 export type RiskLevel = 'low' | 'medium' | 'high';
 

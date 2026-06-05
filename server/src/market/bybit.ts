@@ -7,9 +7,11 @@ import type { AssetSymbol } from '@autonoe/shared';
 const BASE = process.env.BYBIT_BASE ?? 'https://api.bybit.com';
 
 export const BYBIT_SYMBOL: Record<AssetSymbol, string> = {
-  WMNT: 'MNTUSDT',
-  MockBTC: 'BTCUSDT',
-  MockETH: 'ETHUSDT',
+  WMNT: 'MNTUSDT', // WMNT wraps MNT; analyses use MNTUSDT
+  BTC: 'BTCUSDT',
+  ETH: 'ETHUSDT',
+  SUI: 'SUIUSDT',
+  SOL: 'SOLUSDT',
 };
 
 export interface Candle {

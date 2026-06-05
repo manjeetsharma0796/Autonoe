@@ -11,7 +11,7 @@ import { memoryStore } from '../src/wallet.ts';
 
 const policy: SpendingPolicy = {
   maxTradeMUSD: 500,
-  allowedTokens: ['WMNT', 'MockBTC'],
+  allowedTokens: ['WMNT', 'BTC'],
 };
 
 describe('spending policy', () => {
@@ -28,7 +28,7 @@ describe('spending policy', () => {
   });
 
   test('denies a disallowed token', () => {
-    const r = checkPolicy(policy, { token: 'MockETH', amountMUSD: 10 });
+    const r = checkPolicy(policy, { token: 'ETH', amountMUSD: 10 });
     expect(r.ok).toBe(false);
     expect(r.reason).toContain('allow-list');
   });

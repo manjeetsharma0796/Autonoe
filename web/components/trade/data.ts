@@ -27,7 +27,7 @@ export const PAIRS: Pair[] = [
     rate: 0.7787,
   },
   {
-    sym: "MockBTC",
+    sym: "BTC",
     badge: "₿",
     sub: "Test Bitcoin",
     px: "64,210",
@@ -37,7 +37,7 @@ export const PAIRS: Pair[] = [
     rate: 0.00001557,
   },
   {
-    sym: "MockETH",
+    sym: "ETH",
     badge: "Ξ",
     sub: "Test Ether",
     px: "3,488",
@@ -69,14 +69,14 @@ export const BALANCES = [
     tone: "up" as const,
   },
   {
-    sym: "MockBTC",
+    sym: "BTC",
     badge: "₿",
     n: "0.0140",
     sub: "-1.08% · ≈ $898.94",
     tone: "down" as const,
   },
   {
-    sym: "MockETH",
+    sym: "ETH",
     badge: "Ξ",
     n: "1.250",
     sub: "+2.74% · ≈ $4,360",

@@ -7,8 +7,8 @@ import s from "./landing.module.css";
 
 const TICKER_ITEMS = [
   { pair: "mUSD/WMNT", price: "1.2843", change: "▲ 4.21%", dir: "up" },
-  { pair: "mUSD/MockBTC", price: "64,210", change: "▼ 1.08%", dir: "down" },
-  { pair: "mUSD/MockETH", price: "3,488", change: "▲ 2.74%", dir: "up" },
+  { pair: "mUSD/BTC", price: "64,210", change: "▼ 1.08%", dir: "down" },
+  { pair: "mUSD/ETH", price: "3,488", change: "▲ 2.74%", dir: "up" },
   { pair: "Decisions logged", price: "1,204", change: "▲ live", dir: "up" },
 ] as const;
 

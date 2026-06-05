@@ -40,8 +40,8 @@ export const MARKETS: Market[] = [
     defaultFavorite: true,
   },
   {
-    pair: "mUSD/MockBTC",
-    slug: "mUSD-MockBTC",
+    pair: "mUSD/BTC",
+    slug: "mUSD-BTC",
     name: "Test Bitcoin",
     badge: "btc",
     glyph: "₿",
@@ -54,8 +54,8 @@ export const MARKETS: Market[] = [
     defaultFavorite: false,
   },
   {
-    pair: "mUSD/MockETH",
-    slug: "mUSD-MockETH",
+    pair: "mUSD/ETH",
+    slug: "mUSD-ETH",
     name: "Test Ether",
     badge: "eth",
     glyph: "Ξ",
@@ -90,10 +90,10 @@ export const TOP_GAINERS: StripCard[] = [
     direction: "up",
   },
   {
-    slug: "mUSD-MockETH",
+    slug: "mUSD-ETH",
     badge: "eth",
     glyph: "Ξ",
-    title: "mUSD/MockETH",
+    title: "mUSD/ETH",
     sub: "3,488.40 mUSD",
     change: "+2.74%",
     direction: "up",
@@ -111,16 +111,16 @@ export const TOP_GAINERS: StripCard[] = [
 
 export const TOP_LOSERS: StripCard[] = [
   {
-    slug: "mUSD-MockBTC",
+    slug: "mUSD-BTC",
     badge: "btc",
     glyph: "₿",
-    title: "mUSD/MockBTC",
+    title: "mUSD/BTC",
     sub: "64,210.00 mUSD",
     change: "-1.08%",
     direction: "down",
   },
   {
-    slug: "mUSD-MockBTC",
+    slug: "mUSD-BTC",
     badge: "btc",
     glyph: "₿",
     title: "7d trend",
@@ -129,7 +129,7 @@ export const TOP_LOSERS: StripCard[] = [
     direction: "down",
   },
   {
-    slug: "mUSD-MockETH",
+    slug: "mUSD-ETH",
     badge: "eth",
     glyph: "Ξ",
     title: "1h move",

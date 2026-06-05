@@ -26,7 +26,7 @@ const MARKETS: Market[] = [
   },
   {
     badge: "₿",
-    name: "MockBTC",
+    name: "BTC",
     desc: "Test Bitcoin",
     price: "64,210",
     change: "-1.08%",
@@ -35,7 +35,7 @@ const MARKETS: Market[] = [
   },
   {
     badge: "Ξ",
-    name: "MockETH",
+    name: "ETH",
     desc: "Test Ether",
     price: "3,488",
     change: "+2.74%",

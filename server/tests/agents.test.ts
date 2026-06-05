@@ -13,7 +13,7 @@ const thesisCore = {
   reasoning: 'WMNT momentum is constructive on real candles.',
   options: [
     { direction: 'long', asset: 'WMNT', sizeMUSD: 100, rationale: 'breakout', predictedReturnPct: { low: 5, high: 10 }, risk: 'medium' },
-    { direction: 'hedge', asset: 'MockBTC', sizeMUSD: 50, rationale: 'cover', predictedReturnPct: { low: -2, high: 4 }, risk: 'low' },
+    { direction: 'hedge', asset: 'BTC', sizeMUSD: 50, rationale: 'cover', predictedReturnPct: { low: -2, high: 4 }, risk: 'low' },
   ],
 };
 const judgeOut = {

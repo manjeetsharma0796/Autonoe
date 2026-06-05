@@ -6,7 +6,7 @@ import { defaultResolver, type ModelResolver } from '../models.ts';
 
 const SYSTEM =
   'You are Autonoe, a concise crypto trading copilot on the Mantle testnet (assets vs mUSD: ' +
-  'WMNT, MockBTC, MockETH). Answer the user clearly. If they ask for a trade idea, suggest they ' +
+  'WMNT, BTC, ETH, SUI, SOL). Answer the user clearly. If they ask for a trade idea, suggest they ' +
   'send it to the tribunal for a full thesis + verdict.';
 
 export async function chat(

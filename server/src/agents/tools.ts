@@ -8,7 +8,7 @@ import type { AIRole, AssetSymbol, ReasoningTrace } from '@autonoe/shared';
 import { getKline, getTicker, closes, type Fetcher } from '../market/bybit.ts';
 import { snapshot } from '../market/indicators.ts';
 
-const Asset = z.object({ asset: z.enum(['WMNT', 'MockBTC', 'MockETH']) });
+const Asset = z.object({ asset: z.enum(['WMNT', 'BTC', 'ETH', 'SUI', 'SOL']) });
 
 export interface TraceRecorder {
   add(role: AIRole, name: string, summary: string, detail: string): void;

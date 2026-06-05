@@ -13,7 +13,7 @@ import type { Fetcher } from '../market/bybit.ts';
 
 const Option = z.object({
   direction: z.enum(['long', 'short', 'hedge', 'hold']),
-  asset: z.enum(['WMNT', 'MockBTC', 'MockETH']),
+  asset: z.enum(['WMNT', 'BTC', 'ETH', 'SUI', 'SOL']),
   sizeMUSD: z.number().describe('position size in mUSD'),
   rationale: z.string(),
   predictedReturnPct: z.object({ low: z.number(), high: z.number() }),
@@ -21,7 +21,7 @@ const Option = z.object({
 });
 
 const ThesisCore = z.object({
-  suggestedPair: z.enum(['WMNT', 'MockBTC', 'MockETH']),
+  suggestedPair: z.enum(['WMNT', 'BTC', 'ETH', 'SUI', 'SOL']),
   reasoning: z.string().describe('overall reasoning grounded in the tool evidence, 2-4 sentences'),
   options: z.array(Option).min(2).max(4),
 });
@@ -29,7 +29,7 @@ type ThesisCore = z.infer<typeof ThesisCore>;
 
 const SYSTEM =
   'You are Autonoe, an autonomous crypto trading strategist on the Mantle testnet. ' +
-  'Assets tradable against the mUSD stablecoin: WMNT, MockBTC, MockETH. ' +
+  'Assets tradable against the mUSD stablecoin: WMNT (real AMM), BTC, ETH, SUI, SOL (synthetics). ' +
   'Use the available tools to gather real price, candle, indicator and on-chain evidence for the ' +
   'assets relevant to the user intent before forming a view. Be specific and honest about risk.';
 

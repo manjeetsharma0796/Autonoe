@@ -11,8 +11,8 @@ test('provider ids are the five free providers', () => {
   );
 });
 
-test('settlement asset list is the three tradables', () => {
-  expect([...ASSET_SYMBOLS]).toEqual(['WMNT', 'MockBTC', 'MockETH']);
+test('settlement asset list is WMNT + the synthetic markets', () => {
+  expect([...ASSET_SYMBOLS]).toEqual(['WMNT', 'BTC', 'ETH', 'SUI', 'SOL']);
 });
 
 test('API route map exposes all 10 endpoints', () => {
