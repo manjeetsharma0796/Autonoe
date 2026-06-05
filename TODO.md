@@ -93,7 +93,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: canonical Uniswap V2 core + periphery (Factory, Router02) compiled with WMNT as WETH; `createPair` + quote works in a Hardhat test.
 
 ### T-105 — `DecisionLog` contract
-- Status: pending
+- Status: in-progress @prithwish 2026-06-05
 - Depends-on: T-101
 - Scope: contracts
 - Acceptance: `DecisionLog.sol` with `logDecision(thesisHash, verdictHash, asset, amountIn, amountOut, pnl, optionRef)` emitting an event + storing a per-user history; getters; tests pass.
