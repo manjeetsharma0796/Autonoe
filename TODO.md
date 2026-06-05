@@ -273,7 +273,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: persistent nav + a global slide-over wallet drawer reachable from every route; balances/fund/export/limits (calls `packages/wallet`); clearly distinguishes funding wallet (MetaMask) vs autonomous agent wallet with an "acting wallet" indicator; persistent "testnet · not financial advice" disclaimer.
 
 ### T-403 — ReasoningTrace component ("Show thinking")
-- Status: pending
+- Status: done @manjeet_s 2026-06-05 — `web/components/studio/ThinkingTrace.tsx` generalized into one reusable component accepting a `ReasoningTrace` (summary collapsed → `steps[]` expanded); reused across thesis reasoning, subagent traces, and judge arguments. (web-wiring agent)
 - Depends-on: T-401
 - Scope: web
 - Acceptance: reusable collapsible trace — shows `summary` collapsed, expands to `steps[]` (PRD §12 `ReasoningTrace`); reused by thesis, subagents, and judges.
@@ -365,7 +365,7 @@ _(All done — the shared base every track builds on.)_
 ## 6 — Integration & Demo
 
 ### T-601 — Wire UI ↔ server (real endpoints)
-- Status: pending
+- Status: done @manjeet_s 2026-06-05 — `web/lib/api.ts` typed client; Studio (StepThesis→`/api/thesis`(`/human`), StepJudge→`/api/debate`), Trade AiRail (Quick Thesis→`/api/thesis`, Assistant→`/api/assistant`), History page→`/api/history` all live with loading/error states. `tsc` green. (Markets still sample — no markets feed endpoint; execute buttons disabled pending T-409.) (web-wiring agent)
 - Depends-on: T-205, T-206, T-401
 - Scope: integration
 - Acceptance: thesis + debate render from the live API, no mocks.

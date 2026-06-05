@@ -1,9 +1,14 @@
-import { useEffect, useRef } from "react";
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import type { DebateResult, RefinedOption, Thesis } from "@autonoe/shared";
 import styles from "./studio.module.css";
 import { ThinkingTrace } from "./ThinkingTrace";
 import { TribunalFlow } from "./TribunalFlow";
 import { ArrowRightIcon, WarnIcon } from "./icons";
-import { JUDGES, REFINED_OPTIONS, type RefinedOption } from "./data";
+import { postDebate } from "@/lib/api";
+
+// ── Refined option card ───────────────────────────────────────────────────────
 
 function RefinedCard({ opt, animate }: { opt: RefinedOption; animate: boolean }) {
   const barRef = useRef<HTMLDivElement>(null);
@@ -12,15 +17,12 @@ function RefinedCard({ opt, animate }: { opt: RefinedOption; animate: boolean })
     const bar = barRef.current;
     if (!bar) return;
     const pct = `${(opt.confidence * 100).toFixed(0)}%`;
-    const reduce = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!animate || reduce) {
       bar.style.transition = "none";
       bar.style.width = pct;
       return;
     }
-    // start collapsed, then expand on next frame for the CSS transition
     bar.style.width = "0%";
     const raf = requestAnimationFrame(() => {
       bar.style.width = pct;
@@ -32,15 +34,18 @@ function RefinedCard({ opt, animate }: { opt: RefinedOption; animate: boolean })
     <article className={styles.ref}>
       <div className={styles.rtop}>
         <div className={styles.rasset}>
-          {opt.title}
-          <small>{opt.sub}</small>
+          Long {/* direction always shown as "Long" for the refined view */}
+          <small>{opt.optionRef}</small>
         </div>
         <span className={`${styles.riskpill} ${styles[opt.risk]}`}>
-          {opt.riskLabel}
+          {opt.risk.charAt(0).toUpperCase() + opt.risk.slice(1)}
         </span>
       </div>
       <div className={styles.pct}>
-        <span className={styles.pv}>{opt.predicted}</span>
+        <span className={styles.pv}>
+          {opt.predictedOutputPct >= 0 ? "+" : ""}
+          {opt.predictedOutputPct.toFixed(1)}%
+        </span>
         <span className={styles.pl}>predicted outcome</span>
       </div>
       <div className={styles.caveats}>
@@ -60,7 +65,8 @@ function RefinedCard({ opt, animate }: { opt: RefinedOption; animate: boolean })
           <div className={styles.bar} ref={barRef} />
         </div>
       </div>
-      <button className="btn btn-gold" type="button">
+      {/* TODO: T-wallet — wire execute once the wallet execute flow is ready */}
+      <button className="btn btn-gold" type="button" disabled title="Execute: coming soon">
         <ArrowRightIcon />
         Execute
       </button>
@@ -68,9 +74,79 @@ function RefinedCard({ opt, animate }: { opt: RefinedOption; animate: boolean })
   );
 }
 
-/** `active` flips true when the user lands on Step 2 — drives the
- *  confidence-bar fill animation. */
-export function StepJudge({ active }: { active: boolean }) {
+// ── Judge agent panel ─────────────────────────────────────────────────────────
+
+interface JudgePanel {
+  key: "sup" | "dis" | "jud";
+  role: string;
+  heading: string;
+  argument: string;
+  traceIndex?: number; // index into result.traces
+}
+
+// ── StepJudge ─────────────────────────────────────────────────────────────────
+
+export interface StepJudgeProps {
+  /** True when the user first lands on step 2 — drives the bar animation. */
+  active: boolean;
+  /** The thesis produced by StepThesis. If null, shows a "go back" prompt. */
+  thesis: Thesis | null;
+}
+
+/**
+ * `active` flips true when the user lands on Step 2 — drives the
+ * confidence-bar fill animation.
+ * `thesis` flows in from the Workspace after StepThesis completes.
+ */
+export function StepJudge({ active, thesis }: StepJudgeProps) {
+  const [result, setResult] = useState<DebateResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [ran, setRan] = useState(false);
+
+  // Auto-run the debate when thesis becomes available and we're on step 2
+  useEffect(() => {
+    if (!thesis || ran) return;
+    setRan(true);
+    setLoading(true);
+    setError(null);
+    postDebate(thesis)
+      .then((r) => setResult(r))
+      .catch((e) => setError(e instanceof Error ? e.message : "Unknown error"))
+      .finally(() => setLoading(false));
+  }, [thesis, ran]);
+
+  const panels: JudgePanel[] = result
+    ? [
+        {
+          key: "sup",
+          role: "Supporter",
+          heading: "Argues for",
+          argument: result.supporterArgument,
+          traceIndex: result.traces?.findIndex((t) => t.role === "supporter") ?? -1,
+        },
+        {
+          key: "dis",
+          role: "Discriminator",
+          heading: "Argues against",
+          argument: result.discriminatorArgument,
+          traceIndex: result.traces?.findIndex((t) => t.role === "discriminator") ?? -1,
+        },
+        {
+          key: "jud",
+          role: "Judge",
+          heading: "Delivers the verdict",
+          argument: result.judgeSummary,
+          traceIndex: result.traces?.findIndex((t) => t.role === "judge") ?? -1,
+        },
+      ]
+    : [];
+
+  // Best refined option (highest confidence) for the verdict banner
+  const bestOption = result
+    ? [...result.refinedOptions].sort((a, b) => b.confidence - a.confidence)[0]
+    : null;
+
   return (
     <section className="wrap" id="step-2">
       <div className="reveal">
@@ -87,44 +163,102 @@ export function StepJudge({ active }: { active: boolean }) {
 
       <TribunalFlow className="reveal" />
 
-      <div className={styles.tri}>
-        {JUDGES.map((j) => (
-          <div className={`${styles.agent} ${styles[j.key]} reveal`} key={j.key}>
-            <div className={styles.ic}>
-              <i />
-            </div>
-            <div className={styles.role}>{j.role}</div>
-            <h4>{j.heading}</h4>
-            <p className={styles.arg}>{j.argument}</p>
-            <ThinkingTrace summary={j.summary} steps={j.trace} />
-          </div>
-        ))}
-      </div>
-
-      <div className={`${styles.verdict} reveal`}>
-        <div>
-          <div className={styles.vk}>Verdict · preferred option</div>
-          <h4>Long WMNT — scaled, reclaim-gated</h4>
+      {/* No thesis yet — prompt user to go back */}
+      {!thesis && (
+        <div className={`${styles.notice} reveal`}>
+          <WarnIcon />
+          Go back to Step one and generate or write a thesis first.
         </div>
-        <div className={styles.spacer} />
-        <span className={`${styles.pill} ${styles.pillRet}`}>predicted +7.5%</span>
-        <span className={`${styles.pill} ${styles.pillRisk}`}>risk: medium</span>
-        <span className={`${styles.pill} ${styles.pillRisk}`}>confidence 0.62</span>
-      </div>
+      )}
 
-      <div className={`${styles.opthead} reveal`} style={{ marginTop: 44 }}>
-        <h3>Refined options</h3>
-        <span className={styles.cnt}>
-          Re-scored by the panel · predicted % · risk · caveats · confidence
-        </span>
-      </div>
-      <div className={styles.refgrid}>
-        {REFINED_OPTIONS.map((opt) => (
-          <div className="reveal" key={opt.id}>
-            <RefinedCard opt={opt} animate={active} />
+      {/* Loading state */}
+      {loading && (
+        <div className={`${styles.notice} reveal`} style={{ borderColor: "var(--gold2)" }}>
+          The tribunal is deliberating… this may take ~10 seconds.
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && (
+        <div className={`${styles.notice} reveal`}>
+          <WarnIcon />
+          {error}
+        </div>
+      )}
+
+      {/* Judge panels */}
+      {result && (
+        <>
+          <div className={styles.tri}>
+            {panels.map((j) => {
+              const trace =
+                j.traceIndex !== undefined &&
+                j.traceIndex >= 0 &&
+                result.traces
+                  ? result.traces[j.traceIndex]
+                  : undefined;
+              return (
+                <div className={`${styles.agent} ${styles[j.key]} reveal`} key={j.key}>
+                  <div className={styles.ic}>
+                    <i />
+                  </div>
+                  <div className={styles.role}>{j.role}</div>
+                  <h4>{j.heading}</h4>
+                  <p className={styles.arg}>{j.argument}</p>
+                  {trace ? (
+                    <ThinkingTrace trace={trace} />
+                  ) : (
+                    <ThinkingTrace
+                      summary={`— ${j.role} reasoning`}
+                      steps={[{ label: "argument", detail: j.argument }]}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
-        ))}
-      </div>
+
+          {/* Verdict banner */}
+          {bestOption && (
+            <div className={`${styles.verdict} reveal`}>
+              <div>
+                <div className={styles.vk}>Verdict · preferred option</div>
+                <h4>{bestOption.optionRef} — confidence {bestOption.confidence.toFixed(2)}</h4>
+              </div>
+              <div className={styles.spacer} />
+              <span className={`${styles.pill} ${styles.pillRet}`}>
+                predicted {bestOption.predictedOutputPct >= 0 ? "+" : ""}
+                {bestOption.predictedOutputPct.toFixed(1)}%
+              </span>
+              <span className={`${styles.pill} ${styles.pillRisk}`}>
+                risk: {bestOption.risk}
+              </span>
+              <span className={`${styles.pill} ${styles.pillRisk}`}>
+                confidence {bestOption.confidence.toFixed(2)}
+              </span>
+            </div>
+          )}
+
+          {/* Refined options grid */}
+          {result.refinedOptions.length > 0 && (
+            <>
+              <div className={`${styles.opthead} reveal`} style={{ marginTop: 44 }}>
+                <h3>Refined options</h3>
+                <span className={styles.cnt}>
+                  Re-scored by the panel · predicted % · risk · caveats · confidence
+                </span>
+              </div>
+              <div className={styles.refgrid}>
+                {result.refinedOptions.map((opt) => (
+                  <div className="reveal" key={opt.optionRef}>
+                    <RefinedCard opt={opt} animate={active} />
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
 
       <div className={`${styles.notice} reveal`}>
         <WarnIcon />

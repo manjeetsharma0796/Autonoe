@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
-import { THINKING_STEPS } from "./data";
+import type { ChatMessage, ReasoningTrace, Thesis, ThesisOption } from "@autonoe/shared";
+import { postThesis, postAssistant } from "@/lib/api";
+import { ThinkingTrace } from "@/components/studio/ThinkingTrace";
+
+// ── inline icons ─────────────────────────────────────────────────────────────
 
 function BoltIcon() {
   return (
@@ -63,7 +67,52 @@ function SendIcon() {
   );
 }
 
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+function dirLabel(d: ThesisOption["direction"]): string {
+  return d.charAt(0).toUpperCase() + d.slice(1);
+}
+
+function retRange(lo: number, hi: number): string {
+  const f = (n: number) => (n >= 0 ? "+" : "") + n.toFixed(1) + "%";
+  return `${f(lo)} – ${f(hi)}`;
+}
+
+// ── ThesisPane ────────────────────────────────────────────────────────────────
+
 function ThesisPane() {
+  const [intent, setIntent] = useState(
+    "I think WMNT runs into the Mantle upgrade. Build a 4h swing thesis against mUSD."
+  );
+  const [thesis, setThesis] = useState<Thesis | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleGenerate() {
+    setLoading(true);
+    setError(null);
+    setThesis(null);
+    try {
+      const result = await postThesis({
+        intent,
+        // default: all subagents enabled in the trade quick-thesis rail
+        activeSources: [
+          "subagent.onchain",
+          "subagent.market",
+          "subagent.indicators",
+        ],
+      });
+      setThesis(result);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Pick the first (best) option for the compact card
+  const topOption = thesis?.options[0] ?? null;
+
   return (
     <div role="tabpanel">
       <div className="railhead">
@@ -80,69 +129,148 @@ function ThesisPane() {
         <textarea
           className="intent"
           rows={3}
-          defaultValue="I think WMNT runs into the Mantle upgrade. Build a 4h swing thesis against mUSD."
+          value={intent}
+          onChange={(e) => setIntent(e.target.value)}
         />
         <div className="intentrow">
-          <button type="button" className="btn btn-violet btn-block">
-            Generate thesis
+          <button
+            type="button"
+            className="btn btn-violet btn-block"
+            onClick={handleGenerate}
+            disabled={loading}
+          >
+            {loading ? "Generating…" : "Generate thesis"}
           </button>
         </div>
 
-        <div className="thesis">
-          <div className="th-top">
-            <span className="dir long">Long</span>
-            <span className="th-asset">WMNT</span>
-            <span className="th-tag">Option A</span>
+        {error && (
+          <div style={{ color: "var(--red, #FF6B6B)", fontSize: 13, marginTop: 10 }}>
+            {error}
           </div>
-          <div className="th-body">
-            <div className="pills">
-              <span className="pill size">
-                <span className="k">size</span> 1,000 mUSD
-              </span>
-              <span className="pill ret">
-                <span className="k">pred.</span> +6.4% – +11%
-              </span>
-              <span className="pill risk">
-                <span className="k">risk</span> medium
-              </span>
-              <span className="pill">
-                <span className="k">horizon</span> 4h–2d
-              </span>
-            </div>
-            <p className="th-desc">
-              Momentum on the 4H is constructive with an ascending base off 1.22.
-              Catalyst clustering into the upgrade window supports a scaled entry;
-              invalidate below 1.198.
-            </p>
-          </div>
-          <div className="th-foot">
-            <Link href="/studio" className="btn btn-gold btn-block">
-              Refine in Judge Panel →
-            </Link>
-          </div>
-        </div>
+        )}
 
-        <details className="think">
-          <summary>
-            <span className="dotg" /> Show thinking
-            <span style={{ flex: 1 }} />
-            <Caret />
-          </summary>
-          <div className="trace">
-            {THINKING_STEPS.map((s) => (
-              <div className="tstep" key={s.head}>
-                <b>{s.head}</b>
-                {s.rest}
+        {topOption && thesis && (
+          <>
+            <div className="thesis">
+              <div className="th-top">
+                <span className={`dir ${topOption.direction}`}>{dirLabel(topOption.direction)}</span>
+                <span className="th-asset">{topOption.asset}</span>
+                <span className="th-tag">{topOption.id}</span>
               </div>
-            ))}
-          </div>
-        </details>
+              <div className="th-body">
+                <div className="pills">
+                  <span className="pill size">
+                    <span className="k">size</span>{" "}
+                    {topOption.sizeMUSD.toLocaleString()} mUSD
+                  </span>
+                  <span className="pill ret">
+                    <span className="k">pred.</span>{" "}
+                    {retRange(
+                      topOption.predictedReturnPct.low,
+                      topOption.predictedReturnPct.high
+                    )}
+                  </span>
+                  <span className="pill risk">
+                    <span className="k">risk</span> {topOption.risk}
+                  </span>
+                </div>
+                <p className="th-desc">{topOption.rationale}</p>
+              </div>
+              <div className="th-foot">
+                <Link href="/studio" className="btn btn-gold btn-block">
+                  Refine in Judge Panel →
+                </Link>
+              </div>
+            </div>
+
+            {/* Reasoning traces — use the shared ThinkingTrace */}
+            {thesis.traces && thesis.traces.length > 0 ? (
+              <details className="think">
+                <summary>
+                  <span className="dotg" /> Show thinking
+                  <span style={{ flex: 1 }} />
+                  <Caret />
+                </summary>
+                <div className="trace">
+                  {thesis.traces.map((t: ReasoningTrace, i: number) => (
+                    <div className="tstep" key={i}>
+                      <b>{t.role}</b>
+                      {" — "}{t.summary}
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ) : thesis.reasoning ? (
+              <details className="think">
+                <summary>
+                  <span className="dotg" /> Show thinking
+                  <span style={{ flex: 1 }} />
+                  <Caret />
+                </summary>
+                <div className="trace">
+                  <div className="tstep">
+                    <b>reasoning</b>
+                    {" — "}{thesis.reasoning}
+                  </div>
+                </div>
+              </details>
+            ) : null}
+          </>
+        )}
       </div>
     </div>
   );
 }
 
+// ── AssistantPane ─────────────────────────────────────────────────────────────
+
+const INITIAL_MESSAGES: ChatMessage[] = [
+  {
+    role: "assistant",
+    content:
+      "Hey — I can read the live mUSD/WMNT book, your agent wallet, and the DecisionLog. What are you weighing?",
+  },
+];
+
 function AssistantPane() {
+  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
+  const [draft, setDraft] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  async function handleSend() {
+    const text = draft.trim();
+    if (!text || loading) return;
+
+    const userMsg: ChatMessage = { role: "user", content: text };
+    const nextMessages = [...messages, userMsg];
+    setMessages(nextMessages);
+    setDraft("");
+    setLoading(true);
+    setError(null);
+
+    try {
+      const reply = await postAssistant({ messages: nextMessages });
+      setMessages((prev) => [...prev, reply]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setLoading(false);
+      // Scroll to bottom
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 50);
+    }
+  }
+
+  function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      void handleSend();
+    }
+  }
+
   return (
     <div role="tabpanel">
       <div className="railhead">
@@ -156,50 +284,44 @@ function AssistantPane() {
       </div>
       <div className="railbody">
         <div className="chat">
-          <div className="msg bot">
-            <div className="av">A</div>
-            <div className="bubble">
-              Hey — I can read the live <b>mUSD/WMNT</b> book, your agent wallet,
-              and the DecisionLog. What are you weighing?
+          {messages.map((m, i) => (
+            <div key={i} className={`msg ${m.role === "assistant" ? "bot" : "me"}`}>
+              <div className="av">{m.role === "assistant" ? "A" : "YOU"}</div>
+              <div className="bubble">{m.content}</div>
             </div>
-          </div>
-          <div className="msg me">
-            <div className="av">YOU</div>
-            <div className="bubble">
-              What&apos;s WMNT done in the last 24h and is now a decent entry?
+          ))}
+          {loading && (
+            <div className="msg bot">
+              <div className="av">A</div>
+              <div className="bubble" style={{ opacity: 0.6 }}>Thinking…</div>
             </div>
-          </div>
-          <div className="msg bot">
-            <div className="av">A</div>
-            <div className="bubble">
-              WMNT is <span className="mono">+4.21%</span> at{" "}
-              <span className="mono">1.2843</span>, high 1.3018 / low 1.2210.
-              It&apos;s mid-range after a clean bounce off support. A scaled entry
-              beats a full clip here — want me to draft a 4H thesis and route it to
-              the tribunal?
+          )}
+          {error && (
+            <div className="msg bot">
+              <div className="av">A</div>
+              <div className="bubble" style={{ color: "var(--red, #FF6B6B)" }}>
+                {error}
+              </div>
             </div>
-          </div>
-          <div className="msg me">
-            <div className="av">YOU</div>
-            <div className="bubble">Yes, keep size to about 1k mUSD.</div>
-          </div>
-          <div className="msg bot">
-            <div className="av">A</div>
-            <div className="bubble">
-              Done — drafted <b>Long WMNT · 1,000 mUSD</b>, predicted{" "}
-              <span className="mono">+6.4%–11%</span>, risk medium. It&apos;s
-              loaded in the Quick Thesis tab; hit <b>Refine in Judge Panel</b> to
-              put it on trial.
-            </div>
-          </div>
+          )}
+          <div ref={bottomRef} />
         </div>
         <div className="composer">
           <textarea
             rows={1}
             placeholder="Message the assistant…"
             aria-label="Message the assistant"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={handleKey}
           />
-          <button type="button" className="send" aria-label="Send">
+          <button
+            type="button"
+            className="send"
+            aria-label="Send"
+            onClick={() => void handleSend()}
+            disabled={loading || !draft.trim()}
+          >
             <SendIcon />
           </button>
         </div>
@@ -207,6 +329,8 @@ function AssistantPane() {
     </div>
   );
 }
+
+// ── AiRail ────────────────────────────────────────────────────────────────────
 
 export function AiRail() {
   const [tab, setTab] = useState<"thesis" | "assistant">("thesis");

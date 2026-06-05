@@ -1,4 +1,8 @@
+"use client";
+
 import { useState } from "react";
+import type { AIRole, AssetSymbol, Thesis, ThesisOption } from "@autonoe/shared";
+import { SUBAGENT_ROLES } from "@autonoe/shared";
 import styles from "./studio.module.css";
 import { ThinkingTrace } from "./ThinkingTrace";
 import {
@@ -19,11 +23,9 @@ import {
   DEFAULT_HUMAN_CASE,
   DEFAULT_INTENT,
   DEFAULT_SOURCES,
-  THESIS_OPTIONS,
-  THESIS_TRACE,
   type DataSourceKey,
-  type ThesisOption,
 } from "./data";
+import { postThesis, postThesisHuman } from "@/lib/api";
 
 type Mode = "ai" | "human";
 
@@ -34,6 +36,24 @@ const SOURCE_ICON: Record<DataSourceKey, typeof OnChainIcon> = {
   news: NewsIcon,
 };
 
+/** Map DataSourceKey to the AIRole used in activeSources. */
+const SOURCE_TO_ROLE: Record<DataSourceKey, AIRole> = {
+  onchain: "subagent.onchain",
+  market: "subagent.market",
+  indicators: "subagent.indicators",
+  news: "subagent.news",
+};
+
+function directionLabel(d: ThesisOption["direction"]): string {
+  return d.charAt(0).toUpperCase() + d.slice(1);
+}
+
+function formatRange(low: number, high: number): string {
+  const fmt = (n: number) =>
+    (n >= 0 ? "+" : "") + n.toFixed(1) + "%";
+  return `${fmt(low)} to ${fmt(high)}`;
+}
+
 function ThesisOptionCard({
   opt,
   onSendToJudge,
@@ -41,11 +61,12 @@ function ThesisOptionCard({
   opt: ThesisOption;
   onSendToJudge: () => void;
 }) {
+  const dir = opt.direction;
   return (
     <article className={`${styles.opt} ${styles[opt.risk]}`}>
       <div className={styles.otop}>
-        <span className={`${styles.dir} ${styles[opt.direction]}`}>
-          <TrendUpIcon /> {opt.directionLabel}
+        <span className={`${styles.dir} ${styles[dir]}`}>
+          <TrendUpIcon /> {directionLabel(dir)}
         </span>
         <span className={`${styles.riskpill} ${styles[opt.risk]}`}>
           {opt.risk} risk
@@ -53,15 +74,18 @@ function ThesisOptionCard({
       </div>
       <div className={styles.asset}>{opt.asset}</div>
       <div className={styles.size}>
-        Size <b>{opt.sizeValue}</b> · {opt.sizeLabel}
+        Size <b>{opt.sizeMUSD.toLocaleString()} mUSD</b> · {opt.id}
       </div>
       <p className={styles.rat}>{opt.rationale}</p>
       <div className={styles.ret}>
         <span className={styles.rk}>Predicted</span>
-        <span className={styles.rv}>{opt.predicted}</span>
+        <span className={styles.rv}>
+          {formatRange(opt.predictedReturnPct.low, opt.predictedReturnPct.high)}
+        </span>
       </div>
       <div className={styles.acts}>
-        <button className={`btn btn-ghost ${styles.btnSm}`} type="button">
+        {/* TODO: T-wallet — wire execute once the wallet execute flow is ready */}
+        <button className={`btn btn-ghost ${styles.btnSm}`} type="button" disabled title="Execute: coming soon">
           Execute
         </button>
         <button
@@ -77,15 +101,70 @@ function ThesisOptionCard({
   );
 }
 
-export function StepThesis({ onSendToJudge }: { onSendToJudge: () => void }) {
+export interface StepThesisProps {
+  /** Called when the user clicks "To Judge" on any option. */
+  onSendToJudge: (thesis: Thesis) => void;
+}
+
+export function StepThesis({ onSendToJudge }: StepThesisProps) {
   const [intent, setIntent] = useState(DEFAULT_INTENT);
   const [humanCase, setHumanCase] = useState(DEFAULT_HUMAN_CASE);
   const [mode, setMode] = useState<Mode>("ai");
   const [sources, setSources] =
     useState<Record<DataSourceKey, boolean>>(DEFAULT_SOURCES);
 
+  const [thesis, setThesis] = useState<Thesis | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const toggleSource = (key: DataSourceKey) =>
     setSources((s) => ({ ...s, [key]: !s[key] }));
+
+  const activeSources: AIRole[] = SUBAGENT_ROLES.filter(
+    (r) => {
+      // find the DataSourceKey that maps to this role
+      const key = (Object.keys(SOURCE_TO_ROLE) as DataSourceKey[]).find(
+        (k) => SOURCE_TO_ROLE[k] === r
+      );
+      return key !== undefined && sources[key];
+    }
+  );
+
+  async function handleGenerate() {
+    setLoading(true);
+    setError(null);
+    setThesis(null);
+    try {
+      const result = await postThesis({ intent, activeSources });
+      setThesis(result);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleStructure() {
+    setLoading(true);
+    setError(null);
+    setThesis(null);
+    try {
+      // Default to WMNT as suggestedPair; user can adjust intent to imply different asset
+      const suggestedPair: AssetSymbol = "WMNT";
+      const result = await postThesisHuman({
+        intent,
+        body: humanCase,
+        suggestedPair,
+      });
+      setThesis(result);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const enabledCount = Object.values(sources).filter(Boolean).length;
 
   return (
     <section className="wrap" id="step-1">
@@ -162,12 +241,18 @@ export function StepThesis({ onSendToJudge }: { onSendToJudge: () => void }) {
           {mode === "ai" ? (
             <div className={styles.modepane} id="pane-ai">
               <div className={styles.runrow}>
-                <button className="btn btn-gold" type="button">
+                <button
+                  className="btn btn-gold"
+                  type="button"
+                  onClick={handleGenerate}
+                  disabled={loading}
+                >
                   <SparkSingleIcon />
-                  Generate thesis
+                  {loading ? "Generating…" : "Generate thesis"}
                 </button>
                 <span className={styles.hint}>
-                  <ClockIcon />3 subagents active · ~5s to multi-option thesis
+                  <ClockIcon />
+                  {enabledCount} subagent{enabledCount !== 1 ? "s" : ""} active · ~5s to multi-option thesis
                 </span>
               </div>
             </div>
@@ -184,9 +269,14 @@ export function StepThesis({ onSendToJudge }: { onSendToJudge: () => void }) {
                 />
               </div>
               <div className={styles.runrow}>
-                <button className="btn btn-gold" type="button">
+                <button
+                  className="btn btn-gold"
+                  type="button"
+                  onClick={handleStructure}
+                  disabled={loading}
+                >
                   <ArrowRightIcon />
-                  Structure into options
+                  {loading ? "Structuring…" : "Structure into options"}
                 </button>
                 <span className={styles.hint}>
                   <PenIcon />
@@ -197,25 +287,61 @@ export function StepThesis({ onSendToJudge }: { onSendToJudge: () => void }) {
           )}
         </div>
 
-        <ThinkingTrace
-          summary="— Oversold reclaim setup confirmed by 3 of 3 enabled sources"
-          steps={THESIS_TRACE}
-        />
+        {/* Error state */}
+        {error && (
+          <div className={styles.notice} style={{ marginTop: 16 }}>
+            <WarnIcon />
+            {error}
+          </div>
+        )}
+
+        {/* Reasoning traces from the live thesis */}
+        {thesis && thesis.traces && thesis.traces.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            {thesis.traces.map((t, i) => (
+              <ThinkingTrace key={i} trace={t} />
+            ))}
+          </div>
+        )}
+
+        {/* Fallback: show overall thesis reasoning if no per-agent traces */}
+        {thesis && (!thesis.traces || thesis.traces.length === 0) && thesis.reasoning && (
+          <ThinkingTrace
+            summary={thesis.reasoning.slice(0, 100)}
+            steps={[{ label: "reasoning", detail: thesis.reasoning }]}
+          />
+        )}
       </div>
 
-      <div className={`${styles.opthead} reveal`}>
-        <h3>Thesis options</h3>
-        <span className={styles.cnt}>
-          3 risk-tiered candidates · suggested pair mUSD/WMNT
-        </span>
-      </div>
-      <div className={styles.optgrid}>
-        {THESIS_OPTIONS.map((opt) => (
-          <div className="reveal" key={opt.id}>
-            <ThesisOptionCard opt={opt} onSendToJudge={onSendToJudge} />
+      {/* Options grid — only shown after a successful thesis call */}
+      {thesis && thesis.options.length > 0 && (
+        <>
+          <div className={`${styles.opthead} reveal`}>
+            <h3>Thesis options</h3>
+            <span className={styles.cnt}>
+              {thesis.options.length} risk-tiered candidate{thesis.options.length !== 1 ? "s" : ""} · suggested pair mUSD/{thesis.suggestedPair}
+            </span>
           </div>
-        ))}
-      </div>
+          <div className={styles.optgrid}>
+            {thesis.options.map((opt) => (
+              <div className="reveal" key={opt.id}>
+                <ThesisOptionCard
+                  opt={opt}
+                  onSendToJudge={() => onSendToJudge(thesis)}
+                />
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Empty state after a successful call with no options */}
+      {thesis && thesis.options.length === 0 && (
+        <div className={`${styles.notice} reveal`}>
+          <WarnIcon />
+          The agent could not generate thesis options for this intent. Try rephrasing or enabling more data sources.
+        </div>
+      )}
 
       <div className={`${styles.notice} reveal`}>
         <WarnIcon />

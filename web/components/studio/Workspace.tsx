@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import type { Thesis } from "@autonoe/shared";
 import styles from "./studio.module.css";
 import { StepThesis } from "./StepThesis";
 import { StepJudge } from "./StepJudge";
@@ -20,6 +21,8 @@ const STEPS: { n: Step; kicker: string; label: string }[] = [
 export function Workspace() {
   const [step, setStep] = useState<Step>(1);
   const [judgeVisited, setJudgeVisited] = useState(false);
+  // Thesis flows from StepThesis → StepJudge via this shared state.
+  const [currentThesis, setCurrentThesis] = useState<Thesis | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const stepperRef = useRef<HTMLDivElement>(null);
 
@@ -38,6 +41,11 @@ export function Workspace() {
       if (lenis) lenis.scrollTo(y);
       else window.scrollTo({ top: y, behavior: reduce ? "auto" : "smooth" });
     }
+  };
+
+  const handleSendToJudge = (thesis: Thesis) => {
+    setCurrentThesis(thesis);
+    goStep(2);
   };
 
   // Calm staggered reveals for whichever step is active. Re-runs on step
@@ -117,7 +125,7 @@ export function Workspace() {
         data-step={1}
         style={{ display: step === 1 ? "block" : "none" }}
       >
-        <StepThesis onSendToJudge={() => goStep(2)} />
+        <StepThesis onSendToJudge={handleSendToJudge} />
       </div>
 
       <div
@@ -125,7 +133,7 @@ export function Workspace() {
         data-step={2}
         style={{ display: step === 2 ? "block" : "none" }}
       >
-        <StepJudge active={judgeVisited && step === 2} />
+        <StepJudge active={judgeVisited && step === 2} thesis={currentThesis} />
       </div>
 
       <footer className={`${styles.foot} wrap`}>
