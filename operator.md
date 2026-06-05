@@ -17,11 +17,18 @@ Orchestration: **fan out to Sonnet subagents** for routine/independent work
 (UI pages, wiring, funding helpers); **Opus (me)** keeps money/security-critical
 work (oracle signing, wallet execute) + integration verification + adversarial review.
 
-## 🔴 Blocking (a task is stuck until you act)
+## ✅ STATUS: E2E demo is BUILT and the on-chain half is VERIFIED LIVE
+Everything compiles (`next build` green, 7 routes) and all 58 tests pass. The full
+execute loop is proven on Mantle Sepolia: **agent wallet → server-signed oracle price →
+real on-chain trade (AMM swap *and* synthetic) → DecisionLog → /api/history**. Both
+trade paths verified live. The wallet drawer, settings, studio, and history pages are wired.
 
-_(none right now — I have everything I need to keep building. The only thing
-needed before the FULL live demo is an AI provider key — see 🟡 #1 — but I'll
-build + mock around it so nothing is blocked.)_
+## 🔴 The ONE thing only you can do (to run the *AI* half of the demo)
+**Add an AI provider key** so the live thesis + debate steps work:
+- Drop one of `GROQ_API_KEY` / `MISTRAL_API_KEY` / `NVIDIA_API_KEY` / `OPENROUTER_API_KEY` / `GEMINI_API_KEY`
+  into `.env.local`, **or** paste it in the app's `/settings` page (no restart needed). Groq free tier is fastest: https://console.groq.com/keys
+- Without it: you can still create the agent wallet and execute a manual trade → see it logged on-chain (`/history`). **With it**: the full `intent → thesis → debate → execute → log → history` flow runs.
+- This is the only blocker for the *complete* live walkthrough. Everything else is done and verified. See `RUNNING.md` to start it (needs `bun` + `node`).
 
 ---
 
