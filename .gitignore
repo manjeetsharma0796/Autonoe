@@ -9,4 +9,4 @@ cache/
 *.tsbuildinfo
 autonoe.db
 *.db
-.claude/worktrees/
+.claude/

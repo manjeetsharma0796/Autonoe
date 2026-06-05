@@ -71,16 +71,27 @@ THESIS = { options[]: { direction, asset, sizeMUSD, rationale, predictedReturnPc
 
 ## 7. Tokens & trading
 
-- **`mUSD` (Mantle USD)** — mintable test stablecoin, nominal $1 peg, **6 decimals**, the **single settlement currency**. All pools are `mUSD/<asset>`.
-- Tradable assets: **`WMNT`** (wrapped MNT), **`MockBTC`**, **`MockETH`** (18 decimals).
+- **`mUSD` (Mantle USD)** — mintable test stablecoin, nominal $1 peg, **6 decimals**, the **single settlement currency** (the "stablecoin" of the platform). Every market is quoted in mUSD.
+- **Two market types (hybrid — see §8):**
+  - **Real AMM market:** **`mUSD/WMNT`** (wrapped MNT) — a genuine Uniswap-V2 pool with seeded liquidity. The MVP demo trade.
+  - **Synthetic markets:** every other asset (e.g. **BTC, ETH, SUI, SOL** — anything with a market-data feed) trades as an **oracle-priced synthetic position settled in mUSD**. No per-asset ERC-20, no liquidity to seed — a market is just a symbol + a live price. This is what lets the platform "trade whatever pairs are there" and is the only path that expresses **short** as well as long.
+- `MockBTC`/`MockETH` ERC-20s are **no longer deployed** — synthetics need no token.
 - Acquisition: **auto-seeded** mUSD balance on wallet creation **and** a one-click **faucet** re-mint.
 - All predicted returns and PnL are denominated in mUSD for clean dollar figures.
 
-## 8. On-chain execution & benchmarking
+## 8. On-chain execution & benchmarking — hybrid engine
 
-- No production DEX with liquidity is confirmed on Mantle Sepolia (5003); Merchant Moe / Agni / FusionX are mainnet-only. **We deploy our own Uniswap V2 fork** (Factory + Router02) and seed liquidity.
-- **MVP pool:** `mUSD/WMNT` (must work for the demo). `mUSD/MockBTC` and `mUSD/MockETH` added only if time allows.
-- `DecisionLog.sol` records per trade: `thesisHash`, `verdictHash`, `asset`, `amountIn`, `amountOut`, `pnl`, `optionRef`; emits an event and stores a per-user history. Viewable on mantlescan.
+**DECISION (2026-06-05): Hybrid execution.** Two settlement engines behind one mUSD-quoted UX:
+
+**(a) Real AMM leg — `mUSD/WMNT`.** No production DEX with liquidity is confirmed on Mantle Sepolia (5003); Merchant Moe / Agni / FusionX are mainnet-only. **We deploy our own Uniswap V2 fork** (Factory + Router02) and seed the **`mUSD/WMNT`** pool. This is the genuine on-chain swap — the MVP demo trade and the Agentic-Wallets/DeFi proof point. (Must work for the demo.)
+
+**(b) Synthetic leg — every other market.** A **`SyntheticExchange`** contract opens/closes positions denominated in mUSD against a **`PriceOracle`**, with a treasury-funded **house reserve** paying winners. `openPosition(symbol, direction, sizeMUSD)` stamps the entry price; `closePosition(id)` settles `pnl = sizeMUSD × Δprice × directionSign` in mUSD. Because fills use the **real market price**, realized PnL reflects genuine market moves — which makes the per-model leaderboard (§11f) honest. Adding a market is a config entry, not a deploy.
+
+**Oracle — signed-pull (Pyth-style).** The server already reads live market data (Bybit, T-204). On a trade it **signs `{symbol, price, timestamp}`** with a trusted signer key; the trade tx submits that, and `SyntheticExchange` verifies the signature + timestamp freshness on-chain (`ecrecover`). No standing keeper, gas only on trade, scales to any number of markets — a price is only needed when someone actually trades.
+
+**Benchmark.** `DecisionLog.sol` records **both** AMM and synthetic trades identically — per trade: `thesisHash`, `verdictHash`, `asset`, `amountIn`, `amountOut`, `pnl`, `optionRef`; emits an event and stores a per-user history. Viewable on mantlescan.
+
+> Why not a runtime token-factory ("deploy a token per requested pair"): rejected as overkill — the tokens would be mock anyway (no realism gained), seeding liquidity per pair forces the treasury key server-side, adds 15–60s of demo latency + faucet-rate-limit risk, and the AMM price drifts from the real price after one trade (fake PnL). The synthetic leg delivers "trade any pair" with none of that.
 
 ## 9. Network reference (verified, June 2026)
 
@@ -100,7 +111,7 @@ THESIS = { options[]: { direction, asset, sizeMUSD, rationale, predictedReturnPc
 
 | Dir | Responsibility |
 |-----|----------------|
-| `contracts/` | Hardhat: `mUSD`, `WMNT`, `MockBTC`, `MockETH`, Uniswap V2 Factory/Router, `DecisionLog`, deploy + seed scripts |
+| `contracts/` | Hardhat: `mUSD`, `WMNT`, Uniswap V2 Factory/Router (real `mUSD/WMNT` pool), `PriceOracle` + `SyntheticExchange` (oracle-priced mUSD synthetics), `DecisionLog`, deploy + seed scripts |
 | `packages/chain/` | viem clients, `swapExecutor`, `decisionLog` writer/reader, exported `addresses.json` + ABIs |
 | `packages/shared/` | Canonical TypeScript types (Thesis, Option, DebateResult), REST API contract, role enum |
 | `server/` | Express: provider proxy (Mono), role/model config, subagents, thesis + debate endpoints |
@@ -232,7 +243,9 @@ export interface ReasoningTrace {
 }
 
 export type Direction = 'long' | 'short' | 'hedge' | 'hold';
-export type AssetSymbol = 'WMNT' | 'MockBTC' | 'MockETH';
+// 'WMNT' settles via the real AMM; all others are oracle-priced synthetics (§8).
+// Open-ended on purpose — synthetic markets are config, not contracts; add symbols freely.
+export type AssetSymbol = 'WMNT' | 'BTC' | 'ETH' | 'SUI' | 'SOL' | (string & {});
 
 export interface ThesisOption {
   id: string;                       // stable id, e.g. "opt-1"
@@ -305,9 +318,11 @@ export interface SwapResult {
 // packages/chain/addresses.json (shape)
 {
   "chainId": 5003,
-  "mUSD": "0x...", "WMNT": "0x...", "MockBTC": "0x...", "MockETH": "0x...",
+  "mUSD": "0x...", "WMNT": "0x...",
   "factory": "0x...", "router": "0x...", "decisionLog": "0x...",
-  "pools": { "mUSD_WMNT": "0x...", "mUSD_MockBTC": "0x...", "mUSD_MockETH": "0x..." }
+  "oracle": "0x...", "syntheticExchange": "0x...",
+  "pools": { "mUSD_WMNT": "0x..." },
+  "syntheticMarkets": ["BTC", "ETH", "SUI", "SOL"]   // oracle-priced, no per-asset contract
 }
 ```
 
@@ -326,7 +341,7 @@ export interface SwapResult {
 
 ## 15. Scope discipline (YAGNI for 13 days)
 
-- Single MVP pair `mUSD/WMNT`; extra asset pools are stretch.
+- The real AMM `mUSD/WMNT` pool is the must-work MVP trade; synthetic markets (§8b) add breadth cheaply but the demo path can fall back to `mUSD/WMNT` alone if the synthetic leg slips.
 - Charts via **TradingView embed widget** — no custom charting engine.
 - **No order book / matching engine.**
 - Single-user demo is acceptable.
