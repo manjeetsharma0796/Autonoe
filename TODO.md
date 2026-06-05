@@ -86,12 +86,6 @@ _(All done — the shared base every track builds on.)_
 
 > Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
 
-### T-104 — Uniswap V2 fork
-- Status: in-progress @prithwish 2026-06-05
-- Depends-on: T-103
-- Scope: contracts
-- Acceptance: canonical Uniswap V2 core + periphery (Factory, Router02) compiled with WMNT as WETH; `createPair` + quote works in a Hardhat test.
-
 ### T-106 — Deploy + seed script
 - Status: pending
 - Depends-on: T-102, T-103, T-104, T-105
@@ -357,6 +351,12 @@ _(All done — the shared base every track builds on.)_
 ## Done
 
 _(newest first)_
+
+### T-104 — Uniswap V2 fork
+- Status: done @prithwish 2026-06-05 — canonical Uniswap V2 vendored into `contracts/contracts/uniswap/` (core `@1.0.1` @ solc 0.5.16, periphery `@1.1.0-beta.0` @ 0.6.6) via a 3-compiler Hardhat config (0.5.16/0.6.6/0.8.28). Router02 deploys with WMNT as WETH. One modification: `UniswapV2Library.pairFor()` resolves via `factory.getPair()` instead of the mainnet-pinned CREATE2 init-code hash (won't match a locally compiled pair) — see `contracts/uniswap/README.md`. 2 Hardhat 3 + viem tests pass: `createPair` registers mUSD/WMNT; addLiquidity seeds reserves + router `getAmountsOut` quotes a swap (16 in the suite).
+- Depends-on: T-103
+- Scope: contracts
+- Acceptance: canonical Uniswap V2 core + periphery (Factory, Router02) compiled with WMNT as WETH; `createPair` + quote works in a Hardhat test.
 
 ### T-105 — `DecisionLog` contract
 - Status: done @prithwish 2026-06-05 — `contracts/contracts/DecisionLog.sol`: `logDecision(thesisHash, verdictHash, asset, amountIn, amountOut, pnl, optionRef)` appends a `Decision` (signed `int256` pnl, `string` optionRef matching the off-chain `RefinedOption.optionRef`, `asset` token address), indexes it per-user, and emits `DecisionLogged`. Getters: `totalDecisions`, `getDecision`, `getUserDecisionCount`, `getUserDecisionIds`, `getUserDecisions` (T-108 `readHistory` reads these for `/api/history`). 3 Hardhat 3 + viem tests pass (log+event+by-id, independent per-user histories, out-of-range revert) — 14 in the suite.

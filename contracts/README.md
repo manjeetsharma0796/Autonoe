@@ -10,9 +10,9 @@ reports "Nothing to compile".
 
 | Path | What |
 |---|---|
-| `hardhat.config.ts` | Hardhat 3 config — solc 0.8.28, `hardhat` (edr-simulated) + `mantleSepolia` (http) networks |
+| `hardhat.config.ts` | Hardhat 3 config — solc 0.8.28 / 0.6.6 / 0.5.16 (multi-compiler for the Uniswap fork), `hardhat` (edr-simulated) + `mantleSepolia` (http) networks |
 | `config/networks.ts` | Frozen chain constants (chain id, default RPC, env var names) shared with the config + tests |
-| `contracts/` | Solidity sources (empty until T-102) |
+| `contracts/` | Solidity sources — `mUSD`, asset tokens (`WMNT`/`MockBTC`/`MockETH`), `DecisionLog`, and the vendored `uniswap/` V2 fork (see `contracts/uniswap/README.md`) |
 | `test/` | `bun test` smoke tests (CI gate); Hardhat/viem contract tests arrive with the contracts |
 
 ## Commands (run from this dir, or `bun --filter '@autonoe/contracts' <script>`)
