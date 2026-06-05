@@ -1,7 +1,7 @@
 ---
 title: Autonoe team task board
 purpose: Shared async task tracker for the 4-person team — humans and their Claude agents
-last_updated: 2026-06-03
+last_updated: 2026-06-05
 ---
 
 # TODO
@@ -44,7 +44,7 @@ Working alone with no reviewer? Edit `TODO.md` directly on `main`, push (the pus
 
 | Handle | OS | Preferred area | Status |
 |---|---|---|---|
-| `@____` | TBD | Contracts & chain (Track 1) | fill before first claim |
+| `@prithwish` | Linux | Contracts & chain (Track 1) | active |
 | `@____` | TBD | Backend + agents (Track 2) | fill before first claim |
 | `@____` | TBD | Wallet + execution (Track 3) | fill before first claim |
 | `@____` | TBD | Frontend UI (Track 4) | fill before first claim |
@@ -85,12 +85,6 @@ _(All done — the shared base every track builds on.)_
 ## 1 — Contracts & Chain
 
 > Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
-
-### T-101 — Hardhat project + Mantle Sepolia config
-- Status: in-progress @prithwish 2026-06-05
-- Depends-on: —
-- Scope: contracts
-- Acceptance: `contracts/` with `hardhat.config.ts`; `npx hardhat compile` passes; network `mantleSepolia` (5003) configured from `DEPLOYER_PRIVATE_KEY` + RPC env. Add `contracts` to root `workspaces`.
 
 ### T-102 — `mUSD` stablecoin
 - Status: pending
@@ -381,6 +375,12 @@ _(All done — the shared base every track builds on.)_
 ## Done
 
 _(newest first)_
+
+### T-101 — Hardhat project + Mantle Sepolia config
+- Status: done @prithwish 2026-06-05 — Hardhat 3 (ESM + viem) scaffold in `contracts/`: `hardhat.config.ts` (solc 0.8.28; `hardhat` edr-simulated + `mantleSepolia` http networks, both chain 5003), `config/networks.ts` (frozen chain constants shared with the config + a `bun test` smoke suite), empty `contracts/` sources dir. `hardhat compile` → "Nothing to compile", exit 0. RPC from `MANTLE_SEPOLIA_RPC` (public default), deployer from `DEPLOYER_PRIVATE_KEY` via lazy `configVariable` (compile/edr tests need no key). Added `contracts` to root `workspaces`. Unblocks T-102/103/105.
+- Depends-on: —
+- Scope: contracts
+- Acceptance: `contracts/` with `hardhat.config.ts`; `npx hardhat compile` passes; network `mantleSepolia` (5003) configured from `DEPLOYER_PRIVATE_KEY` + RPC env. Add `contracts` to root `workspaces`.
 
 ### T-502 — Workflow helper scripts (lint-todo + leaderboard)
 - Status: done @Claude 2026-06-02

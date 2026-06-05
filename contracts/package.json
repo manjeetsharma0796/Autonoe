@@ -1,0 +1,16 @@
+{
+  "name": "@autonoe/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "compile": "HARDHAT_DISABLE_TELEMETRY_PROMPT=true hardhat compile",
+    "test:hardhat": "HARDHAT_DISABLE_TELEMETRY_PROMPT=true hardhat test",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.0",
+    "hardhat": "^3.0.0"
+  }
+}
