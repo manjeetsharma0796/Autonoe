@@ -17,6 +17,7 @@ import type {
 
 import type {
   HistoryResponse,
+  LeaderboardResponse,
   ModelsResponse,
   ProviderInfo,
   RolesResponse,
@@ -97,6 +98,29 @@ export function postAssistant(args: PostAssistantArgs): Promise<ChatMessage> {
 
 export function getHistory(): Promise<HistoryResponse> {
   return get<HistoryResponse>('/api/history');
+}
+
+// ── /api/leaderboard ──────────────────────────────────────────────────────────
+
+export function getLeaderboard(): Promise<LeaderboardResponse> {
+  return get<LeaderboardResponse>('/api/leaderboard');
+}
+
+// ── /api/candles ──────────────────────────────────────────────────────────────
+
+export interface Candle {
+  time: number; // unix ms
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export function getCandles(symbol: string, interval = '60', limit = 100): Promise<Candle[]> {
+  return get<Candle[]>(
+    `/api/candles?symbol=${encodeURIComponent(symbol)}&interval=${interval}&limit=${limit}`,
+  );
 }
 
 // ── /api/providers ────────────────────────────────────────────────────────────
