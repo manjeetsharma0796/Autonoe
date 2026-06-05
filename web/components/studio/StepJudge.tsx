@@ -8,9 +8,10 @@ import styles from "./studio.module.css";
 import { ThinkingTrace } from "./ThinkingTrace";
 import { TribunalFlow } from "./TribunalFlow";
 import { ArrowRightIcon, WarnIcon } from "./icons";
-import { postDebate } from "@/lib/api";
+import { postDebate, getCandles, type Candle } from "@/lib/api";
 import { useWallet } from "@/components/wallet/WalletProvider";
 import { ExecuteModal } from "@/components/wallet/ExecuteModal";
+import { PredictionChart } from "@/components/charts/PredictionChart";
 
 // ── Refined option card ───────────────────────────────────────────────────────
 
@@ -26,6 +27,7 @@ function RefinedCard({
   const barRef = useRef<HTMLDivElement>(null);
   const wallet = useWallet();
   const [modalOpen, setModalOpen] = useState(false);
+  const [candles, setCandles] = useState<Candle[]>([]);
 
   useEffect(() => {
     const bar = barRef.current;
@@ -46,6 +48,16 @@ function RefinedCard({
 
   // Find the matching ThesisOption to get direction/asset/sizeMUSD.
   const matchingOpt = thesis?.options.find((o) => o.id === opt.optionRef);
+
+  // Fetch candles for the option's asset to back the prediction chart.
+  useEffect(() => {
+    if (!matchingOpt) return;
+    let cancelled = false;
+    getCandles(matchingOpt.asset, "60", 60)
+      .then((data) => { if (!cancelled) setCandles(data); })
+      .catch(() => { /* non-fatal — chart stays empty */ });
+    return () => { cancelled = true; };
+  }, [matchingOpt?.asset]);
 
   async function handleConfirm(passphrase: string | null): Promise<ExecuteResult> {
     if (!wallet.isUnlocked && passphrase) {
@@ -107,6 +119,25 @@ function RefinedCard({
             <div className={styles.bar} ref={barRef} />
           </div>
         </div>
+
+        {/* Compact prediction chart — shows real candles + AI return band */}
+        {candles.length > 0 && matchingOpt && (
+          <div style={{ marginTop: 14, borderRadius: 10, overflow: "hidden", border: "1px solid var(--line2)" }}>
+            <PredictionChart
+              candles={candles}
+              width={440}
+              height={140}
+              tooltip={false}
+              band={{
+                entryPrice: candles[candles.length - 1]?.close ?? matchingOpt.sizeMUSD,
+                lowPct: matchingOpt.predictedReturnPct.low,
+                highPct: matchingOpt.predictedReturnPct.high,
+                targetPct: opt.predictedOutputPct,
+              }}
+            />
+          </div>
+        )}
+
         <button
           className="btn btn-gold"
           type="button"

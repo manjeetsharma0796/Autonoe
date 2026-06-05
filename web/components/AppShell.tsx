@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { KeyQuickPanel } from "@/components/keys/KeyQuickPanel";
 import { usePathname } from "next/navigation";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { injected } from "wagmi/connectors";
@@ -570,6 +571,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // ── Key/model quick-panel state (additive; isolated from wallet drawer) ──
+  const [keyPanelOpen, setKeyPanelOpen] = useState(false);
 
   const { address: metamaskAddr, isConnected } = useAccount();
   const wallet = useWallet();
@@ -618,6 +621,18 @@ export function AppShell({ children }: { children: ReactNode }) {
               ))}
             </div>
 
+            {/* Key/model quick-panel trigger — additive, isolated from wallet drawer */}
+            <button
+              className="btn btn-ghost"
+              type="button"
+              onClick={() => setKeyPanelOpen((v) => !v)}
+              aria-label="Open API keys & models panel"
+              title="API Keys & Models"
+              style={{ padding: "9px 14px", fontSize: 12 }}
+            >
+              Models
+            </button>
+
             <button
               className="btn btn-gold"
               onClick={() => setDrawerOpen(true)}
@@ -632,6 +647,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       {children}
 
       {drawerOpen && <WalletDrawer onClose={() => setDrawerOpen(false)} />}
+
+      {/* Key/model quick-panel overlay — additive, isolated from wallet drawer */}
+      {keyPanelOpen && <KeyQuickPanel onClose={() => setKeyPanelOpen(false)} />}
     </>
   );
 }

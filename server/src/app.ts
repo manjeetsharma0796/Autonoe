@@ -11,6 +11,7 @@ import { runDebate } from './agents/debate.ts';
 import { chat } from './agents/assistant.ts';
 import { signPrice } from './oracle.ts';
 import { getHistory, getLeaderboard } from './history.ts';
+import { getCandlesFor } from './candles.ts';
 
 type Handler = (req: Request, res: Response) => Promise<void> | void;
 const wrap = (h: Handler) => (req: Request, res: Response, next: NextFunction) =>
@@ -95,6 +96,19 @@ export function createApp() {
       const symbol = req.query.symbol;
       if (!symbol || typeof symbol !== 'string') throw httpError(400, 'symbol query param required');
       res.json(await signPrice(symbol));
+    }),
+  );
+
+  // T-415: OHLCV candles for the prediction chart.
+  app.get(
+    '/api/candles',
+    wrap(async (req, res) => {
+      const symbol = req.query.symbol;
+      if (!symbol || typeof symbol !== 'string') throw httpError(400, 'symbol query param required');
+      const interval = typeof req.query.interval === 'string' ? req.query.interval : '60';
+      const rawLimit = parseInt(String(req.query.limit ?? '100'), 10);
+      const limit = Math.min(isNaN(rawLimit) ? 100 : rawLimit, 200);
+      res.json(await getCandlesFor(symbol, interval, limit));
     }),
   );
 

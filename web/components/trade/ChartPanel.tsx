@@ -1,50 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { CANDLES, STATS, TIMEFRAMES, type Pair } from "./data";
+import { useEffect, useState } from "react";
+import { STATS, TIMEFRAMES, type Pair } from "./data";
 import { PairSelector } from "./PairSelector";
+import { PredictionChart } from "@/components/charts/PredictionChart";
+import { getCandles, type Candle } from "@/lib/api";
 
-const X0 = 30;
-const STEP = 50;
-const BW = 13;
-
-function Candles() {
-  return (
-    <g className="candle">
-      {CANDLES.map((c, i) => {
-        const [o, cl, hi, lo] = c;
-        const x = X0 + i * STEP;
-        // lower y = higher price → close above open (smaller y) is "up"
-        const up = cl <= o;
-        const col = up ? "#3FE0A6" : "#FF6B6B";
-        const top = Math.min(o, cl);
-        const bot = Math.max(o, cl);
-        return (
-          <g key={i}>
-            <line
-              className="wick"
-              x1={x}
-              x2={x}
-              y1={hi}
-              y2={lo}
-              stroke={col}
-              strokeOpacity={0.85}
-            />
-            <rect
-              x={x - BW / 2}
-              y={top}
-              width={BW}
-              height={Math.max(2, bot - top)}
-              rx={1.5}
-              fill={col}
-              fillOpacity={0.85}
-            />
-          </g>
-        );
-      })}
-    </g>
-  );
-}
+// Map UI timeframe labels to Bybit interval strings
+const TF_TO_INTERVAL: Record<string, string> = {
+  "5m": "5",
+  "15m": "15",
+  "1H": "60",
+  "4H": "240",
+  "1D": "D",
+  "1W": "W",
+};
 
 export function ChartPanel({
   pair,
@@ -54,7 +24,32 @@ export function ChartPanel({
   onSelectPair: (sym: string) => void;
 }) {
   const [tf, setTf] = useState("4H");
+  const [candles, setCandles] = useState<Candle[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const up = pair.dir === "up";
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    const interval = TF_TO_INTERVAL[tf] ?? "60";
+    getCandles(pair.sym, interval, 100)
+      .then((data) => {
+        if (!cancelled) setCandles(data);
+      })
+      .catch((e) => {
+        if (!cancelled)
+          setError(e instanceof Error ? e.message : "Failed to load candles");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [pair.sym, tf]);
 
   return (
     <section className="panel" style={{ gridColumn: "1 / -1" }}>
@@ -87,79 +82,39 @@ export function ChartPanel({
 
       <div className="pbody">
         <div className="chartwrap">
-          <svg
-            className="chart"
-            viewBox="0 0 880 320"
-            preserveAspectRatio="none"
-            role="img"
-            aria-label={`Candlestick price chart for mUSD/${pair.sym}`}
-          >
-            <defs>
-              <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#F5A524" stopOpacity=".22" />
-                <stop offset="1" stopColor="#F5A524" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-
-            <g className="grid">
-              <line x1="0" y1="40" x2="880" y2="40" />
-              <line x1="0" y1="110" x2="880" y2="110" />
-              <line x1="0" y1="180" x2="880" y2="180" />
-              <line x1="0" y1="250" x2="880" y2="250" />
-            </g>
-
-            <path
-              d="M30,210 L80,200 130,214 180,178 230,190 280,150 330,162 380,124 430,140 480,98 530,116 580,82 630,100 680,70 730,86 780,54 830,66 L830,300 30,300 Z"
-              fill="url(#area)"
-            />
-            <polyline
-              points="30,210 80,200 130,214 180,178 230,190 280,150 330,162 380,124 430,140 480,98 530,116 580,82 630,100 680,70 730,86 780,54 830,66"
-              fill="none"
-              stroke="#F5A524"
-              strokeWidth="1.4"
-              strokeOpacity=".55"
-              strokeLinejoin="round"
-            />
-
-            <Candles />
-
-            <line
-              x1="0"
-              y1="66"
-              x2="880"
-              y2="66"
-              stroke="#FFCC66"
-              strokeWidth="1"
-              strokeDasharray="3 5"
-              strokeOpacity=".55"
-            />
-
-            <text className="axis" x="836" y="44">
-              1.30
-            </text>
-            <text className="axis" x="836" y="114">
-              1.26
-            </text>
-            <text className="axis" x="836" y="184">
-              1.22
-            </text>
-            <text className="axis" x="836" y="254">
-              1.18
-            </text>
-
-            <text className="axis" x="30" y="316">
-              12:00
-            </text>
-            <text className="axis" x="290" y="316">
-              16:00
-            </text>
-            <text className="axis" x="540" y="316">
-              20:00
-            </text>
-            <text className="axis" x="780" y="316">
-              00:00
-            </text>
-          </svg>
+          {loading && candles.length === 0 && (
+            <div
+              style={{
+                height: 320,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--faint)",
+                fontSize: 13,
+                fontFamily: "var(--mono)",
+              }}
+            >
+              Loading candles…
+            </div>
+          )}
+          {error && !loading && (
+            <div
+              style={{
+                height: 320,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--red)",
+                fontSize: 13,
+                fontFamily: "var(--mono)",
+              }}
+            >
+              {error}
+            </div>
+          )}
+          {!error && candles.length > 0 && (
+            <PredictionChart candles={candles} width={880} height={320} tooltip />
+          )}
         </div>
 
         <div className="stats4">

@@ -321,13 +321,13 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: per-provider paste field + "Get free key" link + free-tier note; auto-populate models on paste; per-role model dropdowns (incl. `assistant`); data-source toggles; persists via `/api/keys`, `/api/roles`.
 
 ### T-411 — History / Benchmark page (`/history`)
-- Status: done @manjeet_s 2026-06-05 — `app/history/page.tsx` reads `/api/history` and renders the on-chain DecisionLog records (date, source, option ref, judged, PnL in mUSD coloured, mantlescan tx link). Verified live (a real decision appears after an execute). PnL-over-time / win-rate **charts deferred as stretch** (beyond the E2E-demo DoD).
+- Status: done @manjeet_s 2026-06-05 — `app/history/page.tsx` is now a full Benchmark dashboard: cumulative **PnL-over-time** SVG chart + **win-rate/summary** stats strip + the on-chain DecisionLog records table (mantlescan links). Reads `/api/history`. Verified live. (`components/benchmark/{PnlChart,BenchmarkStats,Leaderboard}.tsx`.)
 - Depends-on: T-401, T-207
 - Scope: web
 - Acceptance: DecisionLog records + PnL-over-time / win-rate charts + mantlescan links; reads `/api/history`.
 
 ### T-412 — Model performance leaderboard
-- Status: pending
+- Status: done @manjeet_s 2026-06-05 — `components/benchmark/Leaderboard.tsx` on the Benchmark page: reads `/api/leaderboard`, groups by role, ranks each (provider, model) by realized avg PnL with trades + win-rate. Friendly empty state until model-attributed trades exist (needs a thesis with `modelsUsed` recorded — see note). tsc + next build green.
 - Depends-on: T-411, T-207
 - Scope: web
 - Acceptance: on the Benchmark page, ranks models per role (thesis/supporter/discriminator/judge) by realized outcome; reads `/api/leaderboard`.
@@ -345,10 +345,16 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: Binance-style markets overview (PRD §11g) — market-stats header, sortable table of all `mUSD/<asset>` pairs (price, 24h %, 24h volume, sparkline), top gainers/losers strip, favorite toggle; clicking a row opens `/trade` with the pair preloaded. Reuses the market price feed (T-204 / T-405), no new backend contract.
 
 ### T-415 — Interactive prediction chart
-- Status: pending
+- Status: done @manjeet_s 2026-06-05 — `server` `GET /api/candles?symbol=&interval=&limit=` (reuses Bybit `getKline`) + `web/components/charts/PredictionChart.tsx`: SVG candlesticks with the Judge's **predicted-return band** (entry line + low/high shading + target marker) and hover OHLC tooltips. Wired into `/trade` ChartPanel (live candles) and the `/studio` verdict (StepJudge). Note: custom SVG instead of TradingView lightweight-charts — avoids a new dependency, matches the app's existing chart style. tsc + next build green.
 - Depends-on: T-405, T-204
 - Scope: web
 - Acceptance: real candles via TradingView **lightweight-charts** fed by Bybit data (through the server/market layer), with the Judge's **predicted-return band** + entry/target markers overlaid on the selected option, and hover tooltips. Used on `/trade` and the `/studio` verdict view to visualize the thesis prediction. Add a server endpoint to expose candles (or reuse the market tool output) so the UI doesn't call Bybit directly.
+
+### T-416 — Frictionless API-key UX (Mono pattern) — NEW
+- Status: done @manjeet_s 2026-06-05 — closes the PRD §11e/§11f "no forced trip to Settings" goal. `web/components/keys/ProviderKeyPanel.tsx`: provider chips (READY/NEEDS-KEY dots) + one key row with inline `Save · clear · get key →` + instant filterable model list (FREE + context badges) + reassurance line. `KeyQuickPanel.tsx` makes the same panel a **global top-overlay** opened from a "Models" button in the nav (drop a key from anywhere). Settings page §01 rebuilt around it; role/data-source panels preserved. tsc + next build green.
+- Depends-on: T-410
+- Scope: web
+- Acceptance: a frictionless, tasteful key-add moment matching the Mono reference — inline chips + single key field + live models, reachable globally without navigating to Settings first.
 
 ---
 
