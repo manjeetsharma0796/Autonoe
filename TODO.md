@@ -87,7 +87,7 @@ _(All done — the shared base every track builds on.)_
 > Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
 
 ### T-102 — `mUSD` stablecoin
-- Status: pending
+- Status: in-progress @prithwish 2026-06-05
 - Depends-on: T-101
 - Scope: contracts
 - Acceptance: `contracts/contracts/mUSD.sol` — ERC-20, 6 decimals; `faucet()` mints a fixed amount with per-address cooldown + cap; `ownerMint()` for seeding. Hardhat tests pass.
