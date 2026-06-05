@@ -279,7 +279,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: on the Benchmark page, ranks models per role (thesis/supporter/discriminator/judge) by realized outcome; reads `/api/leaderboard`.
 
 ### T-413 — Share thesis/verdict card
-- Status: pending
+- Status: in-progress @prithwish 2026-06-05
 - Depends-on: T-407, T-408
 - Scope: web
 - Acceptance: one-click share of a thesis or verdict as an image/link card.
