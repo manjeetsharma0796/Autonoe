@@ -243,13 +243,13 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: enforces max trade size + token allowlist before signing; rejects over-limit with a clear error; tested.
 
 ### T-304 — Agent-sign + execute (AMM **or** synthetic)
-- Status: pending
+- Status: done @manjeet_s 2026-06-05 — `packages/wallet/src/execute.ts`: `executeOption` (policy gate → WMNT AMM swap OR synthetic open via server-signed attestation → on-chain DecisionLog) + `closeSyntheticPosition` (realizes pnl, logs it). Manual-confirm (UI confirms before calling). **Adversarially reviewed (Opus)**: fixed C1 (close now logs the authoritative on-chain position symbol via `readPosition`), H1 (decision-log write is non-throwing after a committed trade — returns `logError` so the UI never retries a double-trade), M1 (zero-quote guard), M2 (oracle symbol-echo assertion). `tsc` green; `readPosition` verified live.
 - Depends-on: T-301, T-303, T-108, T-210
 - Scope: wallet
 - Acceptance: given a chosen option, **branches by asset** — `WMNT` → AMM `swap()`; any other symbol → fetch a signed price attestation (`/api/price/sign`, T-210) then `openSynthetic()`/`closeSynthetic()` via the chain lib. Returns `SwapResult`; triggers the DecisionLog write. Execution is manual-confirm (no auto-execute).
 
 ### T-305 — Funding helpers
-- Status: pending
+- Status: done @manjeet_s 2026-06-05 — `packages/wallet/src/funding.ts`: `getAgentBalances` (MNT/mUSD/WMNT), `fundMUSD` (agent calls the mUSD faucet, receipt-checked), `MNT_FAUCET_URL` surfaced for gas. Note: agent needs a little MNT for gas before the mUSD faucet (the drawer surfaces the faucet link).
 - Depends-on: T-107
 - Scope: wallet
 - Acceptance: auto-seed mUSD on wallet creation + faucet re-mint call; native MNT faucet link surfaced.

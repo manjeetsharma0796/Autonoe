@@ -65,6 +65,7 @@ export async function swap(
   const slippageBps = params.slippageBps ?? 50;
 
   const expectedOut = await getQuote(publicClient, params);
+  if (expectedOut === 0n) throw new Error('swap quote is zero (no liquidity?)');
   const amountOutMin = (expectedOut * BigInt(10_000 - slippageBps)) / 10_000n;
 
   await ensureAllowance(walletClient, publicClient, params.tokenIn, to, addresses.router, params.amountIn);

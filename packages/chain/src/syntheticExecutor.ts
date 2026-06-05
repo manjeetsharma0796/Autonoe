@@ -133,6 +133,26 @@ export async function closeSynthetic(
   return { pnl, payout, txHash: hash, explorerUrl: txUrl(hash) };
 }
 
+export interface SyntheticPosition {
+  trader: `0x${string}`;
+  symbol: string;
+  isLong: boolean;
+  sizeMUSD: bigint;
+  entryPriceX18: bigint;
+  open: boolean;
+}
+
+/** Read a position by id (authoritative on-chain symbol/side/size). */
+export async function readPosition(publicClient: PublicClientT, id: bigint): Promise<SyntheticPosition> {
+  const p = await readContract(publicClient, {
+    address: addresses.syntheticExchange,
+    abi: syntheticAbi,
+    functionName: 'getPosition',
+    args: [id],
+  });
+  return p as SyntheticPosition;
+}
+
 /** House reserve (mUSD held by the exchange). */
 export async function getSyntheticReserve(publicClient: PublicClientT): Promise<bigint> {
   return readContract(publicClient, {
