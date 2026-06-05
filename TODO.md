@@ -87,7 +87,7 @@ _(All done — the shared base every track builds on.)_
 > Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
 
 ### T-103 — Asset tokens (WMNT / MockBTC / MockETH)
-- Status: pending
+- Status: in-progress @prithwish 2026-06-05
 - Depends-on: T-101
 - Scope: contracts
 - Acceptance: `WMNT.sol` (WETH-style deposit/withdraw wrapper) + `MockBTC.sol` + `MockETH.sol` (18-dec mintable ERC-20). Tests pass.
