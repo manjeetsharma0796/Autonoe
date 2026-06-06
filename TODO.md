@@ -167,7 +167,7 @@ _(all done — see Done section)_
 - Acceptance: enforces max trade size + token allowlist before signing; rejects over-limit with a clear error; tested.
 
 ### T-304 — Agent-sign + execute
-- Status: pending
+- Status: in-progress @prithwish 2026-06-06
 - Depends-on: T-301, T-303, T-108
 - Scope: wallet
 - Acceptance: given a chosen option, builds + signs + submits a swap via the chain lib; returns `SwapResult`; triggers the DecisionLog write. Execution is manual-confirm (no auto-execute).
