@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import type { Thesis } from "@autonoe/shared";
 import styles from "./studio.module.css";
 import { StepThesis } from "./StepThesis";
 import { StepJudge } from "./StepJudge";
@@ -20,6 +21,7 @@ const STEPS: { n: Step; kicker: string; label: string }[] = [
 export function Workspace() {
   const [step, setStep] = useState<Step>(1);
   const [judgeVisited, setJudgeVisited] = useState(false);
+  const [thesis, setThesis] = useState<Thesis | null>(null);
   const root = useRef<HTMLDivElement>(null);
   const stepperRef = useRef<HTMLDivElement>(null);
 
@@ -117,7 +119,11 @@ export function Workspace() {
         data-step={1}
         style={{ display: step === 1 ? "block" : "none" }}
       >
-        <StepThesis onSendToJudge={() => goStep(2)} />
+        <StepThesis
+          thesis={thesis}
+          onThesis={setThesis}
+          onSendToJudge={() => goStep(2)}
+        />
       </div>
 
       <div
@@ -125,7 +131,7 @@ export function Workspace() {
         data-step={2}
         style={{ display: step === 2 ? "block" : "none" }}
       >
-        <StepJudge active={judgeVisited && step === 2} />
+        <StepJudge thesis={thesis} active={judgeVisited && step === 2} />
       </div>
 
       <footer className={`${styles.foot} wrap`}>
