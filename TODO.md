@@ -224,7 +224,7 @@ _(all done — see Done section)_
 ## 6 — Integration & Demo
 
 ### T-602 — Wire wallet ↔ chain lib (real swap)
-- Status: pending
+- Status: in-progress @jishnu 2026-06-06
 - Depends-on: T-304, T-108
 - Scope: integration
 - Acceptance: a real `mUSD/WMNT` swap executes from the agent wallet on testnet.
