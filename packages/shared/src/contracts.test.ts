@@ -15,9 +15,10 @@ test('settlement asset list is the three tradables', () => {
   expect([...ASSET_SYMBOLS]).toEqual(['WMNT', 'MockBTC', 'MockETH']);
 });
 
-test('API route map exposes all 11 endpoints', () => {
-  expect(Object.keys(API)).toHaveLength(11);
+test('API route map exposes all 12 endpoints', () => {
+  expect(Object.keys(API)).toHaveLength(12);
   expect(API.thesisHuman).toBe('/api/thesis/human');
   expect(API.candles).toBe('/api/candles');
   expect(API.leaderboard).toBe('/api/leaderboard');
+  expect(API.decisions).toBe('/api/decisions');
 });

@@ -25,6 +25,7 @@ export const API = {
   candles: '/api/candles',
   history: '/api/history',
   leaderboard: '/api/leaderboard',
+  decisions: '/api/decisions',
 } as const;
 
 // ── /api/providers ───────────────────────────────────────────────────────────
@@ -141,3 +142,21 @@ export interface LeaderboardRow {
   avgPnlMUSD: number;
 }
 export type LeaderboardResponse = LeaderboardRow[];
+
+// ── /api/decisions ────────────────────────────────────────────────────────────
+
+/** POST body for recording a just-executed decision's off-chain metadata. */
+export interface DecisionRecordInput {
+  thesisHash: string;
+  thesisId: string;
+  source: 'ai' | 'human';
+  judged: boolean;
+  chosenOptionRef: string;
+  txHash: string | null;
+  pnlMUSD: number;
+  modelsUsed: Partial<RoleModelMap>;
+  createdAt: string;
+}
+export interface DecisionRecordResponse {
+  ok: boolean;
+}

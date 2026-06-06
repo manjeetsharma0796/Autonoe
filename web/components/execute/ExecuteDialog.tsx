@@ -17,6 +17,7 @@ import { browserWalletStore } from "@/lib/walletStore";
 import { useAgentWallet } from "@/components/wallet/WalletProvider";
 import { thesisHash, verdictHash } from "@/lib/executeHashes";
 import { dirLabel, moneyMUSD, bandLabel } from "@/components/studio/format";
+import { recordDecision } from "@/lib/api";
 import styles from "./ExecuteDialog.module.css";
 
 // ── types ─────────────────────────────────────────────────────────────────────
@@ -151,6 +152,22 @@ export function ExecuteDialog({
       });
 
       setResult(res);
+
+      // Best-effort: record off-chain metadata so /api/history shows the full
+      // merged record (T-603). Uses the same tHash passed to executeOption so
+      // the join key matches the on-chain DecisionLog entry exactly.
+      void recordDecision({
+        thesisHash: tHash,
+        thesisId: thesis.id,
+        source: thesis.source,
+        judged: verdict !== null,
+        chosenOptionRef: optionRef,
+        txHash: res.swap.txHash,
+        pnlMUSD: 0,                  // realized PnL is computed when the position closes
+        modelsUsed: thesis.modelsUsed ?? {},
+        createdAt: new Date().toISOString(),
+      });
+
       setStage("success");
     } catch (err: unknown) {
       const msg =

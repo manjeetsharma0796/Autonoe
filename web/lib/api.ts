@@ -7,6 +7,7 @@ import {
   type AssetSymbol,
   type ChatMessage,
   type DebateResult,
+  type DecisionRecordInput,
   type Thesis,
 } from "@autonoe/shared";
 
@@ -75,4 +76,17 @@ export function chatAssistant(
   signal?: AbortSignal,
 ): Promise<ChatMessage> {
   return postJSON<ChatMessage>(API.assistant, { messages, context }, signal);
+}
+
+/**
+ * Best-effort: record an executed decision's off-chain metadata so
+ * /api/history can return the full merged record (T-603).
+ * Swallows all errors — a telemetry failure must not surface in the UI.
+ */
+export async function recordDecision(input: DecisionRecordInput): Promise<void> {
+  try {
+    await postJSON<{ ok: boolean }>(API.decisions, input);
+  } catch {
+    // intentionally swallowed — best-effort telemetry
+  }
 }
