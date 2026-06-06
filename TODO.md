@@ -204,7 +204,7 @@ _(all done — see Done section)_
 - Acceptance: Supporter/Discriminator/Judge arguments (each with a reasoning trace), verdict, and refined options with predicted % + risk + caveats graphed; "Execute" per option.
 
 ### T-409 — Execute flow (shared)
-- Status: pending
+- Status: in-progress @prithwish 2026-06-06
 - Depends-on: T-407, T-408, T-304
 - Scope: web
 - Acceptance: from a chosen option (direct from thesis OR from judge) → confirm → tx status + PnL + mantlescan link (calls `packages/wallet` execute).
