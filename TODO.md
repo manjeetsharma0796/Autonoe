@@ -87,7 +87,7 @@ _(All done — the shared base every track builds on.)_
 > Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
 
 ### T-108 — viem chain library
-- Status: pending
+- Status: in-progress @jishnu 2026-06-06
 - Depends-on: T-107
 - Scope: chain
 - Acceptance: `packages/chain/src/{clients,swapExecutor,decisionLog}.ts` — `getQuote()`, `swap()` (approve + `swapExactTokensForTokens` + slippage), `writeDecision()`, `readHistory()`. An integration test executes a real swap on testnet.
