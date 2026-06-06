@@ -15,20 +15,30 @@ export class MissingKeyError extends Error {
   }
 }
 
+export interface ModelOpts {
+  temperature?: number;
+  /** If set, the model streams and each generated text token is passed here. */
+  onToken?: (token: string) => void;
+}
+
 /** Build a chat model for an explicit provider/model choice. */
-export function makeModel(choice: ModelChoice, opts: { temperature?: number } = {}): ChatOpenAI {
+export function makeModel(choice: ModelChoice, opts: ModelOpts = {}): ChatOpenAI {
   const apiKey = getProviderKey(choice.provider);
   if (!apiKey) throw new MissingKeyError(choice.provider);
   return new ChatOpenAI({
     model: choice.model,
     apiKey,
     temperature: opts.temperature ?? 0.4,
+    streaming: Boolean(opts.onToken),
     configuration: { baseURL: baseUrl(choice.provider) },
+    callbacks: opts.onToken
+      ? [{ handleLLMNewToken: (token: string) => opts.onToken?.(token) }]
+      : undefined,
   });
 }
 
 /** Resolve the model assigned to a role (from the role→model map). */
-export function modelForRole(role: AIRole, opts?: { temperature?: number }): ChatOpenAI {
+export function modelForRole(role: AIRole, opts?: ModelOpts): ChatOpenAI {
   return makeModel(resolveRole(role), opts);
 }
 
@@ -36,7 +46,7 @@ export function modelForRole(role: AIRole, opts?: { temperature?: number }): Cha
  * Injectable resolver type — agents depend on this so tests can pass a fake.
  * The default implementation is `modelForRole`.
  */
-export type ModelResolver = (role: AIRole, opts?: { temperature?: number }) => ChatModelLike;
+export type ModelResolver = (role: AIRole, opts?: ModelOpts) => ChatModelLike;
 
 /** A tool call requested by the model. */
 export interface ToolCall {

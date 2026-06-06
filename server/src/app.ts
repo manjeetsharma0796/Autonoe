@@ -11,6 +11,15 @@ import { runDebate } from './agents/debate.ts';
 import { chat } from './agents/assistant.ts';
 import { signPrice } from './oracle.ts';
 import { getHistory, getLeaderboard } from './history.ts';
+import { makeModel, type ChatModelLike, type ModelResolver } from './models.ts';
+import { resolveRole } from './roles.ts';
+import { sse } from './stream.ts';
+
+/** A model resolver that streams every generated token to `emit`. */
+function streamingResolver(emit: (token: string) => void): ModelResolver {
+  return (role, opts) =>
+    makeModel(resolveRole(role), { ...opts, onToken: emit }) as unknown as ChatModelLike;
+}
 import { getCandlesFor } from './candles.ts';
 
 type Handler = (req: Request, res: Response) => Promise<void> | void;
@@ -98,6 +107,62 @@ export function createApp() {
       const { messages, context } = req.body ?? {};
       if (!Array.isArray(messages)) throw httpError(400, 'messages[] required');
       res.json(await chat({ messages, context }));
+    }),
+  );
+
+  // ── Streaming (SSE) variants — stream `thinking`/`token` deltas, then `result` ──
+
+  app.post(
+    '/api/assistant/stream',
+    wrap(async (req, res) => {
+      const { messages, context } = req.body ?? {};
+      if (!Array.isArray(messages)) throw httpError(400, 'messages[] required');
+      const ch = sse(res);
+      const resolver = streamingResolver((t) => ch.send('token', { delta: t }));
+      try {
+        const reply = await chat({ messages, context }, resolver);
+        ch.send('result', reply);
+        ch.send('done', {});
+      } catch (e) {
+        ch.send('error', { error: (e as Error).message });
+      }
+      ch.end();
+    }),
+  );
+
+  app.post(
+    '/api/thesis/stream',
+    wrap(async (req, res) => {
+      const { intent, activeSources } = req.body ?? {};
+      if (!intent) throw httpError(400, 'intent required');
+      const ch = sse(res);
+      const resolver = streamingResolver((t) => ch.send('thinking', { delta: t }));
+      try {
+        const thesis = await generateThesis({ intent: String(intent), activeSources }, { resolve: resolver });
+        ch.send('result', thesis);
+        ch.send('done', {});
+      } catch (e) {
+        ch.send('error', { error: (e as Error).message });
+      }
+      ch.end();
+    }),
+  );
+
+  app.post(
+    '/api/debate/stream',
+    wrap(async (req, res) => {
+      const { thesis } = req.body ?? {};
+      if (!thesis?.id) throw httpError(400, 'thesis required');
+      const ch = sse(res);
+      const resolver = streamingResolver((t) => ch.send('thinking', { delta: t }));
+      try {
+        const result = await runDebate(thesis, resolver);
+        ch.send('result', result);
+        ch.send('done', {});
+      } catch (e) {
+        ch.send('error', { error: (e as Error).message });
+      }
+      ch.end();
     }),
   );
 
