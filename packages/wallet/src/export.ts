@@ -1,7 +1,7 @@
 // Key-export helpers. Both require the wallet to already exist; exporting the
 // raw private key additionally requires the passphrase (it unlocks first).
 
-import { loadKeystore, unlock, type WalletStore } from './wallet.ts';
+import { loadKeystore, unlock, type WalletStore } from './wallet.js';
 
 /**
  * Decrypt and return the agent private key as a 0x-prefixed hex string.

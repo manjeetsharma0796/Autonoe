@@ -9,7 +9,7 @@ export {
   memoryStore,
   type Keystore,
   type WalletStore,
-} from './wallet.ts';
+} from './wallet.js';
 
 export {
   POLICY_KEY,
@@ -21,6 +21,6 @@ export {
   type SpendingPolicy,
   type PolicyCheckInput,
   type PolicyCheckResult,
-} from './policy.ts';
+} from './policy.js';
 
-export { exportPrivateKey, exportKeystoreJSON } from './export.ts';
+export { exportPrivateKey, exportKeystoreJSON } from './export.js';

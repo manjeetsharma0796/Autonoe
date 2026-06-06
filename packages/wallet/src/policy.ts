@@ -2,7 +2,7 @@
 // trades that satisfy this policy; the UI lets the user tune it and it is
 // persisted alongside the keystore.
 
-import type { WalletStore } from './wallet.ts';
+import type { WalletStore } from './wallet.js';
 
 export const POLICY_KEY = 'autonoe.wallet.policy';
 

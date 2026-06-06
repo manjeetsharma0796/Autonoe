@@ -3,8 +3,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { injected } from "wagmi/connectors";
+import { useAccount } from "wagmi";
+import { WalletDrawer } from "./wallet/WalletDrawer";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -25,8 +25,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const { address, isConnected } = useAccount();
-  const { connect, isPending } = useConnect();
-  const { disconnect } = useDisconnect();
 
   // Scroll-condense the floating nav, matching the mockup.
   useEffect(() => {
@@ -35,6 +33,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Lock body scroll while the drawer is open.
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [drawerOpen]);
 
   return (
     <>
@@ -70,9 +78,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               onClick={() => setDrawerOpen(true)}
               type="button"
             >
-              {isConnected && address
-                ? shortAddress(address)
-                : "Connect →"}
+              {isConnected && address ? shortAddress(address) : "Connect →"}
             </button>
           </nav>
         </div>
@@ -80,73 +86,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {children}
 
-      {/* Wallet drawer stub — page agents extend this later. */}
-      {drawerOpen && (
-        <>
-          <div
-            className="drawer-overlay"
-            onClick={() => setDrawerOpen(false)}
-            aria-hidden
-          />
-          <aside className="drawer" role="dialog" aria-label="Wallet">
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <span className="tag">Wallet</span>
-              <button
-                className="btn btn-ghost"
-                onClick={() => setDrawerOpen(false)}
-                type="button"
-              >
-                Close
-              </button>
-            </div>
+      {drawerOpen && <WalletDrawer onClose={() => setDrawerOpen(false)} />}
 
-            <div style={{ marginTop: 28 }}>
-              {isConnected && address ? (
-                <>
-                  <p
-                    style={{
-                      fontFamily: "var(--mono)",
-                      color: "var(--ink)",
-                      wordBreak: "break-all",
-                    }}
-                  >
-                    {address}
-                  </p>
-                  <button
-                    className="btn btn-ghost"
-                    style={{ marginTop: 18 }}
-                    onClick={() => disconnect()}
-                    type="button"
-                  >
-                    Disconnect
-                  </button>
-                </>
-              ) : (
-                <>
-                  <p className="sub" style={{ marginTop: 0 }}>
-                    Connect MetaMask to use the agent wallet on Mantle Sepolia.
-                  </p>
-                  <button
-                    className="btn btn-gold"
-                    style={{ marginTop: 18 }}
-                    disabled={isPending}
-                    onClick={() => connect({ connector: injected() })}
-                    type="button"
-                  >
-                    {isPending ? "Connecting…" : "Connect MetaMask →"}
-                  </button>
-                </>
-              )}
-            </div>
-          </aside>
-        </>
-      )}
+      {/* Persistent testnet / disclaimer marker, present on every route. */}
+      <div className="disclaimer-bar" role="note">
+        Testnet · not financial advice
+      </div>
     </>
   );
 }
