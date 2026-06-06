@@ -219,7 +219,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: **Next.js App Router** app scaffolded with bun (`bunx create-next-app`); 6 routes as `app/` segments (`/`, `/markets`, `/trade`, `/studio`, `/history`, `/settings`); design tokens applied (dark OLED, gold `#F59E0B` + purple `#8B5CF6`, Orbitron/Exo 2); motion/VFX deps via bun (Lenis, gsap + @gsap/react, framer-motion); a client Providers wrapper for wagmi/RainbowKit; MetaMask connect on Mantle Sepolia. Add `web` to root `workspaces`. See PRD §10a boundary + §11b motion stack + §11h workflow.
 
 ### T-402 — Global shell + wallet drawer
-- Status: pending
+- Status: in-progress @jishnu 2026-06-06
 - Depends-on: T-401, T-301
 - Scope: web
 - Acceptance: persistent nav + a global slide-over wallet drawer reachable from every route; balances/fund/export/limits (calls `packages/wallet`); clearly distinguishes funding wallet (MetaMask) vs autonomous agent wallet with an "acting wallet" indicator; persistent "testnet · not financial advice" disclaimer.
