@@ -1,6 +1,7 @@
 import { readContract, writeContract, waitForTransactionReceipt } from 'viem/actions';
 import type { SwapResult } from '@autonoe/shared';
 import { erc20Abi, routerAbi } from './abis.js';
+import { MAX_UINT256, waitForAllowance } from './allowance.js';
 import { addresses } from './addresses.js';
 import { txUrl } from './network.js';
 import type { PublicClientT, WalletClientT } from './clients.js';
@@ -39,20 +40,22 @@ async function ensureAllowance(
   spender: `0x${string}`,
   amount: bigint
 ): Promise<void> {
-  const current = await readContract(publicClient, {
-    address: token,
-    abi: erc20Abi,
-    functionName: 'allowance',
-    args: [owner, spender],
-  });
-  if (current >= amount) return;
+  const read = () =>
+    readContract(publicClient, {
+      address: token,
+      abi: erc20Abi,
+      functionName: 'allowance',
+      args: [owner, spender],
+    });
+  if ((await read()) >= amount) return;
   const hash = await writeContract(walletClient, {
     address: token,
     abi: erc20Abi,
     functionName: 'approve',
-    args: [spender, amount],
+    args: [spender, MAX_UINT256], // sticky approve
   });
   await waitForTransactionReceipt(publicClient, { hash });
+  await waitForAllowance(read, amount); // defeat read-after-write RPC staleness
 }
 
 /** Approve (if needed) + execute a real swap on the AMM, returning a SwapResult. */

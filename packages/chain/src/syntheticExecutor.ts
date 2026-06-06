@@ -1,6 +1,7 @@
 import { encodeAbiParameters, keccak256, parseEventLogs, parseUnits, type Account } from 'viem';
 import { readContract, writeContract, simulateContract, waitForTransactionReceipt } from 'viem/actions';
 import { erc20Abi, oracleAbi, syntheticAbi } from './abis.js';
+import { MAX_UINT256, waitForAllowance } from './allowance.js';
 import { addresses } from './addresses.js';
 import { txUrl } from './network.js';
 import type { PublicClientT, WalletClientT } from './clients.js';
@@ -58,20 +59,22 @@ async function ensureAllowance(
   owner: `0x${string}`,
   amount: bigint
 ): Promise<void> {
-  const current = await readContract(publicClient, {
-    address: addresses.mUSD,
-    abi: erc20Abi,
-    functionName: 'allowance',
-    args: [owner, addresses.syntheticExchange],
-  });
-  if (current >= amount) return;
+  const read = () =>
+    readContract(publicClient, {
+      address: addresses.mUSD,
+      abi: erc20Abi,
+      functionName: 'allowance',
+      args: [owner, addresses.syntheticExchange],
+    });
+  if ((await read()) >= amount) return;
   const hash = await writeContract(walletClient, {
     address: addresses.mUSD,
     abi: erc20Abi,
     functionName: 'approve',
-    args: [addresses.syntheticExchange, amount],
+    args: [addresses.syntheticExchange, MAX_UINT256], // sticky: avoids re-approve every trade
   });
   await waitForTransactionReceipt(publicClient, { hash });
+  await waitForAllowance(read, amount); // defeat read-after-write RPC staleness
 }
 
 /** Open a synthetic position (long/short) settled in mUSD against the oracle. */

@@ -50,6 +50,23 @@ export function hasProviderKey(provider: ProviderId): boolean {
   return kv.get(keyName(provider)) !== null;
 }
 
+// Seed provider keys from env (e.g. MISTRAL_API_KEY) into the store at boot, so a
+// pre-set `.env`/`.env.local` key works without visiting Settings. Stored keys win.
+const ENV_KEY_NAME: Record<ProviderId, string> = {
+  groq: 'GROQ_API_KEY',
+  mistral: 'MISTRAL_API_KEY',
+  nvidia: 'NVIDIA_API_KEY',
+  openrouter: 'OPENROUTER_API_KEY',
+  gemini: 'GEMINI_API_KEY',
+};
+
+export function seedEnvProviderKeys(): void {
+  for (const provider of Object.keys(ENV_KEY_NAME) as ProviderId[]) {
+    const value = process.env[ENV_KEY_NAME[provider]];
+    if (value && !hasProviderKey(provider)) setProviderKey(provider, value);
+  }
+}
+
 // ── Role → model config ──────────────────────────────────────────────────────
 
 const ROLES_KEY = 'role_model_map';

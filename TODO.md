@@ -389,7 +389,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: each executed option writes to DecisionLog; the history page shows the on-chain record.
 
 ### T-604 — E2E happy path
-- Status: blocked — needs an AI provider key for the live thesis/debate steps. The **on-chain half is verified live** (execute → swap/synthetic → DecisionLog → /api/history). All UI is wired (studio thesis/debate → execute → history). With one provider key in `.env.local` or `/settings`, the full `intent → thesis → debate → execute → log → history` runs. `next build` green, 58 tests pass.
+- Status: done @manjeet_s 2026-06-06 — **verified end-to-end LIVE on Mantle Sepolia with a real LLM (Mistral)**: intent "long the dip on ETH" → thesis (grounded in real Bybit ETH price + RSI 30.87 + MACD, 2 risk-tiered options, 3 subagent traces) → debate (Supporter→Discriminator→Judge, refined options + 0.65 confidence) → `executeOption` opened a synthetic ETH long from the agent wallet → DecisionLog write → `/api/history` shows the record. Fixed two issues found during the live run: (1) provider keys from `.env`/`.env.local` are now seeded into the store at boot (`seedEnvProviderKeys`); (2) `ensureAllowance` now uses a sticky max-uint approve + polls until the allowance reflects, defeating Mantle's load-balanced read-after-write RPC staleness (was `ERC20InsufficientAllowance`).
 - Depends-on: T-601, T-602, T-603
 - Scope: integration
 - Acceptance: intent → thesis → debate → swap → on-chain log passes end-to-end (local fork or live Mantle Sepolia).
