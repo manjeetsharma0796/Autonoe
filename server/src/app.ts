@@ -10,7 +10,7 @@ import { generateThesis, structureHumanThesis } from './agents/thesis.ts';
 import { runDebate } from './agents/debate.ts';
 import { chat } from './agents/assistant.ts';
 import { fetchCandles } from './market/candles.ts';
-import { allDecisions } from './store.ts';
+import { allDecisions, recordDecision, type StoredDecision } from './store.ts';
 import { buildHistory, buildLeaderboard, type OnchainDecision } from './decisions.ts';
 
 type Handler = (req: Request, res: Response) => Promise<void> | void;
@@ -134,6 +134,33 @@ export function createApp(deps: AppDeps = {}) {
 
   // /api/leaderboard — realized outcomes aggregated by model + role. T-207.
   app.get(API.leaderboard, (_req, res) => res.json(buildLeaderboard(allDecisions())));
+
+  // /api/decisions — record an executed decision's off-chain metadata. T-603.
+  app.post(
+    API.decisions,
+    wrap((req, res) => {
+      const body = req.body ?? {};
+      const { thesisHash } = body as { thesisHash?: unknown };
+      if (typeof thesisHash !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(thesisHash)) {
+        throw httpError(400, 'thesisHash must be a 0x-prefixed 32-byte hex string');
+      }
+      const raw = body as Record<string, unknown>;
+      const source = raw['source'] === 'human' ? 'human' : 'ai';
+      const stored: StoredDecision = {
+        thesisHash,
+        thesisId: typeof raw['thesisId'] === 'string' ? raw['thesisId'] : thesisHash,
+        source,
+        judged: Boolean(raw['judged']),
+        chosenOptionRef: typeof raw['chosenOptionRef'] === 'string' ? raw['chosenOptionRef'] : '',
+        txHash: typeof raw['txHash'] === 'string' ? raw['txHash'] : null,
+        pnlMUSD: typeof raw['pnlMUSD'] === 'number' && isFinite(raw['pnlMUSD']) ? raw['pnlMUSD'] : 0,
+        modelsUsed: (raw['modelsUsed'] != null && typeof raw['modelsUsed'] === 'object') ? raw['modelsUsed'] as StoredDecision['modelsUsed'] : {},
+        createdAt: typeof raw['createdAt'] === 'string' ? raw['createdAt'] : new Date().toISOString(),
+      };
+      recordDecision(stored);
+      res.json({ ok: true });
+    }),
+  );
 
   // error handler
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
