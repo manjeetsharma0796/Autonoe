@@ -86,12 +86,6 @@ _(All done — the shared base every track builds on.)_
 
 > Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
 
-### T-106 — Deploy + seed script
-- Status: in-progress @jishnu 2026-06-06
-- Depends-on: T-102, T-103, T-104, T-105
-- Scope: contracts
-- Acceptance: `contracts/scripts/deploy.ts` deploys all tokens + factory + router + DecisionLog, creates the `mUSD/WMNT` pair, seeds liquidity, and prints all addresses.
-
 ### T-107 — Export addresses + ABIs
 - Status: pending
 - Depends-on: T-106
@@ -321,6 +315,12 @@ _(All done — the shared base every track builds on.)_
 ## Done
 
 _(newest first)_
+
+### T-106 — Deploy + seed script
+- Status: done @jishnu 2026-06-06 — `contracts/scripts/deploy.ts` deploys mUSD + WMNT/MockBTC/MockETH + UniswapV2Factory/Router02 (WMNT as WETH) + DecisionLog, creates the `mUSD/WMNT` pair, seeds liquidity (`ownerMint` + wrap + `addLiquidity`, faucet-friendly `SEED_MUSD`/`SEED_WMNT` overrides), and prints every address (table + JSON). `bun run deploy` targets the in-process EDR network (no key) — validated end-to-end; `bun run deploy:testnet` (`DEPLOY_NETWORK=mantleSepolia` + `DEPLOYER_PRIVATE_KEY` + `MANTLE_SEPOLIA_RPC`) does the live run, which is **T-107**'s job. Per repo convention, viem-contract scripts are checked/run by Hardhat (not tsc), so `scripts/` is excluded from the contracts tsconfig like `test/`. `tsc` 6/6, offline tests pass.
+- Depends-on: T-102, T-103, T-104, T-105
+- Scope: contracts
+- Acceptance: `contracts/scripts/deploy.ts` deploys all tokens + factory + router + DecisionLog, creates the `mUSD/WMNT` pair, seeds liquidity, and prints all addresses.
 
 ### T-601 — Wire UI ↔ server (real endpoints)
 - Status: done @jishnu 2026-06-06 — typed API client (`web/lib/api.ts`) over the `@autonoe/shared` contract. The Studio flow now renders **live**: `StepThesis` calls `/api/thesis` (AI, data-source toggles → `subagent.*` roles) or `/api/thesis/human`, and `StepJudge` calls `/api/debate` on the lifted thesis (Supporter/Discriminator/Judge arguments + traces + refined options + verdict + prediction chart) — state lifted into `Workspace`, all sample arrays gone. Trade `AiRail` Quick Thesis → `/api/thesis`, Assistant → `/api/assistant`. Loading + graceful error states (missing-key errors deep-link to `/settings`). Verified: server reachable, `/api/thesis` returns a live thesis with a key and the structured `{error}` the UI surfaces without one. `tsc` 6/6, `next build` green.

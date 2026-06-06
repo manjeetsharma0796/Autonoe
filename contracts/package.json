@@ -6,6 +6,8 @@
   "scripts": {
     "compile": "HARDHAT_DISABLE_TELEMETRY_PROMPT=true hardhat compile",
     "test:hardhat": "HARDHAT_DISABLE_TELEMETRY_PROMPT=true hardhat test",
+    "deploy": "HARDHAT_DISABLE_TELEMETRY_PROMPT=true hardhat run scripts/deploy.ts",
+    "deploy:testnet": "HARDHAT_DISABLE_TELEMETRY_PROMPT=true DEPLOY_NETWORK=mantleSepolia hardhat run scripts/deploy.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test test-unit"
   },
