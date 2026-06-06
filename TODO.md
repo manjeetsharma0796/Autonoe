@@ -223,17 +223,17 @@ _(all done — see Done section)_
 
 ## 6 — Integration & Demo
 
-### T-605 — Demo polish + script
-- Status: in-progress @prithwish 2026-06-06
-- Depends-on: T-604
-- Scope: docs
-- Acceptance: UI passes a design review; the demo narrative (PRD §16) is rehearsed; mantlescan links work.
-
 ---
 
 ## Done
 
 _(newest first)_
+
+### T-605 — Demo polish + script
+- Status: done @prithwish 2026-06-06 — `DEMO.md` Demo-Day runbook: pre-flight checklist (backend/frontend up, provider key, agent wallet + faucets, `bun run e2e` smoke test), the rehearsed **PRD §16 narrative** as a step-by-step table (with the stage note to drive the live execute from `/studio`, not the sample `/trade` swap box), **verified live mantlescan links** (deployed contracts from `addresses.json` + the real T-604 swap `0xa45161…`/DecisionLog `0x491b9b…` txs), and a **design-review sign-off**. Full UX/brand review against `design-system/autonoe/MASTER.md` → **PASS-WITH-NITS, no blockers**: confirmed disclaimer on every route, reasoning traces on thesis/subagents/judges, agent-vs-funding wallet distinction, execute-dialog a11y (role=dialog/aria-modal/Escape/autofocus), and mantlescan links on execute-success + every history row; non-blocking nits (disclaimer copy/opacity, `/trade` sample controls, drawer aria) documented as deferred polish.
+- Depends-on: T-604
+- Scope: docs
+- Acceptance: UI passes a design review; the demo narrative (PRD §16) is rehearsed; mantlescan links work.
 
 ### T-604 — E2E happy path
 - Status: done @prithwish 2026-06-06 — `scripts/e2e.ts` (`bun run e2e`) drives the **real** integration surface end-to-end: boots the server in-process (`createApp`), configures the Mistral provider (`POST /api/keys`), discovers a model + assigns every role (`/api/models`, `PUT /api/roles`), generates a **thesis** (`POST /api/thesis`), runs the **debate** (`POST /api/debate`), then executes the highest-confidence option via `@autonoe/wallet` `executeOption` (real **swap** + DecisionLog write on Mantle Sepolia), records it off-chain (`POST /api/decisions`) and confirms `GET /api/history` surfaces the on-chain record (polls through public-RPC replica lag). Gated on `MISTRAL_API_KEY` + `DEPLOYER_PRIVATE_KEY` (prints `SKIP` without them, so CI is unaffected). **Ran green live**: intent → thesis `6e7dc6fc` → debate verdict → long WMNT → swap `0xa45161…` (50 mUSD → 0.0735 WMNT) → DecisionLog `0x491b9b…` → history contains the trade ✅. Added `viem` to root devDeps + the `e2e` script.
