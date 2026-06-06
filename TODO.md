@@ -203,12 +203,6 @@ _(all done — see Done section)_
 - Scope: web
 - Acceptance: Supporter/Discriminator/Judge arguments (each with a reasoning trace), verdict, and refined options with predicted % + risk + caveats graphed; "Execute" per option.
 
-### T-411 — History / Benchmark page (`/history`)
-- Status: in-progress @jishnu 2026-06-06
-- Depends-on: T-401, T-207
-- Scope: web
-- Acceptance: DecisionLog records + PnL-over-time / win-rate charts + mantlescan links; reads `/api/history`.
-
 ### T-412 — Model performance leaderboard
 - Status: pending
 - Depends-on: T-411, T-207
@@ -264,6 +258,12 @@ _(all done — see Done section)_
 ## Done
 
 _(newest first)_
+
+### T-411 — History / Benchmark page (`/history`)
+- Status: done @jishnu 2026-06-06 — `web/app/history/page.tsx` + `web/components/history/HistoryClient.tsx`: reads `GET /api/history?address=` for the **agent wallet** (from the T-402 `WalletProvider`), renders headline stats (trades / win-rate / cumulative PnL), an SVG **cumulative-PnL-over-time** chart, and a DecisionLog records table with per-tx **mantlescan** links (`@autonoe/chain` `txUrl`/`addressUrl`). Graceful states: no-wallet prompt, loading, server-offline, empty. `tsc` 6/6; `next build` green (`/history`).
+- Depends-on: T-401, T-207
+- Scope: web
+- Acceptance: DecisionLog records + PnL-over-time / win-rate charts + mantlescan links; reads `/api/history`.
 
 ### T-409 — Execute flow (shared)
 - Status: done @prithwish 2026-06-06 — shared `web/components/execute/ExecuteDialog.tsx` (+ `.module.css`) wired into both the thesis options (`StepThesis`/`ThesisOptionCard`) and the judge's refined options (`StepJudge`/`RefinedCard`, which resolves the underlying `ThesisOption` by `optionRef`). Flow: **confirm** (option summary + spend cap + slippage + passphrase) → **signing** → **success** (tx status, swap in→out, mantlescan link from `swap.explorerUrl`, honest "realized PnL pending — opening trade" with the predicted band) | **error** (wrong passphrase / policy violation / funds error → surfaces the agent address + fund hint, with Retry). Calls `@autonoe/wallet` `executeOption` with `confirmed:true`; obtains the private key **ephemerally** via `unlock()` at click time (never stored in state/ref/context). `thesisHash`/`verdictHash` derived deterministically (sorted-JSON `keccak256`, `web/lib/executeHashes.ts`; sentinel hash on the thesis-direct path). Accessible (role=dialog, aria-modal, Escape + backdrop close, autofocus). `tsc` clean; `next build` green (`/studio` + `/trade`).
