@@ -86,11 +86,7 @@ _(All done — the shared base every track builds on.)_
 
 > Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
 
-### T-108 — viem chain library
-- Status: in-progress @jishnu 2026-06-06
-- Depends-on: T-107
-- Scope: chain
-- Acceptance: `packages/chain/src/{clients,swapExecutor,decisionLog}.ts` — `getQuote()`, `swap()` (approve + `swapExactTokensForTokens` + slippage), `writeDecision()`, `readHistory()`. An integration test executes a real swap on testnet.
+_(all done — see Done section)_
 
 ---
 
@@ -297,6 +293,12 @@ _(All done — the shared base every track builds on.)_
 ## Done
 
 _(newest first)_
+
+### T-108 — viem chain library
+- Status: done @jishnu 2026-06-06 — `packages/chain/src/{clients,swapExecutor,decisionLog,abis}.ts`: viem public/wallet clients (`defineChain` Mantle Sepolia) + deployed-address registry; `getQuote()` (router `getAmountsOut`); `swap()` (approve → `swapExactTokensForTokens` with bps slippage floor, realized `amountOut` parsed from receipt Transfer logs — robust against load-balanced-RPC read lag); `writeDecision()`/`readHistory()` over DecisionLog. Added `viem` to the package deps. **Integration test executed a real swap + DecisionLog round-trip on Mantle Sepolia** (`src/swap.integration.test.ts`, skips without `DEPLOYER_PRIVATE_KEY` so CI stays green — 2 pass / 2 skip there). `tsc` 6/6; full suite green.
+- Depends-on: T-107
+- Scope: chain
+- Acceptance: `packages/chain/src/{clients,swapExecutor,decisionLog}.ts` — `getQuote()`, `swap()` (approve + `swapExactTokensForTokens` + slippage), `writeDecision()`, `readHistory()`. An integration test executes a real swap on testnet.
 
 ### T-410 — Settings page (`/settings`)
 - Status: done @prithwish 2026-06-06 — `web/components/settings/SettingsClient.tsx` (+ `settings.module.css`) on the `/settings` route: provider cards (password paste field + "Get a free key →" link + free-tier note, static fallback merged under live `/api/providers`); saving a key POSTs `/api/keys` then auto-loads that provider's models from `/api/models?provider=`; per-role model dropdowns for all 9 `AI_ROLES` incl. `assistant` (provider-grouped optgroups) persisted via PUT `/api/roles`; data-source toggles for the 4 subagent roles (localStorage); graceful offline banner. Rebuilt on current `main` (the original branch predated jishnu's T-106/109/402/415/601 work). `tsc` clean across the workspace; `next build` green with `/settings` in the route table.
