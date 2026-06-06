@@ -224,7 +224,7 @@ _(all done — see Done section)_
 ## 6 — Integration & Demo
 
 ### T-604 — E2E happy path
-- Status: pending
+- Status: in-progress @prithwish 2026-06-06
 - Depends-on: T-601, T-602, T-603
 - Scope: integration
 - Acceptance: intent → thesis → debate → swap → on-chain log passes end-to-end (local fork or live Mantle Sepolia).
