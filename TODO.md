@@ -142,12 +142,6 @@ _(all done — see Done section)_
 - Scope: api
 - Acceptance: `POST /api/assistant` replies via the assistant-role model with optional market/position context; can spin off a thesis.
 
-### T-209 — Web search / news tool (deferred)
-- Status: pending — deferred per scope decision; theses are currently grounded in price + indicators + on-chain only.
-- Depends-on: T-202, T-205
-- Scope: api
-- Acceptance: a Tavily (or Brave/Exa) web-search tool registered for `subagent.news` and surfaced to the thesis agent's tool loop, so theses can cite news/sentiment.
-
 ---
 
 ## 3 — Wallet & Execution
@@ -179,7 +173,7 @@ _(all done — see Done section)_
 - Acceptance: given a chosen option, builds + signs + submits a swap via the chain lib; returns `SwapResult`; triggers the DecisionLog write. Execution is manual-confirm (no auto-execute).
 
 ### T-305 — Funding helpers
-- Status: pending
+- Status: in-progress @prithwish 2026-06-06
 - Depends-on: T-107
 - Scope: wallet
 - Acceptance: auto-seed mUSD on wallet creation + faucet re-mint call; native MNT faucet link surfaced.
@@ -299,6 +293,12 @@ _(newest first)_
 - Depends-on: T-107
 - Scope: chain
 - Acceptance: `packages/chain/src/{clients,swapExecutor,decisionLog}.ts` — `getQuote()`, `swap()` (approve + `swapExactTokensForTokens` + slippage), `writeDecision()`, `readHistory()`. An integration test executes a real swap on testnet.
+
+### T-209 — Web search / news tool
+- Status: done @prithwish 2026-06-06 — `server/src/market/news.ts` (`searchNews`, injectable `NewsFetcher` POST client) + a `search_news` tool registered in `server/src/agents/tools.ts` gated by `subagent.news`, recording a `subagent.news` reasoning trace. Surfaced to the thesis tool loop automatically (`subagent.news` ∈ `SUBAGENT_ROLES`), so theses can cite news/sentiment; the `thesis` SYSTEM prompt now lists news evidence, and the UI data-source toggles control it. **Degrades gracefully**: with no `TAVILY_API_KEY` the tool returns "not configured" and theses still run on price/indicators/on-chain — never throws. 6 new offline tests (injected fetcher: field mapping, no-key guard, HTTP-error throw, allow-list gating, trace recording). `bun test` server 26/26, `tsc` clean.
+- Depends-on: T-202, T-205
+- Scope: api
+- Acceptance: a Tavily (or Brave/Exa) web-search tool registered for `subagent.news` and surfaced to the thesis agent's tool loop, so theses can cite news/sentiment.
 
 ### T-410 — Settings page (`/settings`)
 - Status: done @prithwish 2026-06-06 — `web/components/settings/SettingsClient.tsx` (+ `settings.module.css`) on the `/settings` route: provider cards (password paste field + "Get a free key →" link + free-tier note, static fallback merged under live `/api/providers`); saving a key POSTs `/api/keys` then auto-loads that provider's models from `/api/models?provider=`; per-role model dropdowns for all 9 `AI_ROLES` incl. `assistant` (provider-grouped optgroups) persisted via PUT `/api/roles`; data-source toggles for the 4 subagent roles (localStorage); graceful offline banner. Rebuilt on current `main` (the original branch predated jishnu's T-106/109/402/415/601 work). `tsc` clean across the workspace; `next build` green with `/settings` in the route table.

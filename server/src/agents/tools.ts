@@ -1,12 +1,15 @@
 // LangChain tools the thesis agent can call on demand (intent-driven). Each tool
 // fetches real data and records a reasoning-trace entry. The active data-source
-// toggles act as an allow-list of which tools the model may use. (News skipped.)
+// toggles act as an allow-list of which tools the model may use.
+// News/sentiment is provided by the search_news tool (subagent.news, T-209)
+// via Tavily; degrades gracefully when TAVILY_API_KEY is unset.
 
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import type { AIRole, AssetSymbol, ReasoningTrace } from '@autonoe/shared';
 import { getKline, getTicker, closes, type Fetcher } from '../market/bybit.ts';
 import { snapshot } from '../market/indicators.ts';
+import { searchNews, type NewsFetcher } from '../market/news.ts';
 
 const Asset = z.object({ asset: z.enum(['WMNT', 'MockBTC', 'MockETH']) });
 
@@ -28,7 +31,12 @@ export function makeRecorder(): TraceRecorder {
 }
 
 /** Build the toolset, filtered to the active data sources. */
-export function makeTools(rec: TraceRecorder, active: AIRole[], f?: Fetcher) {
+export function makeTools(
+  rec: TraceRecorder,
+  active: AIRole[],
+  f?: Fetcher,
+  newsDeps?: { fetcher?: NewsFetcher; apiKey?: string },
+) {
   const allow = new Set(active);
 
   const tickerTool = tool(
@@ -80,11 +88,49 @@ export function makeTools(rec: TraceRecorder, active: AIRole[], f?: Fetcher) {
     { name: 'get_onchain_market', description: 'On-chain AMM price/liquidity for mUSD pairs (Mantle).', schema: z.object({}) },
   );
 
+  const newsTool = tool(
+    async ({ query }: { query: string }) => {
+      const result = await searchNews(query, {
+        fetcher: newsDeps?.fetcher,
+        apiKey: newsDeps?.apiKey,
+      });
+      if (!result.configured) {
+        rec.add(
+          'subagent.news',
+          `news:${query}`,
+          'Web search unavailable (no TAVILY_API_KEY)',
+          'news source not configured',
+        );
+        return 'News search is not configured (TAVILY_API_KEY not set).';
+      }
+      if (result.items.length === 0) {
+        rec.add('subagent.news', `news:${query}`, 'No recent headlines found', 'no results returned by Tavily');
+        return 'No recent headlines found for this query.';
+      }
+      const detail = result.items
+        .map((item) => {
+          const host = (() => { try { return new URL(item.url).hostname; } catch { return item.url; } })();
+          return `${item.title} — ${host}`;
+        })
+        .join('\n');
+      rec.add('subagent.news', `news:${query}`, 'Searched recent news (Tavily)', detail);
+      return detail;
+    },
+    {
+      name: 'search_news',
+      description: 'Recent news headlines + sentiment for a topic/asset via web search.',
+      schema: z.object({
+        query: z.string().describe('news search query, e.g. "Mantle network" or "Bitcoin ETF approval"'),
+      }),
+    },
+  );
+
   const all = [
     { roles: ['subagent.market'], t: tickerTool },
     { roles: ['subagent.market'], t: candlesTool },
     { roles: ['subagent.indicators'], t: indicatorsTool },
     { roles: ['subagent.onchain'], t: onchainTool },
+    { roles: ['subagent.news'], t: newsTool },
   ];
 
   const tools = all.filter((e) => e.roles.some((r) => allow.has(r as AIRole))).map((e) => e.t);
