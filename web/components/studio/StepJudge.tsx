@@ -8,8 +8,10 @@ import type {
   RefinedOption,
   RiskLevel,
   Thesis,
+  ThesisOption,
 } from "@autonoe/shared";
 import styles from "./studio.module.css";
+import { ExecuteDialog } from "../execute/ExecuteDialog";
 import { ThinkingTrace } from "./ThinkingTrace";
 import { TribunalFlow } from "./TribunalFlow";
 import { ShareButton } from "../share/ShareCard";
@@ -44,8 +46,22 @@ function toDisplay(opt: RefinedOption, thesis: Thesis | null): DisplayRefined {
   };
 }
 
-function RefinedCard({ opt, animate }: { opt: DisplayRefined; animate: boolean }) {
+function RefinedCard({
+  opt,
+  animate,
+  resolvedOption,
+  thesis,
+  debate,
+}: {
+  opt: DisplayRefined;
+  animate: boolean;
+  /** The underlying ThesisOption resolved from thesis.options by optionRef. */
+  resolvedOption: ThesisOption | undefined;
+  thesis: Thesis;
+  debate: DebateResult;
+}) {
   const barRef = useRef<HTMLDivElement>(null);
+  const [executing, setExecuting] = useState(false);
 
   useEffect(() => {
     const bar = barRef.current;
@@ -65,42 +81,59 @@ function RefinedCard({ opt, animate }: { opt: DisplayRefined; animate: boolean }
   }, [animate, opt.confidence]);
 
   return (
-    <article className={styles.ref}>
-      <div className={styles.rtop}>
-        <div className={styles.rasset}>
-          {opt.title}
-          <small>{opt.sub}</small>
+    <>
+      <article className={styles.ref}>
+        <div className={styles.rtop}>
+          <div className={styles.rasset}>
+            {opt.title}
+            <small>{opt.sub}</small>
+          </div>
+          <span className={`${styles.riskpill} ${styles[opt.risk]}`}>
+            {opt.riskLabel}
+          </span>
         </div>
-        <span className={`${styles.riskpill} ${styles[opt.risk]}`}>
-          {opt.riskLabel}
-        </span>
-      </div>
-      <div className={styles.pct}>
-        <span className={styles.pv}>{opt.predicted}</span>
-        <span className={styles.pl}>predicted outcome</span>
-      </div>
-      <div className={styles.caveats}>
-        <div className={styles.cl}>Caveats</div>
-        <ul>
-          {opt.caveats.map((c, i) => (
-            <li key={i}>{c}</li>
-          ))}
-        </ul>
-      </div>
-      <div className={styles.conf}>
-        <div className={styles.ch}>
-          <span className={styles.ck}>Confidence</span>
-          <span className={styles.cv}>{opt.confidence.toFixed(2)}</span>
+        <div className={styles.pct}>
+          <span className={styles.pv}>{opt.predicted}</span>
+          <span className={styles.pl}>predicted outcome</span>
         </div>
-        <div className={styles.track}>
-          <div className={styles.bar} ref={barRef} />
+        <div className={styles.caveats}>
+          <div className={styles.cl}>Caveats</div>
+          <ul>
+            {opt.caveats.map((c, i) => (
+              <li key={i}>{c}</li>
+            ))}
+          </ul>
         </div>
-      </div>
-      <button className="btn btn-gold" type="button">
-        <ArrowRightIcon />
-        Execute
-      </button>
-    </article>
+        <div className={styles.conf}>
+          <div className={styles.ch}>
+            <span className={styles.ck}>Confidence</span>
+            <span className={styles.cv}>{opt.confidence.toFixed(2)}</span>
+          </div>
+          <div className={styles.track}>
+            <div className={styles.bar} ref={barRef} />
+          </div>
+        </div>
+        <button
+          className="btn btn-gold"
+          type="button"
+          disabled={!resolvedOption}
+          onClick={() => setExecuting(true)}
+        >
+          <ArrowRightIcon />
+          Execute
+        </button>
+      </article>
+
+      {executing && resolvedOption && (
+        <ExecuteDialog
+          option={resolvedOption}
+          thesis={thesis}
+          verdict={debate}
+          optionRef={opt.id}
+          onClose={() => setExecuting(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -303,7 +336,13 @@ export function StepJudge({
           <div className={styles.refgrid}>
             {refined.map((opt) => (
               <div className="reveal" key={opt.id}>
-                <RefinedCard opt={opt} animate={active} />
+                <RefinedCard
+                  opt={opt}
+                  animate={active}
+                  resolvedOption={thesis?.options.find((o) => o.id === opt.id)}
+                  thesis={thesis!}
+                  debate={debate}
+                />
               </div>
             ))}
           </div>

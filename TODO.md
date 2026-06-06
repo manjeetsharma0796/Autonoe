@@ -203,12 +203,6 @@ _(all done — see Done section)_
 - Scope: web
 - Acceptance: Supporter/Discriminator/Judge arguments (each with a reasoning trace), verdict, and refined options with predicted % + risk + caveats graphed; "Execute" per option.
 
-### T-409 — Execute flow (shared)
-- Status: in-progress @prithwish 2026-06-06
-- Depends-on: T-407, T-408, T-304
-- Scope: web
-- Acceptance: from a chosen option (direct from thesis OR from judge) → confirm → tx status + PnL + mantlescan link (calls `packages/wallet` execute).
-
 ### T-411 — History / Benchmark page (`/history`)
 - Status: in-progress @jishnu 2026-06-06
 - Depends-on: T-401, T-207
@@ -270,6 +264,12 @@ _(all done — see Done section)_
 ## Done
 
 _(newest first)_
+
+### T-409 — Execute flow (shared)
+- Status: done @prithwish 2026-06-06 — shared `web/components/execute/ExecuteDialog.tsx` (+ `.module.css`) wired into both the thesis options (`StepThesis`/`ThesisOptionCard`) and the judge's refined options (`StepJudge`/`RefinedCard`, which resolves the underlying `ThesisOption` by `optionRef`). Flow: **confirm** (option summary + spend cap + slippage + passphrase) → **signing** → **success** (tx status, swap in→out, mantlescan link from `swap.explorerUrl`, honest "realized PnL pending — opening trade" with the predicted band) | **error** (wrong passphrase / policy violation / funds error → surfaces the agent address + fund hint, with Retry). Calls `@autonoe/wallet` `executeOption` with `confirmed:true`; obtains the private key **ephemerally** via `unlock()` at click time (never stored in state/ref/context). `thesisHash`/`verdictHash` derived deterministically (sorted-JSON `keccak256`, `web/lib/executeHashes.ts`; sentinel hash on the thesis-direct path). Accessible (role=dialog, aria-modal, Escape + backdrop close, autofocus). `tsc` clean; `next build` green (`/studio` + `/trade`).
+- Depends-on: T-407, T-408, T-304
+- Scope: web
+- Acceptance: from a chosen option (direct from thesis OR from judge) → confirm → tx status + PnL + mantlescan link (calls `packages/wallet` execute).
 
 ### T-207 — History + leaderboard endpoints
 - Status: done @jishnu 2026-06-06 — `GET /api/history?address=` merges the on-chain DecisionLog (`@autonoe/chain` `readHistory`, lazily imported) with off-chain SQLite metadata (model attribution/source/txHash) into `HistoryRecord[]`; `GET /api/leaderboard` aggregates realized PnL + win-rate by role/provider/model from stored decisions. New `decisions` SQLite table + `recordDecision`/`allDecisions` in `store.ts` (the writer T-304/T-603 calls); pure `buildHistory`/`buildLeaderboard` in `server/src/decisions.ts` (4 unit tests). Chain reader injectable on `createApp` for offline tests. Verified live: leaderboard `[]` on empty db; history returns the deployer's real on-chain decisions (from the T-108 test) merged with fallbacks; no-address → `[]`. `tsc` 6/6; server 30/30.

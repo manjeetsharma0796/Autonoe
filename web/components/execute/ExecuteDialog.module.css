@@ -1,0 +1,350 @@
+/* ============================================================
+   Execute Dialog — modal overlay for the execute flow (T-409).
+   Tokens (--gold, --gold2, --green, --red, --muted, --faint,
+   --ink, --line, --line2, --panel, --bg2, --mono, --disp, --body)
+   are defined globally. Class names follow the studio.module.css
+   patterns for consistency.
+   ============================================================ */
+
+/* backdrop */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 9999;
+}
+
+/* dialog box */
+.dialog {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: linear-gradient(180deg, var(--panel), var(--bg2));
+  padding: 30px 28px 28px;
+  box-shadow: 0 32px 80px -16px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255,255,255,0.04) inset;
+  overflow: hidden;
+}
+.dialog::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--gold), var(--gold2));
+  opacity: 0.9;
+  border-radius: 22px 22px 0 0;
+}
+
+/* close button */
+.closeBtn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--faint);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  font-size: 17px;
+  line-height: 1;
+}
+.closeBtn:hover {
+  background: rgba(255,255,255,0.07);
+  color: var(--ink);
+}
+.closeBtn:focus-visible {
+  outline: 2px solid var(--gold2);
+  outline-offset: 2px;
+}
+
+/* header */
+.header {
+  padding-right: 40px;
+}
+.kicker {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--gold2);
+}
+.title {
+  font-family: var(--disp);
+  font-weight: 600;
+  font-size: 20px;
+  margin-top: 8px;
+  color: var(--ink);
+}
+
+/* option summary card */
+.summary {
+  margin-top: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 16px;
+  background: rgba(255,255,255,0.018);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.summaryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.summaryLabel {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.summaryValue {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.summaryValue.long { color: var(--green); }
+.summaryValue.short { color: var(--red); }
+.summaryValue.hedge { color: #8b5cf6; }
+.summaryValue.hold { color: var(--muted); }
+
+/* passphrase input */
+.passphraseSection {
+  margin-top: 20px;
+}
+.fieldLabel {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 10px;
+}
+.inp {
+  width: 100%;
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: 300;
+  color: var(--ink);
+  padding: 13px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.025);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+.inp::placeholder {
+  color: var(--faint);
+}
+.inp:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(245,165,36,0.14);
+}
+
+/* slippage hint */
+.slippageRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.slippageLabel {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+}
+.slippageValue {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* testnet notice */
+.notice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+  border: 1px solid var(--line2);
+  padding: 7px 12px;
+  border-radius: 999px;
+  margin-top: 16px;
+}
+.notice svg {
+  width: 13px;
+  height: 13px;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+/* action row */
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+}
+.actions .btn {
+  flex: 1;
+  justify-content: center;
+}
+
+/* error / info banners */
+.banner {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 13px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.bannerError {
+  border: 1px solid rgba(255,107,107,0.35);
+  background: rgba(255,107,107,0.08);
+  color: #ff6b6b;
+}
+.bannerInfo {
+  border: 1px solid rgba(245,165,36,0.28);
+  background: rgba(245,165,36,0.07);
+  color: var(--gold2);
+}
+.bannerWarn {
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.02);
+  color: var(--muted);
+}
+
+/* signing spinner */
+.spinWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 0 8px;
+}
+.spinLabel {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--line);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* success result */
+.success {
+  margin-top: 18px;
+}
+.successTitle {
+  font-family: var(--disp);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--green);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.successTitle::before {
+  content: "✓";
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(63,224,166,0.15);
+  border: 1px solid rgba(63,224,166,0.4);
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+}
+.swapRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}
+.swapArrow {
+  color: var(--gold);
+}
+.pnlNote {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  border: 1px solid var(--line2);
+  background: rgba(255,255,255,0.015);
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.mantleLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--gold2);
+  text-decoration: none;
+  border: 1px solid rgba(245,165,36,0.3);
+  background: rgba(245,165,36,0.07);
+  padding: 8px 14px;
+  border-radius: 999px;
+  margin-top: 16px;
+  transition: background 0.2s, border-color 0.2s;
+}
+.mantleLink:hover {
+  background: rgba(245,165,36,0.13);
+  border-color: rgba(245,165,36,0.55);
+}
+.mantleLink svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* address display */
+.addrBox {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line2);
+  background: rgba(255,255,255,0.018);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--faint);
+  word-break: break-all;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+    border-top-color: var(--gold);
+  }
+}
