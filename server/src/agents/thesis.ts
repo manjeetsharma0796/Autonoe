@@ -30,7 +30,7 @@ type ThesisCore = z.infer<typeof ThesisCore>;
 const SYSTEM =
   'You are Autonoe, an autonomous crypto trading strategist on the Mantle testnet. ' +
   'Assets tradable against the mUSD stablecoin: WMNT, MockBTC, MockETH. ' +
-  'Use the available tools to gather real price, candle, indicator and on-chain evidence for the ' +
+  'Use the available tools to gather real price, candle, indicator, on-chain and news/sentiment evidence for the ' +
   'assets relevant to the user intent before forming a view. Be specific and honest about risk.';
 
 const MAX_STEPS = 5;
