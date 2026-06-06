@@ -236,12 +236,6 @@ _(All done — the shared base every track builds on.)_
 - Scope: web
 - Acceptance: from a chosen option (direct from thesis OR from judge) → confirm → tx status + PnL + mantlescan link (calls `packages/wallet` execute).
 
-### T-410 — Settings page (`/settings`)
-- Status: in-progress @prithwish 2026-06-05
-- Depends-on: T-401, T-203
-- Scope: web
-- Acceptance: per-provider paste field + "Get free key" link + free-tier note; auto-populate models on paste; per-role model dropdowns (incl. `assistant`); data-source toggles; persists via `/api/keys`, `/api/roles`.
-
 ### T-411 — History / Benchmark page (`/history`)
 - Status: pending
 - Depends-on: T-401, T-207
@@ -303,6 +297,12 @@ _(All done — the shared base every track builds on.)_
 ## Done
 
 _(newest first)_
+
+### T-410 — Settings page (`/settings`)
+- Status: done @prithwish 2026-06-06 — `web/components/settings/SettingsClient.tsx` (+ `settings.module.css`) on the `/settings` route: provider cards (password paste field + "Get a free key →" link + free-tier note, static fallback merged under live `/api/providers`); saving a key POSTs `/api/keys` then auto-loads that provider's models from `/api/models?provider=`; per-role model dropdowns for all 9 `AI_ROLES` incl. `assistant` (provider-grouped optgroups) persisted via PUT `/api/roles`; data-source toggles for the 4 subagent roles (localStorage); graceful offline banner. Rebuilt on current `main` (the original branch predated jishnu's T-106/109/402/415/601 work). `tsc` clean across the workspace; `next build` green with `/settings` in the route table.
+- Depends-on: T-401, T-203
+- Scope: web
+- Acceptance: per-provider paste field + "Get free key" link + free-tier note; auto-populate models on paste; per-role model dropdowns (incl. `assistant`); data-source toggles; persists via `/api/keys`, `/api/roles`.
 
 ### T-107 — Export addresses + ABIs
 - Status: done @jishnu 2026-06-06 — **deployed the full stack live to Mantle Sepolia** (chain 5003) via new `contracts/scripts/deployAll.ts` (deploys all 7 contracts + seeds all 3 pools, txs serialized on receipts for public-RPC reliability; `bun run deploy:all[:testnet]`). Live addresses written to `packages/chain/addresses.json` (placeholder replaced) and all 8 ABIs to `packages/chain/abis/`. Contracts confirmed on-chain (bytecode present). Deployer `0x4523095f3d872dD51aAB5c6428b513AF645C15B5`; mUSD `0x1f7d…d7ef`, router `0x8c30…a2ab`, mUSD/WMNT pool `0x3D54…d6B8`. ⚠️ **Source-verification on mantlescan still pending** — needs `hardhat-verify` + an explorer API key (contracts are visible as bytecode now; one follow-up command away).
