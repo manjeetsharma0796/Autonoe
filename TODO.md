@@ -223,12 +223,6 @@ _(all done — see Done section)_
 
 ## 6 — Integration & Demo
 
-### T-603 — On-chain logging live
-- Status: in-progress @prithwish 2026-06-06
-- Depends-on: T-304, T-105, T-207
-- Scope: integration
-- Acceptance: each executed option writes to DecisionLog; the history page shows the on-chain record.
-
 ### T-604 — E2E happy path
 - Status: pending
 - Depends-on: T-601, T-602, T-603
@@ -246,6 +240,12 @@ _(all done — see Done section)_
 ## Done
 
 _(newest first)_
+
+### T-603 — On-chain logging live
+- Status: done @prithwish 2026-06-06 — closed the off-chain half so `/api/history` shows each executed option's on-chain record **with** model attribution. New `POST /api/decisions` (`server/src/app.ts` → `recordDecision`, validates a 0x 32-byte `thesisHash`, coerces the body to a `StoredDecision`) + `decisions` route & `DecisionRecordInput` in the `@autonoe/shared` contract + `recordDecision` best-effort client in `web/lib/api.ts`; `ExecuteDialog` (T-409) now records the decision off-chain on execute success, **reusing the same `thesisHash`** it passed to `executeOption` so it joins the on-chain `writeDecision` record (`buildHistory` merges by `thesisHash`). **Verified live on Mantle Sepolia**: a real `executeOption` swap (mUSD→WMNT, tx `0xbc1c6f…`) wrote DecisionLog `0x4ae72f…`; `GET /api/history?address=` then returned that on-chain record merged with the posted `txHash` + `modelsUsed`. `bun test` server 35/35 (5 new endpoint tests) + shared 4/4; full-workspace `typecheck` + `next build` green.
+- Depends-on: T-304, T-105, T-207
+- Scope: integration
+- Acceptance: each executed option writes to DecisionLog; the history page shows the on-chain record.
 
 ### T-602 — Wire wallet ↔ chain lib (real swap)
 - Status: done @jishnu 2026-06-06 — end-to-end integration test (`packages/wallet/tests/execute.integration.test.ts`) drives **`executeOption`** (T-304) → policy check → **real `swap()`** (T-108) → **DecisionLog write**, executing a live **mUSD→WMNT** swap **from the agent wallet on Mantle Sepolia** (owner-mints mUSD to fund, confirms `SwapResult.txHash` + non-zero `amountOut` + `decisionTxHash`). Skips without `DEPLOYER_PRIVATE_KEY` so CI stays green (wallet 35 pass / 1 skip). Verified live this session.
