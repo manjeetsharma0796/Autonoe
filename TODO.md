@@ -209,12 +209,6 @@ _(all done — see Done section)_
 - Scope: web
 - Acceptance: from a chosen option (direct from thesis OR from judge) → confirm → tx status + PnL + mantlescan link (calls `packages/wallet` execute).
 
-### T-411 — History / Benchmark page (`/history`)
-- Status: in-progress @jishnu 2026-06-06
-- Depends-on: T-401, T-207
-- Scope: web
-- Acceptance: DecisionLog records + PnL-over-time / win-rate charts + mantlescan links; reads `/api/history`.
-
 ### T-412 — Model performance leaderboard
 - Status: pending
 - Depends-on: T-411, T-207
@@ -270,6 +264,12 @@ _(all done — see Done section)_
 ## Done
 
 _(newest first)_
+
+### T-411 — History / Benchmark page (`/history`)
+- Status: done @jishnu 2026-06-06 — `web/app/history/page.tsx` + `web/components/history/HistoryClient.tsx`: reads `GET /api/history?address=` for the **agent wallet** (from the T-402 `WalletProvider`), renders headline stats (trades / win-rate / cumulative PnL), an SVG **cumulative-PnL-over-time** chart, and a DecisionLog records table with per-tx **mantlescan** links (`@autonoe/chain` `txUrl`/`addressUrl`). Graceful states: no-wallet prompt, loading, server-offline, empty. `tsc` 6/6; `next build` green (`/history`).
+- Depends-on: T-401, T-207
+- Scope: web
+- Acceptance: DecisionLog records + PnL-over-time / win-rate charts + mantlescan links; reads `/api/history`.
 
 ### T-207 — History + leaderboard endpoints
 - Status: done @jishnu 2026-06-06 — `GET /api/history?address=` merges the on-chain DecisionLog (`@autonoe/chain` `readHistory`, lazily imported) with off-chain SQLite metadata (model attribution/source/txHash) into `HistoryRecord[]`; `GET /api/leaderboard` aggregates realized PnL + win-rate by role/provider/model from stored decisions. New `decisions` SQLite table + `recordDecision`/`allDecisions` in `store.ts` (the writer T-304/T-603 calls); pure `buildHistory`/`buildLeaderboard` in `server/src/decisions.ts` (4 unit tests). Chain reader injectable on `createApp` for offline tests. Verified live: leaderboard `[]` on empty db; history returns the deployer's real on-chain decisions (from the T-108 test) merged with fallbacks; no-address → `[]`. `tsc` 6/6; server 30/30.
