@@ -147,7 +147,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: `POST /api/assistant` replies via the assistant-role model with optional market/position context; can spin off a thesis.
 
 ### T-209 — Web search / news tool (deferred)
-- Status: pending — deferred per scope decision; theses are currently grounded in price + indicators + on-chain only.
+- Status: in-progress @prithwish 2026-06-06
 - Depends-on: T-202, T-205
 - Scope: api
 - Acceptance: a Tavily (or Brave/Exa) web-search tool registered for `subagent.news` and surfaced to the thesis agent's tool loop, so theses can cite news/sentiment.
