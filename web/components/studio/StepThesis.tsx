@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { AIRole, AssetSymbol, Thesis, ThesisOption } from "@autonoe/shared";
 import { SUBAGENT_ROLES } from "@autonoe/shared";
 import { keccak256, stringToHex } from "viem";
@@ -27,7 +27,9 @@ import {
   DEFAULT_SOURCES,
   type DataSourceKey,
 } from "./data";
-import { postThesis, postThesisHuman } from "@/lib/api";
+import { postThesisHuman } from "@/lib/api";
+import { streamSSE } from "@/lib/stream";
+import { LiveThinking } from "@/components/ai/LiveThinking";
 import { useWallet } from "@/components/wallet/WalletProvider";
 import { ExecuteModal } from "@/components/wallet/ExecuteModal";
 import { ShareButton } from "@/components/share/ShareCard";
@@ -186,6 +188,8 @@ export function StepThesis({ onSendToJudge }: StepThesisProps) {
   const [thesis, setThesis] = useState<Thesis | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [thinking, setThinking] = useState("");
+  const abortRef = useRef<AbortController | null>(null);
 
   const toggleSource = (key: DataSourceKey) =>
     setSources((s) => ({ ...s, [key]: !s[key] }));
@@ -201,14 +205,39 @@ export function StepThesis({ onSendToJudge }: StepThesisProps) {
   );
 
   async function handleGenerate() {
+    // Cancel any previous in-flight stream.
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     setLoading(true);
     setError(null);
     setThesis(null);
+    setThinking("");
+
     try {
-      const result = await postThesis({ intent, activeSources });
-      setThesis(result);
+      await streamSSE(
+        "/api/thesis/stream",
+        { intent, activeSources },
+        {
+          signal: ac.signal,
+          onEvent(event, data) {
+            if (event === "thinking") {
+              const d = data as { delta?: string };
+              if (d.delta) setThinking((t) => t + d.delta);
+            } else if (event === "result") {
+              setThesis(data as Thesis);
+            } else if (event === "error") {
+              const d = data as { error?: string };
+              setError(d.error ?? "Unknown streaming error");
+            }
+          },
+        }
+      );
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
+      if ((e as Error).name !== "AbortError") {
+        setError(e instanceof Error ? e.message : "Unknown error");
+      }
     } finally {
       setLoading(false);
     }
@@ -362,6 +391,13 @@ export function StepThesis({ onSendToJudge }: StepThesisProps) {
           <div className={styles.notice} style={{ marginTop: 16 }}>
             <WarnIcon />
             {error}
+          </div>
+        )}
+
+        {/* Live streaming thinking panel — visible while streaming and collapsible after */}
+        {(thinking || loading) && (
+          <div style={{ marginTop: 16 }}>
+            <LiveThinking text={thinking} streaming={loading} />
           </div>
         )}
 

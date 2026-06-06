@@ -8,10 +8,11 @@ import styles from "./studio.module.css";
 import { ThinkingTrace } from "./ThinkingTrace";
 import { TribunalFlow } from "./TribunalFlow";
 import { ArrowRightIcon, WarnIcon } from "./icons";
-import { postDebate, getCandles, type Candle } from "@/lib/api";
+import { streamSSE } from "@/lib/stream";
+import { LiveThinking } from "@/components/ai/LiveThinking";
+import { TradingViewChart } from "@/components/charts/TradingViewChart";
 import { useWallet } from "@/components/wallet/WalletProvider";
 import { ExecuteModal } from "@/components/wallet/ExecuteModal";
-import { PredictionChart } from "@/components/charts/PredictionChart";
 import { ShareButton } from "@/components/share/ShareCard";
 
 // ── Refined option card ───────────────────────────────────────────────────────
@@ -30,7 +31,6 @@ function RefinedCard({
   const barRef = useRef<HTMLDivElement>(null);
   const wallet = useWallet();
   const [modalOpen, setModalOpen] = useState(false);
-  const [candles, setCandles] = useState<Candle[]>([]);
 
   useEffect(() => {
     const bar = barRef.current;
@@ -51,16 +51,6 @@ function RefinedCard({
 
   // Find the matching ThesisOption to get direction/asset/sizeMUSD.
   const matchingOpt = thesis?.options.find((o) => o.id === opt.optionRef);
-
-  // Fetch candles for the option's asset to back the prediction chart.
-  useEffect(() => {
-    if (!matchingOpt) return;
-    let cancelled = false;
-    getCandles(matchingOpt.asset, "60", 60)
-      .then((data) => { if (!cancelled) setCandles(data); })
-      .catch(() => { /* non-fatal — chart stays empty */ });
-    return () => { cancelled = true; };
-  }, [matchingOpt?.asset]);
 
   async function handleConfirm(passphrase: string | null): Promise<ExecuteResult> {
     if (!wallet.isUnlocked && passphrase) {
@@ -123,21 +113,10 @@ function RefinedCard({
           </div>
         </div>
 
-        {/* Compact prediction chart — shows real candles + AI return band */}
-        {candles.length > 0 && matchingOpt && (
+        {/* TradingView live chart for the option's asset */}
+        {matchingOpt && (
           <div style={{ marginTop: 14, borderRadius: 10, overflow: "hidden", border: "1px solid var(--line2)" }}>
-            <PredictionChart
-              candles={candles}
-              width={440}
-              height={140}
-              tooltip={false}
-              band={{
-                entryPrice: candles[candles.length - 1]?.close ?? matchingOpt.sizeMUSD,
-                lowPct: matchingOpt.predictedReturnPct.low,
-                highPct: matchingOpt.predictedReturnPct.high,
-                targetPct: opt.predictedOutputPct,
-              }}
-            />
+            <TradingViewChart asset={matchingOpt.asset} height={220} interval="60" />
           </div>
         )}
 
@@ -220,16 +199,46 @@ export function StepJudge({ active, thesis }: StepJudgeProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ran, setRan] = useState(false);
+  const [thinking, setThinking] = useState("");
+  const abortRef = useRef<AbortController | null>(null);
 
   // Auto-run the debate when thesis becomes available and we're on step 2
   useEffect(() => {
     if (!thesis || ran) return;
     setRan(true);
+
+    // Cancel any previous stream.
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
     setLoading(true);
     setError(null);
-    postDebate(thesis)
-      .then((r) => setResult(r))
-      .catch((e) => setError(e instanceof Error ? e.message : "Unknown error"))
+    setThinking("");
+
+    streamSSE(
+      "/api/debate/stream",
+      { thesis },
+      {
+        signal: ac.signal,
+        onEvent(event, data) {
+          if (event === "thinking") {
+            const d = data as { delta?: string };
+            if (d.delta) setThinking((t) => t + d.delta);
+          } else if (event === "result") {
+            setResult(data as DebateResult);
+          } else if (event === "error") {
+            const d = data as { error?: string };
+            setError(d.error ?? "Unknown streaming error");
+          }
+        },
+      }
+    )
+      .catch((e) => {
+        if ((e as Error).name !== "AbortError") {
+          setError(e instanceof Error ? e.message : "Unknown error");
+        }
+      })
       .finally(() => setLoading(false));
   }, [thesis, ran]);
 
@@ -292,6 +301,13 @@ export function StepJudge({ active, thesis }: StepJudgeProps) {
       {loading && (
         <div className={`${styles.notice} reveal`} style={{ borderColor: "var(--gold2)" }}>
           The tribunal is deliberating… this may take ~10 seconds.
+        </div>
+      )}
+
+      {/* Live streaming thinking panel — visible while deliberating and collapsible after */}
+      {(thinking || loading) && (
+        <div className="reveal" style={{ marginTop: 16 }}>
+          <LiveThinking text={thinking} streaming={loading} />
         </div>
       )}
 

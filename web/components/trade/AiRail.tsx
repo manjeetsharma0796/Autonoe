@@ -2,9 +2,9 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import type { ChatMessage, ReasoningTrace, Thesis, ThesisOption } from "@autonoe/shared";
-import { postThesis, postAssistant } from "@/lib/api";
-import { ThinkingTrace } from "@/components/studio/ThinkingTrace";
+import type { ChatMessage, Thesis, ThesisOption } from "@autonoe/shared";
+import { streamSSE } from "@/lib/stream";
+import { LiveThinking } from "@/components/ai/LiveThinking";
 
 // ── inline icons ─────────────────────────────────────────────────────────────
 
@@ -34,20 +34,6 @@ function ChatIcon() {
       strokeLinejoin="round"
     >
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
-  );
-}
-
-function Caret() {
-  return (
-    <svg
-      className="car"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -85,26 +71,53 @@ function ThesisPane() {
     "I think WMNT runs into the Mantle upgrade. Build a 4h swing thesis against mUSD."
   );
   const [thesis, setThesis] = useState<Thesis | null>(null);
+  const [thinking, setThinking] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   async function handleGenerate() {
+    // Cancel any in-flight stream
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+
     setLoading(true);
     setError(null);
     setThesis(null);
+    setThinking("");
+
     try {
-      const result = await postThesis({
-        intent,
-        // default: all subagents enabled in the trade quick-thesis rail
-        activeSources: [
-          "subagent.onchain",
-          "subagent.market",
-          "subagent.indicators",
-        ],
-      });
-      setThesis(result);
+      await streamSSE(
+        "/api/thesis/stream",
+        {
+          intent,
+          activeSources: [
+            "subagent.onchain",
+            "subagent.market",
+            "subagent.indicators",
+          ],
+        },
+        {
+          signal: ctrl.signal,
+          onEvent(event, data) {
+            if (event === "thinking") {
+              const d = data as { delta?: string };
+              if (d.delta) setThinking((prev) => prev + d.delta);
+            } else if (event === "result") {
+              setThesis(data as Thesis);
+            } else if (event === "error") {
+              const d = data as { error?: string };
+              setError(d.error ?? "Unknown error");
+            }
+            // "token" and "done" are not produced by /thesis/stream — ignore
+          },
+        }
+      );
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
+      if ((e as { name?: string }).name !== "AbortError") {
+        setError(e instanceof Error ? e.message : "Unknown error");
+      }
     } finally {
       setLoading(false);
     }
@@ -136,7 +149,7 @@ function ThesisPane() {
           <button
             type="button"
             className="btn btn-violet btn-block"
-            onClick={handleGenerate}
+            onClick={() => void handleGenerate()}
             disabled={loading}
           >
             {loading ? "Generating…" : "Generate thesis"}
@@ -148,6 +161,9 @@ function ThesisPane() {
             {error}
           </div>
         )}
+
+        {/* Live thinking panel — visible while streaming and after */}
+        <LiveThinking text={thinking} streaming={loading} />
 
         {topOption && thesis && (
           <>
@@ -182,39 +198,6 @@ function ThesisPane() {
                 </Link>
               </div>
             </div>
-
-            {/* Reasoning traces — use the shared ThinkingTrace */}
-            {thesis.traces && thesis.traces.length > 0 ? (
-              <details className="think">
-                <summary>
-                  <span className="dotg" /> Show thinking
-                  <span style={{ flex: 1 }} />
-                  <Caret />
-                </summary>
-                <div className="trace">
-                  {thesis.traces.map((t: ReasoningTrace, i: number) => (
-                    <div className="tstep" key={i}>
-                      <b>{t.role}</b>
-                      {" — "}{t.summary}
-                    </div>
-                  ))}
-                </div>
-              </details>
-            ) : thesis.reasoning ? (
-              <details className="think">
-                <summary>
-                  <span className="dotg" /> Show thinking
-                  <span style={{ flex: 1 }} />
-                  <Caret />
-                </summary>
-                <div className="trace">
-                  <div className="tstep">
-                    <b>reasoning</b>
-                    {" — "}{thesis.reasoning}
-                  </div>
-                </div>
-              </details>
-            ) : null}
           </>
         )}
       </div>
@@ -237,11 +220,25 @@ function AssistantPane() {
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Streaming in-progress bubble text (null = not streaming)
+  const [streamingContent, setStreamingContent] = useState<string | null>(null);
+  const streamedRef = useRef<string>("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  function scrollToBottom() {
+    setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 50);
+  }
 
   async function handleSend() {
     const text = draft.trim();
     if (!text || loading) return;
+
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
 
     const userMsg: ChatMessage = { role: "user", content: text };
     const nextMessages = [...messages, userMsg];
@@ -249,18 +246,54 @@ function AssistantPane() {
     setDraft("");
     setLoading(true);
     setError(null);
+    setStreamingContent("");
+    streamedRef.current = "";
+    scrollToBottom();
 
     try {
-      const reply = await postAssistant({ messages: nextMessages });
-      setMessages((prev) => [...prev, reply]);
+      let finalMessage: ChatMessage | null = null;
+
+      await streamSSE(
+        "/api/assistant/stream",
+        { messages: nextMessages },
+        {
+          signal: ctrl.signal,
+          onEvent(event, data) {
+            if (event === "token") {
+              const d = data as { delta?: string };
+              if (d.delta) {
+                streamedRef.current += d.delta;
+                setStreamingContent(streamedRef.current);
+                scrollToBottom();
+              }
+            } else if (event === "result") {
+              finalMessage = data as ChatMessage;
+            } else if (event === "error") {
+              const d = data as { error?: string };
+              setError(d.error ?? "Unknown error");
+            }
+          },
+        }
+      );
+
+      // Commit the final message, falling back to accumulated streamed tokens
+      setStreamingContent(null);
+      const committed: ChatMessage | null =
+        finalMessage ??
+        (streamedRef.current
+          ? { role: "assistant", content: streamedRef.current }
+          : null);
+      if (committed) {
+        setMessages((prev) => [...prev, committed]);
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
+      if ((e as { name?: string }).name !== "AbortError") {
+        setError(e instanceof Error ? e.message : "Unknown error");
+        setStreamingContent(null);
+      }
     } finally {
       setLoading(false);
-      // Scroll to bottom
-      setTimeout(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 50);
+      scrollToBottom();
     }
   }
 
@@ -290,10 +323,20 @@ function AssistantPane() {
               <div className="bubble">{m.content}</div>
             </div>
           ))}
+          {/* In-progress streaming bubble */}
           {loading && (
             <div className="msg bot">
               <div className="av">A</div>
-              <div className="bubble" style={{ opacity: 0.6 }}>Thinking…</div>
+              <div className="bubble">
+                {streamingContent ? (
+                  <>
+                    {streamingContent}
+                    <span style={{ opacity: 0.5 }}>▋</span>
+                  </>
+                ) : (
+                  <span style={{ opacity: 0.6 }}>Thinking…</span>
+                )}
+              </div>
             </div>
           )}
           {error && (

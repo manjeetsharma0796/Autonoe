@@ -31,15 +31,10 @@ export function Workspace() {
     if (n === 2) setJudgeVisited(true);
     const top = stepperRef.current;
     if (top) {
-      const y =
-        top.getBoundingClientRect().top + window.scrollY - 110;
-      const lenis = (window as unknown as { __lenis?: { scrollTo: (y: number) => void } })
-        .__lenis;
       const reduce = window.matchMedia(
         "(prefers-reduced-motion: reduce)"
       ).matches;
-      if (lenis) lenis.scrollTo(y);
-      else window.scrollTo({ top: y, behavior: reduce ? "auto" : "smooth" });
+      top.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
     }
   };
 
