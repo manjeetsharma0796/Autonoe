@@ -36,6 +36,7 @@
       "name": "@autonoe/wallet",
       "version": "0.1.0",
       "dependencies": {
+        "@autonoe/chain": "0.1.0",
         "@autonoe/shared": "0.1.0",
         "viem": "^2",
       },

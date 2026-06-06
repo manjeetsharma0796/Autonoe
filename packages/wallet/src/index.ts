@@ -24,3 +24,16 @@ export {
 } from './policy.js';
 
 export { exportPrivateKey, exportKeystoreJSON } from './export.js';
+
+export {
+  MNT_FAUCET_URL,
+  MUSD_ADDRESS,
+  musdBalance,
+  claimMusdFaucet,
+  seedAgentWallet,
+  buildClients,
+  type PublicClientLike,
+  type WalletClientLike,
+  type FundingClients,
+  type SeedResult,
+} from './funding.js';

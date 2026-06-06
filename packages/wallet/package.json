@@ -17,6 +17,7 @@
     "test": "bun test"
   },
   "dependencies": {
+    "@autonoe/chain": "0.1.0",
     "@autonoe/shared": "0.1.0",
     "viem": "^2"
   }
