@@ -86,12 +86,6 @@ _(All done — the shared base every track builds on.)_
 
 > Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
 
-### T-107 — Export addresses + ABIs
-- Status: in-progress @jishnu 2026-06-06
-- Depends-on: T-106
-- Scope: chain
-- Acceptance: live Mantle Sepolia addresses written to `packages/chain/addresses.json` (replacing the placeholder) and ABIs to `packages/chain/abis/`; contracts verified on mantlescan.
-
 ### T-108 — viem chain library
 - Status: pending
 - Depends-on: T-107
@@ -309,6 +303,12 @@ _(All done — the shared base every track builds on.)_
 ## Done
 
 _(newest first)_
+
+### T-107 — Export addresses + ABIs
+- Status: done @jishnu 2026-06-06 — **deployed the full stack live to Mantle Sepolia** (chain 5003) via new `contracts/scripts/deployAll.ts` (deploys all 7 contracts + seeds all 3 pools, txs serialized on receipts for public-RPC reliability; `bun run deploy:all[:testnet]`). Live addresses written to `packages/chain/addresses.json` (placeholder replaced) and all 8 ABIs to `packages/chain/abis/`. Contracts confirmed on-chain (bytecode present). Deployer `0x4523095f3d872dD51aAB5c6428b513AF645C15B5`; mUSD `0x1f7d…d7ef`, router `0x8c30…a2ab`, mUSD/WMNT pool `0x3D54…d6B8`. ⚠️ **Source-verification on mantlescan still pending** — needs `hardhat-verify` + an explorer API key (contracts are visible as bytecode now; one follow-up command away).
+- Depends-on: T-106
+- Scope: chain
+- Acceptance: live Mantle Sepolia addresses written to `packages/chain/addresses.json` (replacing the placeholder) and ABIs to `packages/chain/abis/`; contracts verified on mantlescan.
 
 ### T-109 — Extra pools (stretch)
 - Status: done @jishnu 2026-06-06 — `contracts/scripts/seedExtra.ts` creates + seeds the secondary **mUSD/MockBTC** and **mUSD/MockETH** pairs (mint both sides → approve → `addLiquidity`, ratios ≈ live spot, overridable via `SEED_BTC_*`/`SEED_ETH_*`). Self-contained: `bun run seed:extra` deploys a fresh stack on the in-process EDR network (no key) — validated end-to-end (both pairs created); for a live run after T-107 pass existing addresses via `MUSD_ADDR`/`MOCKBTC_ADDR`/`MOCKETH_ADDR`/`FACTORY_ADDR`/`ROUTER_ADDR` + `seed:extra:testnet`. `tsc` 6/6.
