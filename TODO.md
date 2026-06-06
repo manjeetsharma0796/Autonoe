@@ -130,11 +130,6 @@ _(all done — see Done section)_
 - Scope: api
 - Acceptance: `POST /api/debate` → `DebateResult` (accepts AI or human thesis); Supporter → Discriminator → Judge each use their configured model; returns refined options (predicted % + risk + caveats) plus per-judge `traces`.
 
-### T-207 — History + leaderboard endpoints
-- Status: in-progress @jishnu 2026-06-06
-- Depends-on: T-108, T-201
-- Scope: api
-- Acceptance: `GET /api/history` merges SQLite records + on-chain DecisionLog, storing models used per role; `GET /api/leaderboard` aggregates realized outcomes by model + role.
 
 ### T-208 — Assistant chat endpoint
 - Status: done @Claude 2026-06-03 — `/api/assistant` replies via the assistant-role model (`server/src/agents/assistant.ts`). Returns a full message; streaming can be added later.
@@ -275,6 +270,12 @@ _(all done — see Done section)_
 ## Done
 
 _(newest first)_
+
+### T-207 — History + leaderboard endpoints
+- Status: done @jishnu 2026-06-06 — `GET /api/history?address=` merges the on-chain DecisionLog (`@autonoe/chain` `readHistory`, lazily imported) with off-chain SQLite metadata (model attribution/source/txHash) into `HistoryRecord[]`; `GET /api/leaderboard` aggregates realized PnL + win-rate by role/provider/model from stored decisions. New `decisions` SQLite table + `recordDecision`/`allDecisions` in `store.ts` (the writer T-304/T-603 calls); pure `buildHistory`/`buildLeaderboard` in `server/src/decisions.ts` (4 unit tests). Chain reader injectable on `createApp` for offline tests. Verified live: leaderboard `[]` on empty db; history returns the deployer's real on-chain decisions (from the T-108 test) merged with fallbacks; no-address → `[]`. `tsc` 6/6; server 30/30.
+- Depends-on: T-108, T-201
+- Scope: api
+- Acceptance: `GET /api/history` merges SQLite records + on-chain DecisionLog, storing models used per role; `GET /api/leaderboard` aggregates realized outcomes by model + role.
 
 ### T-304 — Agent-sign + execute
 - Status: done @prithwish 2026-06-06 — `packages/wallet/src/execute.ts` (exported via the barrel): `executeOption(input, deps?)` orchestrates **manual-confirm guard** (`confirmed` must be `true` — no auto-execute, thrown before any I/O) → **spending-policy check** (T-303 `enforcePolicy`: hard cap + token allow-list) → **swap via the chain lib** (T-108 `swap()` = approve + `swapExactTokensForTokens` + slippage) → **DecisionLog write** (T-108 `writeDecision()`, `pnl` 0n on an open; realized PnL is T-603), returning the **shared `SwapResult`** (`{ txHash, amountIn, amountOut, explorerUrl }`) + the decision tx hash. Pure helpers `buildSwapPlan` (direction-aware path/amountIn: long/hold/hedge → mUSD→asset @6dec, short → asset→mUSD @18dec) + `scaleToBaseUnits`. Chain deps are injectable → 14 new offline tests (confirm guard, over-cap, disallowed token, long/short path + scaling, shared-shape mapping). `tsc -b` clean; `bun test` wallet 35/35.

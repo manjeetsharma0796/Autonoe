@@ -10,12 +10,32 @@ import { generateThesis, structureHumanThesis } from './agents/thesis.ts';
 import { runDebate } from './agents/debate.ts';
 import { chat } from './agents/assistant.ts';
 import { fetchCandles } from './market/candles.ts';
+import { allDecisions } from './store.ts';
+import { buildHistory, buildLeaderboard, type OnchainDecision } from './decisions.ts';
 
 type Handler = (req: Request, res: Response) => Promise<void> | void;
 const wrap = (h: Handler) => (req: Request, res: Response, next: NextFunction) =>
   Promise.resolve(h(req, res)).catch(next);
 
-export function createApp() {
+export interface AppDeps {
+  /** On-chain DecisionLog reader; defaults to the chain lib (lazily imported so
+   *  importing the app doesn't pull viem/RPC into offline tests). */
+  readHistory?: (address: string) => Promise<OnchainDecision[]>;
+}
+
+const defaultReadHistory = async (address: string): Promise<OnchainDecision[]> => {
+  const { readHistory } = await import('@autonoe/chain');
+  const records = await readHistory(address as `0x${string}`);
+  return records.map((d) => ({
+    thesisHash: d.thesisHash,
+    optionRef: d.optionRef,
+    pnl: d.pnl,
+    timestamp: d.timestamp,
+  }));
+};
+
+export function createApp(deps: AppDeps = {}) {
+  const readHistory = deps.readHistory ?? defaultReadHistory;
   const app = express();
   app.use(express.json({ limit: '1mb' }));
 
@@ -96,9 +116,24 @@ export function createApp() {
     }),
   );
 
-  // T-207 will back these with SQLite + on-chain DecisionLog.
-  app.get(API.history, (_req, res) => res.json([]));
-  app.get(API.leaderboard, (_req, res) => res.json([]));
+  // /api/history?address= — merge the on-chain DecisionLog for that wallet with
+  // our stored off-chain metadata (model attribution, source, tx hash). T-207.
+  app.get(
+    API.history,
+    wrap(async (req, res) => {
+      const address = typeof req.query.address === 'string' ? req.query.address : '';
+      if (!/^0x[0-9a-fA-F]{40}$/.test(address)) {
+        res.json([]);
+        return;
+      }
+      const onchain = await readHistory(address);
+      const metaByHash = new Map(allDecisions().map((d) => [d.thesisHash.toLowerCase(), d]));
+      res.json(buildHistory(onchain, metaByHash));
+    }),
+  );
+
+  // /api/leaderboard — realized outcomes aggregated by model + role. T-207.
+  app.get(API.leaderboard, (_req, res) => res.json(buildLeaderboard(allDecisions())));
 
   // error handler
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

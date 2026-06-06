@@ -61,3 +61,44 @@ export function getRoles(): RoleModelMap | null {
 export function setRoles(map: RoleModelMap): void {
   kv.setJSON(ROLES_KEY, map);
 }
+
+// ── Executed decisions (off-chain metadata, merged with the on-chain
+// DecisionLog for /api/history and aggregated for /api/leaderboard, T-207) ─────
+
+db.exec(
+  'CREATE TABLE IF NOT EXISTS decisions (thesisHash TEXT PRIMARY KEY, data TEXT NOT NULL)',
+);
+const decGet = db.query<{ data: string }, [string]>(
+  'SELECT data FROM decisions WHERE thesisHash = ?',
+);
+const decAll = db.query<{ data: string }, []>('SELECT data FROM decisions');
+const decSet = db.query(
+  'INSERT INTO decisions(thesisHash, data) VALUES(?, ?) ON CONFLICT(thesisHash) DO UPDATE SET data = excluded.data',
+);
+
+/** Off-chain record written at execution time (T-304/T-603), keyed by the
+ *  on-chain `thesisHash` so /api/history can merge it with the DecisionLog. */
+export interface StoredDecision {
+  thesisHash: string;
+  thesisId: string;
+  source: 'ai' | 'human';
+  judged: boolean;
+  chosenOptionRef: string;
+  txHash: string | null;
+  pnlMUSD: number;
+  modelsUsed: Partial<RoleModelMap>;
+  createdAt: string;
+}
+
+export function recordDecision(d: StoredDecision): void {
+  decSet.run(d.thesisHash, JSON.stringify(d));
+}
+
+export function getDecision(thesisHash: string): StoredDecision | null {
+  const row = decGet.get(thesisHash);
+  return row ? (JSON.parse(row.data) as StoredDecision) : null;
+}
+
+export function allDecisions(): StoredDecision[] {
+  return decAll.all().map((r) => JSON.parse(r.data) as StoredDecision);
+}
