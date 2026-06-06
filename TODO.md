@@ -87,7 +87,7 @@ _(All done — the shared base every track builds on.)_
 > Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
 
 ### T-106 — Deploy + seed script
-- Status: pending
+- Status: in-progress @jishnu 2026-06-06
 - Depends-on: T-102, T-103, T-104, T-105
 - Scope: contracts
 - Acceptance: `contracts/scripts/deploy.ts` deploys all tokens + factory + router + DecisionLog, creates the `mUSD/WMNT` pair, seeds liquidity, and prints all addresses.
