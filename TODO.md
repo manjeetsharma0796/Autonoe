@@ -131,7 +131,7 @@ _(all done — see Done section)_
 - Acceptance: `POST /api/debate` → `DebateResult` (accepts AI or human thesis); Supporter → Discriminator → Judge each use their configured model; returns refined options (predicted % + risk + caveats) plus per-judge `traces`.
 
 ### T-207 — History + leaderboard endpoints
-- Status: pending — endpoints exist but stubbed (`GET /api/history` / `/api/leaderboard` return `[]`); wiring needs SQLite records + the chain lib's DecisionLog reader (T-108).
+- Status: in-progress @jishnu 2026-06-06
 - Depends-on: T-108, T-201
 - Scope: api
 - Acceptance: `GET /api/history` merges SQLite records + on-chain DecisionLog, storing models used per role; `GET /api/leaderboard` aggregates realized outcomes by model + role.
