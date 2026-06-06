@@ -218,12 +218,6 @@ _(All done — the shared base every track builds on.)_
 - Scope: web
 - Acceptance: **Next.js App Router** app scaffolded with bun (`bunx create-next-app`); 6 routes as `app/` segments (`/`, `/markets`, `/trade`, `/studio`, `/history`, `/settings`); design tokens applied (dark OLED, gold `#F59E0B` + purple `#8B5CF6`, Orbitron/Exo 2); motion/VFX deps via bun (Lenis, gsap + @gsap/react, framer-motion); a client Providers wrapper for wagmi/RainbowKit; MetaMask connect on Mantle Sepolia. Add `web` to root `workspaces`. See PRD §10a boundary + §11b motion stack + §11h workflow.
 
-### T-402 — Global shell + wallet drawer
-- Status: in-progress @jishnu 2026-06-06
-- Depends-on: T-401, T-301
-- Scope: web
-- Acceptance: persistent nav + a global slide-over wallet drawer reachable from every route; balances/fund/export/limits (calls `packages/wallet`); clearly distinguishes funding wallet (MetaMask) vs autonomous agent wallet with an "acting wallet" indicator; persistent "testnet · not financial advice" disclaimer.
-
 ### T-404 — Landing page (`/`) — VISUAL TEMPLATE
 - Status: done @Claude 2026-06-03 — `app/page.tsx` + `components/landing/*` (Hero char-split, Tribunal flow, HowItWorks, Benchmark count-up, MarketsPreview, FinalCta); GSAP/useGSAP reveals. `next build` green.
 - Depends-on: T-401
@@ -339,6 +333,12 @@ _(All done — the shared base every track builds on.)_
 ## Done
 
 _(newest first)_
+
+### T-402 — Global shell + wallet drawer
+- Status: done @jishnu 2026-06-06 — global slide-over wallet drawer (`web/components/wallet/{WalletProvider,WalletDrawer}.tsx`) reachable from every route via the AppShell nav. Cleanly separates the **funding wallet** (MetaMask/wagmi) from the autonomous **agent wallet** (`@autonoe/wallet`) with an "Acting · Agent" indicator + colour-coded cards. Agent wallet: create/unlock/lock (passphrase, localStorage `WalletStore` in `web/lib/walletStore.ts`), export private key (clipboard) + keystore JSON (download), spending-limits editor (`getPolicy`/`setPolicy`). Balances + faucet are sample data pending the chain lib (T-602). Persistent "testnet · not financial advice" marker on every route. Made `@autonoe/wallet` consumable from a strict-DOM tsconfig by emitting `dist` + `.d.ts` (mirrors `@autonoe/chain`). `tsc` (6/6), `bun test` (wallet 14/14), `next build` green.
+- Depends-on: T-401, T-301
+- Scope: web
+- Acceptance: persistent nav + a global slide-over wallet drawer reachable from every route; balances/fund/export/limits (calls `packages/wallet`); clearly distinguishes funding wallet (MetaMask) vs autonomous agent wallet with an "acting wallet" indicator; persistent "testnet · not financial advice" disclaimer.
 
 ### T-413 — Share thesis/verdict card
 - Status: done @prithwish 2026-06-05 — reusable `web/components/share/ShareCard.tsx` `ShareButton` (client): one-click popover with a live canvas preview, **Copy link** (encodes the card into a `/studio#card=<base64>` deep link → clipboard) and **Download image** (renders a 1200×630 branded PNG via canvas). Closes on outside-click/Escape. Wired into the Judge verdict (`StepJudge`) and the thesis options header (`StepThesis`). `next build` + `tsc` green.
