@@ -21,6 +21,18 @@ export function createApp() {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
 
+  // Verbose request log: method, path, status, duration.
+  app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+      const ms = Date.now() - start;
+      const code = res.statusCode;
+      const mark = code >= 500 ? '✗' : code >= 400 ? '!' : '✓';
+      console.log(`${mark} ${req.method} ${req.originalUrl} → ${code} ${ms}ms`);
+    });
+    next();
+  });
+
   app.get('/health', (_req, res) => res.json({ ok: true }));
 
   app.get(API.providers, (_req, res) => res.json(listProviders()));
