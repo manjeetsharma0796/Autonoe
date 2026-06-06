@@ -47,7 +47,7 @@ Working alone with no reviewer? Edit `TODO.md` directly on `main`, push (the pus
 | `@prithwish` | Linux | Contracts & chain (Track 1) | active |
 | `@____` | TBD | Backend + agents (Track 2) | fill before first claim |
 | `@____` | TBD | Wallet + execution (Track 3) | fill before first claim |
-| `@____` | TBD | Frontend UI (Track 4) | fill before first claim |
+| `@jishnu` | Windows | Frontend UI (Track 4) + integration | active |
 
 ## Active claims
 
