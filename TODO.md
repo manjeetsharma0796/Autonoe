@@ -293,7 +293,7 @@ _(All done — the shared base every track builds on.)_
 ## 6 — Integration & Demo
 
 ### T-601 — Wire UI ↔ server (real endpoints)
-- Status: pending
+- Status: in-progress @jishnu 2026-06-06
 - Depends-on: T-205, T-206, T-401
 - Scope: integration
 - Acceptance: thesis + debate render from the live API, no mocks.
