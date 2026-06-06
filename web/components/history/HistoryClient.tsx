@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import type { HistoryRecord } from "@autonoe/shared";
 import { addressUrl, txUrl } from "@autonoe/chain";
 import { useAgentWallet } from "../wallet/WalletProvider";
+import { LeaderboardClient } from "./LeaderboardClient";
 
 function fmtMUSD(n: number): string {
   return `${n >= 0 ? "+" : ""}${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
@@ -200,6 +201,8 @@ export function HistoryClient() {
           </p>
         </>
       )}
+
+      <LeaderboardClient />
     </main>
   );
 }
