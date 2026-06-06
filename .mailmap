@@ -1,0 +1,6 @@
+# Canonicalize author identities so commit-name variants collapse to one person
+# in `git shortlog`, `git log --use-mailmap`, and the Telegram leaderboard.
+# Format: Proper Name <proper@email> <other-email-to-map>
+
+Jishnu Baruah <52702792+jishnu-baruah@users.noreply.github.com> <jsbaruah1@gmail.com>
+Jishnu Baruah <52702792+jishnu-baruah@users.noreply.github.com> jishnu-baruah <jsbaruah1@gmail.com>

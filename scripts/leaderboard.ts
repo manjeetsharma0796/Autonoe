@@ -9,7 +9,9 @@ const title = process.argv[3] ?? 'Leaderboard';
 
 let log = '';
 try {
-  log = execSync(`git log --since="${since}" --pretty=format:%an%x09%s`, {
+  // %aN (not %an) applies .mailmap so name/email variants of one person
+  // collapse into a single leaderboard row.
+  log = execSync(`git log --use-mailmap --since="${since}" --pretty=format:%aN%x09%s`, {
     encoding: 'utf8',
   });
 } catch {
