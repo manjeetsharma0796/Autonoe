@@ -86,11 +86,7 @@ _(All done — the shared base every track builds on.)_
 
 > Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
 
-### T-108 — viem chain library
-- Status: in-progress @jishnu 2026-06-06
-- Depends-on: T-107
-- Scope: chain
-- Acceptance: `packages/chain/src/{clients,swapExecutor,decisionLog}.ts` — `getQuote()`, `swap()` (approve + `swapExactTokensForTokens` + slippage), `writeDecision()`, `readHistory()`. An integration test executes a real swap on testnet.
+_(all done — see Done section)_
 
 ---
 
@@ -285,6 +281,12 @@ _(All done — the shared base every track builds on.)_
 ## Done
 
 _(newest first)_
+
+### T-108 — viem chain library
+- Status: done @jishnu 2026-06-06 — `packages/chain/src/{clients,swapExecutor,decisionLog,abis}.ts`: viem public/wallet clients (`defineChain` Mantle Sepolia) + deployed-address registry; `getQuote()` (router `getAmountsOut`); `swap()` (approve → `swapExactTokensForTokens` with bps slippage floor, realized `amountOut` parsed from receipt Transfer logs — robust against load-balanced-RPC read lag); `writeDecision()`/`readHistory()` over DecisionLog. Added `viem` to the package deps. **Integration test executed a real swap + DecisionLog round-trip on Mantle Sepolia** (`src/swap.integration.test.ts`, skips without `DEPLOYER_PRIVATE_KEY` so CI stays green — 2 pass / 2 skip there). `tsc` 6/6; full suite green.
+- Depends-on: T-107
+- Scope: chain
+- Acceptance: `packages/chain/src/{clients,swapExecutor,decisionLog}.ts` — `getQuote()`, `swap()` (approve + `swapExactTokensForTokens` + slippage), `writeDecision()`, `readHistory()`. An integration test executes a real swap on testnet.
 
 ### T-305 — Funding helpers
 - Status: done @prithwish 2026-06-06 — `packages/wallet/src/funding.ts` (exported via the package barrel): **native MNT faucet link surfaced** (`MNT_FAUCET_URL` ← `@autonoe/chain` `FAUCET_URL`) + live `MUSD_ADDRESS` from `@autonoe/chain/addresses.json`; **faucet re-mint call** `claimMusdFaucet(privateKey)` (writes mUSD `faucet()`, waits receipt, throws on revert w/ cooldown/cap hint, returns `{ hash, explorerUrl }`); **auto-seed on creation** `seedAgentWallet(privateKey, address)` — guards on zero native MNT (a fresh EOA can't pay gas) returning `{ seeded:false, needsGas:true, mntFaucetUrl }`, else claims the faucet; plus `musdBalance(address)`. Clients are injectable (`PublicClientLike`/`WalletClientLike`) so it's unit-tested fully offline with fakes; real path uses inline viem clients on Mantle Sepolia. Added `@autonoe/chain` dep to the wallet package. `tsc -b` clean; `bun test` 22/22 (14 existing + 8 new).
