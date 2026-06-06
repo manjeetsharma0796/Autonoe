@@ -99,7 +99,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: `packages/chain/src/{clients,swapExecutor,decisionLog}.ts` — `getQuote()`, `swap()` (approve + `swapExactTokensForTokens` + slippage), `writeDecision()`, `readHistory()`. An integration test executes a real swap on testnet.
 
 ### T-109 — Extra pools (stretch)
-- Status: pending
+- Status: in-progress @jishnu 2026-06-06
 - Depends-on: T-106
 - Scope: contracts
 - Acceptance: `mUSD/MockBTC` and `mUSD/MockETH` pairs created + seeded via a `seedExtra.ts` script.
