@@ -87,7 +87,7 @@ _(All done — the shared base every track builds on.)_
 > Solidity/Hardhat + the viem library other tracks call. Independent of tracks 2–4 after Foundations.
 
 ### T-107 — Export addresses + ABIs
-- Status: pending
+- Status: in-progress @jishnu 2026-06-06
 - Depends-on: T-106
 - Scope: chain
 - Acceptance: live Mantle Sepolia addresses written to `packages/chain/addresses.json` (replacing the placeholder) and ABIs to `packages/chain/abis/`; contracts verified on mantlescan.
