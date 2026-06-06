@@ -223,12 +223,6 @@ _(all done — see Done section)_
 
 ## 6 — Integration & Demo
 
-### T-602 — Wire wallet ↔ chain lib (real swap)
-- Status: in-progress @jishnu 2026-06-06
-- Depends-on: T-304, T-108
-- Scope: integration
-- Acceptance: a real `mUSD/WMNT` swap executes from the agent wallet on testnet.
-
 ### T-603 — On-chain logging live
 - Status: pending
 - Depends-on: T-304, T-105, T-207
@@ -252,6 +246,12 @@ _(all done — see Done section)_
 ## Done
 
 _(newest first)_
+
+### T-602 — Wire wallet ↔ chain lib (real swap)
+- Status: done @jishnu 2026-06-06 — end-to-end integration test (`packages/wallet/tests/execute.integration.test.ts`) drives **`executeOption`** (T-304) → policy check → **real `swap()`** (T-108) → **DecisionLog write**, executing a live **mUSD→WMNT** swap **from the agent wallet on Mantle Sepolia** (owner-mints mUSD to fund, confirms `SwapResult.txHash` + non-zero `amountOut` + `decisionTxHash`). Skips without `DEPLOYER_PRIVATE_KEY` so CI stays green (wallet 35 pass / 1 skip). Verified live this session.
+- Depends-on: T-304, T-108
+- Scope: integration
+- Acceptance: a real `mUSD/WMNT` swap executes from the agent wallet on testnet.
 
 ### T-412 — Model performance leaderboard
 - Status: done @jishnu 2026-06-06 — `web/components/history/LeaderboardClient.tsx` mounted on the Benchmark page (`/history`): reads `GET /api/leaderboard`, groups rows by AI role (thesis → supporter → discriminator → judge → assistant → subagents) and ranks each role's models by avg realized PnL, showing trades / win-rate / avg PnL (mUSD). Graceful empty + server-offline states. `tsc` 6/6; `next build` green.
