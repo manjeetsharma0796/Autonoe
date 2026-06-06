@@ -1,6 +1,7 @@
 import { test, expect } from 'bun:test';
 import { sma, ema, rsi, macd, snapshot } from '../src/market/indicators.ts';
 import { getKline, getTicker, type Fetcher } from '../src/market/bybit.ts';
+import { fetchCandles } from '../src/market/candles.ts';
 
 const upSeries = Array.from({ length: 30 }, (_, i) => 100 + i); // strictly increasing
 
@@ -66,4 +67,22 @@ test('getTicker parses price + 24h percent', async () => {
   const t = await getTicker('MockBTC', fakeFetch);
   expect(t.price).toBe(1.2843);
   expect(t.change24hPct).toBeCloseTo(4.21, 5);
+});
+
+// ── /api/candles query validation (fetchCandles) ─────────────────────────────
+
+test('fetchCandles returns parsed candles for a valid asset', async () => {
+  const candles = await fetchCandles({ asset: 'WMNT', interval: '60', limit: 3 }, fakeFetch);
+  expect(candles).toHaveLength(3);
+  expect(candles[0]!.close).toBe(104);
+});
+
+test('fetchCandles rejects an unknown asset with a 400', async () => {
+  await expect(fetchCandles({ asset: 'DOGE' }, fakeFetch)).rejects.toMatchObject({ status: 400 });
+});
+
+test('fetchCandles rejects an unsupported interval with a 400', async () => {
+  await expect(
+    fetchCandles({ asset: 'WMNT', interval: '7' }, fakeFetch),
+  ).rejects.toMatchObject({ status: 400 });
 });

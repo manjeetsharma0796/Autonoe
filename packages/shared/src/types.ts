@@ -73,6 +73,17 @@ export const ASSET_SYMBOLS: readonly AssetSymbol[] = ['WMNT', 'MockBTC', 'MockET
 
 export type RiskLevel = 'low' | 'medium' | 'high';
 
+/** One OHLCV bar. Served by `/api/candles`, consumed by the price chart. */
+export interface Candle {
+  /** Bar open time, ms since epoch. */
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
 export interface ThesisOption {
   /** Stable id, e.g. "opt-1". */
   id: string;

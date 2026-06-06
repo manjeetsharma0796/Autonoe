@@ -278,12 +278,6 @@ _(All done — the shared base every track builds on.)_
 - Scope: web
 - Acceptance: Binance-style markets overview (PRD §11g) — market-stats header, sortable table of all `mUSD/<asset>` pairs (price, 24h %, 24h volume, sparkline), top gainers/losers strip, favorite toggle; clicking a row opens `/trade` with the pair preloaded. Reuses the market price feed (T-204 / T-405), no new backend contract.
 
-### T-415 — Interactive prediction chart
-- Status: in-progress @jishnu 2026-06-06
-- Depends-on: T-405, T-204
-- Scope: web
-- Acceptance: real candles via TradingView **lightweight-charts** fed by Bybit data (through the server/market layer), with the Judge's **predicted-return band** + entry/target markers overlaid on the selected option, and hover tooltips. Used on `/trade` and the `/studio` verdict view to visualize the thesis prediction. Add a server endpoint to expose candles (or reuse the market tool output) so the UI doesn't call Bybit directly.
-
 ---
 
 ## 5 — Infra / DevOps / Docs
@@ -333,6 +327,12 @@ _(All done — the shared base every track builds on.)_
 ## Done
 
 _(newest first)_
+
+### T-415 — Interactive prediction chart
+- Status: done @jishnu 2026-06-06 — new `GET /api/candles?asset=&interval=&limit=` (`server/src/market/candles.ts` over the Bybit market layer; validates asset/interval, clamps limit ≤500) so the UI never calls Bybit directly. `web/components/trade/PredictionChart.tsx` renders real OHLCV via TradingView **lightweight-charts** with an **entry line + predicted-return band** (low/high target price lines) + target marker for the selected option, and a crosshair OHLC tooltip. Wired into `/trade` (`ChartPanel`, timeframe chips → Bybit intervals, per-pair band) and the `/studio` verdict view (`StepJudge`, preferred option's band). Added shared `Candle` type + `candles` route to the API contract. Verified: endpoint returns live MNTUSDT candles + 400s bad input; `tsc` 6/6, `bun test` (server 19/19 incl. 3 new, shared 4/4), `next build` green.
+- Depends-on: T-405, T-204
+- Scope: web
+- Acceptance: real candles via TradingView **lightweight-charts** fed by Bybit data (through the server/market layer), with the Judge's **predicted-return band** + entry/target markers overlaid on the selected option, and hover tooltips. Used on `/trade` and the `/studio` verdict view to visualize the thesis prediction. Add a server endpoint to expose candles (or reuse the market tool output) so the UI doesn't call Bybit directly.
 
 ### T-402 — Global shell + wallet drawer
 - Status: done @jishnu 2026-06-06 — global slide-over wallet drawer (`web/components/wallet/{WalletProvider,WalletDrawer}.tsx`) reachable from every route via the AppShell nav. Cleanly separates the **funding wallet** (MetaMask/wagmi) from the autonomous **agent wallet** (`@autonoe/wallet`) with an "Acting · Agent" indicator + colour-coded cards. Agent wallet: create/unlock/lock (passphrase, localStorage `WalletStore` in `web/lib/walletStore.ts`), export private key (clipboard) + keystore JSON (download), spending-limits editor (`getPolicy`/`setPolicy`). Balances + faucet are sample data pending the chain lib (T-602). Persistent "testnet · not financial advice" marker on every route. Made `@autonoe/wallet` consumable from a strict-DOM tsconfig by emitting `dist` + `.d.ts` (mirrors `@autonoe/chain`). `tsc` (6/6), `bun test` (wallet 14/14), `next build` green.

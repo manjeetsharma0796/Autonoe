@@ -3,6 +3,7 @@ import styles from "./studio.module.css";
 import { ThinkingTrace } from "./ThinkingTrace";
 import { TribunalFlow } from "./TribunalFlow";
 import { ShareButton } from "../share/ShareCard";
+import { PredictionChart } from "../trade/PredictionChart";
 import { ArrowRightIcon, WarnIcon } from "./icons";
 import { JUDGES, REFINED_OPTIONS, type RefinedOption } from "./data";
 
@@ -122,6 +123,29 @@ export function StepJudge({ active }: { active: boolean }) {
               { label: "confidence", value: "0.62" },
             ],
           }}
+        />
+      </div>
+
+      <div
+        className="reveal"
+        style={{
+          marginTop: 24,
+          padding: 16,
+          border: "1px solid var(--line)",
+          borderRadius: 14,
+          background: "rgba(255,255,255,0.015)",
+        }}
+      >
+        <PredictionChart
+          asset="WMNT"
+          interval="240"
+          prediction={{
+            direction: "long",
+            lowPct: 6.4,
+            highPct: 11.0,
+            label: "preferred",
+          }}
+          height={300}
         />
       </div>
 

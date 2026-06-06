@@ -4,6 +4,7 @@
 import type {
   AIRole,
   AssetSymbol,
+  Candle,
   ChatMessage,
   DebateResult,
   ProviderId,
@@ -21,6 +22,7 @@ export const API = {
   thesisHuman: '/api/thesis/human',
   debate: '/api/debate',
   assistant: '/api/assistant',
+  candles: '/api/candles',
   history: '/api/history',
   leaderboard: '/api/leaderboard',
 } as const;
@@ -102,6 +104,17 @@ export interface AssistantRequest {
 }
 /** Streamed; each chunk is a partial assistant message. */
 export type AssistantChunk = { delta: string } | { done: true };
+
+// ── /api/candles?asset=&interval=&limit= ─────────────────────────────────────
+
+export interface CandlesQuery {
+  asset: AssetSymbol;
+  /** Bybit kline interval in minutes ('1'|'5'|'15'|'60'|'240') or 'D'|'W'. */
+  interval?: string;
+  /** Max bars (server clamps to 1..500). */
+  limit?: number;
+}
+export type CandlesResponse = Candle[];
 
 // ── /api/history ─────────────────────────────────────────────────────────────
 
