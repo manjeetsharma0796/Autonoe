@@ -292,12 +292,6 @@ _(All done — the shared base every track builds on.)_
 
 ## 6 — Integration & Demo
 
-### T-601 — Wire UI ↔ server (real endpoints)
-- Status: in-progress @jishnu 2026-06-06
-- Depends-on: T-205, T-206, T-401
-- Scope: integration
-- Acceptance: thesis + debate render from the live API, no mocks.
-
 ### T-602 — Wire wallet ↔ chain lib (real swap)
 - Status: pending
 - Depends-on: T-304, T-108
@@ -327,6 +321,12 @@ _(All done — the shared base every track builds on.)_
 ## Done
 
 _(newest first)_
+
+### T-601 — Wire UI ↔ server (real endpoints)
+- Status: done @jishnu 2026-06-06 — typed API client (`web/lib/api.ts`) over the `@autonoe/shared` contract. The Studio flow now renders **live**: `StepThesis` calls `/api/thesis` (AI, data-source toggles → `subagent.*` roles) or `/api/thesis/human`, and `StepJudge` calls `/api/debate` on the lifted thesis (Supporter/Discriminator/Judge arguments + traces + refined options + verdict + prediction chart) — state lifted into `Workspace`, all sample arrays gone. Trade `AiRail` Quick Thesis → `/api/thesis`, Assistant → `/api/assistant`. Loading + graceful error states (missing-key errors deep-link to `/settings`). Verified: server reachable, `/api/thesis` returns a live thesis with a key and the structured `{error}` the UI surfaces without one. `tsc` 6/6, `next build` green.
+- Depends-on: T-205, T-206, T-401
+- Scope: integration
+- Acceptance: thesis + debate render from the live API, no mocks.
 
 ### T-415 — Interactive prediction chart
 - Status: done @jishnu 2026-06-06 — new `GET /api/candles?asset=&interval=&limit=` (`server/src/market/candles.ts` over the Bybit market layer; validates asset/interval, clamps limit ≤500) so the UI never calls Bybit directly. `web/components/trade/PredictionChart.tsx` renders real OHLCV via TradingView **lightweight-charts** with an **entry line + predicted-return band** (low/high target price lines) + target marker for the selected option, and a crosshair OHLC tooltip. Wired into `/trade` (`ChartPanel`, timeframe chips → Bybit intervals, per-pair band) and the `/studio` verdict view (`StepJudge`, preferred option's band). Added shared `Candle` type + `candles` route to the API contract. Verified: endpoint returns live MNTUSDT candles + 400s bad input; `tsc` 6/6, `bun test` (server 19/19 incl. 3 new, shared 4/4), `next build` green.
