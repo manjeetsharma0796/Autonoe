@@ -9,6 +9,7 @@ import { getRoleMap, setRoleMap } from './roles.ts';
 import { generateThesis, structureHumanThesis } from './agents/thesis.ts';
 import { runDebate } from './agents/debate.ts';
 import { chat } from './agents/assistant.ts';
+import { fetchCandles } from './market/candles.ts';
 
 type Handler = (req: Request, res: Response) => Promise<void> | void;
 const wrap = (h: Handler) => (req: Request, res: Response, next: NextFunction) =>
@@ -83,6 +84,15 @@ export function createApp() {
       const { messages, context } = req.body ?? {};
       if (!Array.isArray(messages)) throw httpError(400, 'messages[] required');
       res.json(await chat({ messages, context }));
+    }),
+  );
+
+  // Real OHLCV bars (Bybit spot via the market layer) so the UI never calls
+  // Bybit directly — feeds the interactive prediction chart (T-415).
+  app.get(
+    API.candles,
+    wrap(async (req, res) => {
+      res.json(await fetchCandles(req.query));
     }),
   );
 

@@ -13,6 +13,9 @@ export type Pair = {
   dir: "up" | "down";
   /** mUSD -> asset conversion rate (asset per 1 mUSD) */
   rate: number;
+  /** Sample quick-thesis predicted-return band (percent) for the chart overlay. */
+  predLowPct: number;
+  predHighPct: number;
 };
 
 export const PAIRS: Pair[] = [
@@ -25,6 +28,8 @@ export const PAIRS: Pair[] = [
     ch: "4.21%",
     dir: "up",
     rate: 0.7787,
+    predLowPct: 6.4,
+    predHighPct: 11.0,
   },
   {
     sym: "MockBTC",
@@ -35,6 +40,8 @@ export const PAIRS: Pair[] = [
     ch: "1.08%",
     dir: "down",
     rate: 0.00001557,
+    predLowPct: 2.0,
+    predHighPct: 5.5,
   },
   {
     sym: "MockETH",
@@ -45,6 +52,8 @@ export const PAIRS: Pair[] = [
     ch: "2.74%",
     dir: "up",
     rate: 0.0002867,
+    predLowPct: 3.2,
+    predHighPct: 7.8,
   },
 ];
 
