@@ -98,12 +98,6 @@ _(All done — the shared base every track builds on.)_
 - Scope: chain
 - Acceptance: `packages/chain/src/{clients,swapExecutor,decisionLog}.ts` — `getQuote()`, `swap()` (approve + `swapExactTokensForTokens` + slippage), `writeDecision()`, `readHistory()`. An integration test executes a real swap on testnet.
 
-### T-109 — Extra pools (stretch)
-- Status: in-progress @jishnu 2026-06-06
-- Depends-on: T-106
-- Scope: contracts
-- Acceptance: `mUSD/MockBTC` and `mUSD/MockETH` pairs created + seeded via a `seedExtra.ts` script.
-
 ---
 
 ## 2 — Backend, Proxy & Agents
@@ -315,6 +309,12 @@ _(All done — the shared base every track builds on.)_
 ## Done
 
 _(newest first)_
+
+### T-109 — Extra pools (stretch)
+- Status: done @jishnu 2026-06-06 — `contracts/scripts/seedExtra.ts` creates + seeds the secondary **mUSD/MockBTC** and **mUSD/MockETH** pairs (mint both sides → approve → `addLiquidity`, ratios ≈ live spot, overridable via `SEED_BTC_*`/`SEED_ETH_*`). Self-contained: `bun run seed:extra` deploys a fresh stack on the in-process EDR network (no key) — validated end-to-end (both pairs created); for a live run after T-107 pass existing addresses via `MUSD_ADDR`/`MOCKBTC_ADDR`/`MOCKETH_ADDR`/`FACTORY_ADDR`/`ROUTER_ADDR` + `seed:extra:testnet`. `tsc` 6/6.
+- Depends-on: T-106
+- Scope: contracts
+- Acceptance: `mUSD/MockBTC` and `mUSD/MockETH` pairs created + seeded via a `seedExtra.ts` script.
 
 ### T-106 — Deploy + seed script
 - Status: done @jishnu 2026-06-06 — `contracts/scripts/deploy.ts` deploys mUSD + WMNT/MockBTC/MockETH + UniswapV2Factory/Router02 (WMNT as WETH) + DecisionLog, creates the `mUSD/WMNT` pair, seeds liquidity (`ownerMint` + wrap + `addLiquidity`, faucet-friendly `SEED_MUSD`/`SEED_WMNT` overrides), and prints every address (table + JSON). `bun run deploy` targets the in-process EDR network (no key) — validated end-to-end; `bun run deploy:testnet` (`DEPLOY_NETWORK=mantleSepolia` + `DEPLOYER_PRIVATE_KEY` + `MANTLE_SEPOLIA_RPC`) does the live run, which is **T-107**'s job. Per repo convention, viem-contract scripts are checked/run by Hardhat (not tsc), so `scripts/` is excluded from the contracts tsconfig like `test/`. `tsc` 6/6, offline tests pass.
