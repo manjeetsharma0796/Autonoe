@@ -177,7 +177,7 @@ _(All done — the shared base every track builds on.)_
 - Acceptance: given a chosen option, builds + signs + submits a swap via the chain lib; returns `SwapResult`; triggers the DecisionLog write. Execution is manual-confirm (no auto-execute).
 
 ### T-305 — Funding helpers
-- Status: pending
+- Status: in-progress @prithwish 2026-06-06
 - Depends-on: T-107
 - Scope: wallet
 - Acceptance: auto-seed mUSD on wallet creation + faucet re-mint call; native MNT faucet link surfaced.
