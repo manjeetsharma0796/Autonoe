@@ -7,6 +7,7 @@ import { ASSET_SYMBOLS } from "@autonoe/shared";
 import styles from "./studio.module.css";
 import { ThinkingTrace } from "./ThinkingTrace";
 import { ShareButton } from "../share/ShareCard";
+import { ExecuteDialog } from "../execute/ExecuteDialog";
 import { ApiError, generateThesis, structureHumanThesis } from "@/lib/api";
 import { bandLabel, dirLabel, moneyMUSD } from "./format";
 import {
@@ -49,44 +50,64 @@ const SOURCE_ROLE: Record<DataSourceKey, string> = {
 
 function ThesisOptionCard({
   opt,
+  thesis,
   onSendToJudge,
 }: {
   opt: ThesisOption;
+  thesis: Thesis;
   onSendToJudge: () => void;
 }) {
+  const [executing, setExecuting] = useState(false);
+
   return (
-    <article className={`${styles.opt} ${styles[opt.risk]}`}>
-      <div className={styles.otop}>
-        <span className={`${styles.dir} ${styles[opt.direction]}`}>
-          <TrendUpIcon /> {dirLabel(opt.direction)}
-        </span>
-        <span className={`${styles.riskpill} ${styles[opt.risk]}`}>
-          {opt.risk} risk
-        </span>
-      </div>
-      <div className={styles.asset}>{opt.asset}</div>
-      <div className={styles.size}>
-        Size <b>{moneyMUSD(opt.sizeMUSD)}</b> · {opt.id}
-      </div>
-      <p className={styles.rat}>{opt.rationale}</p>
-      <div className={styles.ret}>
-        <span className={styles.rk}>Predicted</span>
-        <span className={styles.rv}>{bandLabel(opt.predictedReturnPct)}</span>
-      </div>
-      <div className={styles.acts}>
-        <button className={`btn btn-ghost ${styles.btnSm}`} type="button">
-          Execute
-        </button>
-        <button
-          className={`btn btn-gold ${styles.btnSm}`}
-          type="button"
-          onClick={onSendToJudge}
-        >
-          <ArrowRightIcon />
-          To Judge
-        </button>
-      </div>
-    </article>
+    <>
+      <article className={`${styles.opt} ${styles[opt.risk]}`}>
+        <div className={styles.otop}>
+          <span className={`${styles.dir} ${styles[opt.direction]}`}>
+            <TrendUpIcon /> {dirLabel(opt.direction)}
+          </span>
+          <span className={`${styles.riskpill} ${styles[opt.risk]}`}>
+            {opt.risk} risk
+          </span>
+        </div>
+        <div className={styles.asset}>{opt.asset}</div>
+        <div className={styles.size}>
+          Size <b>{moneyMUSD(opt.sizeMUSD)}</b> · {opt.id}
+        </div>
+        <p className={styles.rat}>{opt.rationale}</p>
+        <div className={styles.ret}>
+          <span className={styles.rk}>Predicted</span>
+          <span className={styles.rv}>{bandLabel(opt.predictedReturnPct)}</span>
+        </div>
+        <div className={styles.acts}>
+          <button
+            className={`btn btn-ghost ${styles.btnSm}`}
+            type="button"
+            onClick={() => setExecuting(true)}
+          >
+            Execute
+          </button>
+          <button
+            className={`btn btn-gold ${styles.btnSm}`}
+            type="button"
+            onClick={onSendToJudge}
+          >
+            <ArrowRightIcon />
+            To Judge
+          </button>
+        </div>
+      </article>
+
+      {executing && (
+        <ExecuteDialog
+          option={opt}
+          thesis={thesis}
+          verdict={null}
+          optionRef={opt.id}
+          onClose={() => setExecuting(false)}
+        />
+      )}
+    </>
   );
 }
 
@@ -331,7 +352,11 @@ export function StepThesis({
           <div className={styles.optgrid}>
             {options.map((opt) => (
               <div className="reveal" key={opt.id}>
-                <ThesisOptionCard opt={opt} onSendToJudge={onSendToJudge} />
+                <ThesisOptionCard
+                  opt={opt}
+                  thesis={thesis!}
+                  onSendToJudge={onSendToJudge}
+                />
               </div>
             ))}
           </div>
