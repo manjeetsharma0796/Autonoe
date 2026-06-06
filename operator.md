@@ -23,12 +23,15 @@ execute loop is proven on Mantle Sepolia: **agent wallet → server-signed oracl
 real on-chain trade (AMM swap *and* synthetic) → DecisionLog → /api/history**. Both
 trade paths verified live. The wallet drawer, settings, studio, and history pages are wired.
 
-## 🔴 The ONE thing only you can do (to run the *AI* half of the demo)
-**Add an AI provider key** so the live thesis + debate steps work:
-- Drop one of `GROQ_API_KEY` / `MISTRAL_API_KEY` / `NVIDIA_API_KEY` / `OPENROUTER_API_KEY` / `GEMINI_API_KEY`
-  into `.env.local`, **or** paste it in the app's `/settings` page (no restart needed). Groq free tier is fastest: https://console.groq.com/keys
-- Without it: you can still create the agent wallet and execute a manual trade → see it logged on-chain (`/history`). **With it**: the full `intent → thesis → debate → execute → log → history` flow runs.
-- This is the only blocker for the *complete* live walkthrough. Everything else is done and verified. See `RUNNING.md` to start it (needs `bun` + `node`).
+## ✅ FULL LIVE E2E VERIFIED (2026-06-06) — nothing blocking
+You provided a **Mistral** key; I validated it (models + chat) and ran the COMPLETE flow live on
+Mantle Sepolia: intent "long the dip on ETH" → **thesis** (real ETH price + RSI 30.87 + MACD, 2 options)
+→ **debate** (Supporter→Discriminator→Judge, 0.65 confidence) → **execute** (synthetic ETH long from the
+agent wallet) → **DecisionLog** → `/api/history` shows it. Your key is in gitignored `.env.local`
+(`MISTRAL_API_KEY`) and now auto-loads at server boot (env-key seeding) — no Settings trip needed.
+Two live-run bugs fixed: env-key seeding + allowance RPC-staleness (sticky approve + poll).
+
+_(Optional remaining, your call: T-503 GitHub CI secrets · T-209 news/web-search tool — explicitly deferred.)_
 
 ---
 
