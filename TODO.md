@@ -230,7 +230,7 @@ _(all done — see Done section)_
 - Acceptance: a real `mUSD/WMNT` swap executes from the agent wallet on testnet.
 
 ### T-603 — On-chain logging live
-- Status: pending
+- Status: in-progress @prithwish 2026-06-06
 - Depends-on: T-304, T-105, T-207
 - Scope: integration
 - Acceptance: each executed option writes to DecisionLog; the history page shows the on-chain record.
