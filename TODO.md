@@ -210,7 +210,7 @@ _(all done — see Done section)_
 - Acceptance: from a chosen option (direct from thesis OR from judge) → confirm → tx status + PnL + mantlescan link (calls `packages/wallet` execute).
 
 ### T-411 — History / Benchmark page (`/history`)
-- Status: pending
+- Status: in-progress @jishnu 2026-06-06
 - Depends-on: T-401, T-207
 - Scope: web
 - Acceptance: DecisionLog records + PnL-over-time / win-rate charts + mantlescan links; reads `/api/history`.
