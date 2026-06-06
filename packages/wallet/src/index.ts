@@ -37,3 +37,13 @@ export {
   type FundingClients,
   type SeedResult,
 } from './funding.js';
+
+export {
+  scaleToBaseUnits,
+  buildSwapPlan,
+  executeOption,
+  type ExecutableOption,
+  type ExecuteOptionInput,
+  type ExecuteOptionResult,
+  type ExecuteDeps,
+} from './execute.js';

@@ -161,12 +161,6 @@ _(all done — see Done section)_
 - Scope: wallet
 - Acceptance: enforces max trade size + token allowlist before signing; rejects over-limit with a clear error; tested.
 
-### T-304 — Agent-sign + execute
-- Status: in-progress @prithwish 2026-06-06
-- Depends-on: T-301, T-303, T-108
-- Scope: wallet
-- Acceptance: given a chosen option, builds + signs + submits a swap via the chain lib; returns `SwapResult`; triggers the DecisionLog write. Execution is manual-confirm (no auto-execute).
-
 ---
 
 ## 4 — Frontend UI
@@ -282,6 +276,12 @@ _(newest first)_
 - Depends-on: T-108, T-201
 - Scope: api
 - Acceptance: `GET /api/history` merges SQLite records + on-chain DecisionLog, storing models used per role; `GET /api/leaderboard` aggregates realized outcomes by model + role.
+
+### T-304 — Agent-sign + execute
+- Status: done @prithwish 2026-06-06 — `packages/wallet/src/execute.ts` (exported via the barrel): `executeOption(input, deps?)` orchestrates **manual-confirm guard** (`confirmed` must be `true` — no auto-execute, thrown before any I/O) → **spending-policy check** (T-303 `enforcePolicy`: hard cap + token allow-list) → **swap via the chain lib** (T-108 `swap()` = approve + `swapExactTokensForTokens` + slippage) → **DecisionLog write** (T-108 `writeDecision()`, `pnl` 0n on an open; realized PnL is T-603), returning the **shared `SwapResult`** (`{ txHash, amountIn, amountOut, explorerUrl }`) + the decision tx hash. Pure helpers `buildSwapPlan` (direction-aware path/amountIn: long/hold/hedge → mUSD→asset @6dec, short → asset→mUSD @18dec) + `scaleToBaseUnits`. Chain deps are injectable → 14 new offline tests (confirm guard, over-cap, disallowed token, long/short path + scaling, shared-shape mapping). `tsc -b` clean; `bun test` wallet 35/35.
+- Depends-on: T-301, T-303, T-108
+- Scope: wallet
+- Acceptance: given a chosen option, builds + signs + submits a swap via the chain lib; returns `SwapResult`; triggers the DecisionLog write. Execution is manual-confirm (no auto-execute).
 
 ### T-108 — viem chain library
 - Status: done @jishnu 2026-06-06 — `packages/chain/src/{clients,swapExecutor,decisionLog,abis}.ts`: viem public/wallet clients (`defineChain` Mantle Sepolia) + deployed-address registry; `getQuote()` (router `getAmountsOut`); `swap()` (approve → `swapExactTokensForTokens` with bps slippage floor, realized `amountOut` parsed from receipt Transfer logs — robust against load-balanced-RPC read lag); `writeDecision()`/`readHistory()` over DecisionLog. Added `viem` to the package deps. **Integration test executed a real swap + DecisionLog round-trip on Mantle Sepolia** (`src/swap.integration.test.ts`, skips without `DEPLOYER_PRIVATE_KEY` so CI stays green — 2 pass / 2 skip there). `tsc` 6/6; full suite green.
