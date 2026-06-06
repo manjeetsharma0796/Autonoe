@@ -224,7 +224,7 @@ _(all done — see Done section)_
 ## 6 — Integration & Demo
 
 ### T-605 — Demo polish + script
-- Status: pending
+- Status: in-progress @prithwish 2026-06-06
 - Depends-on: T-604
 - Scope: docs
 - Acceptance: UI passes a design review; the demo narrative (PRD §16) is rehearsed; mantlescan links work.
