@@ -223,12 +223,6 @@ _(all done — see Done section)_
 
 ## 6 — Integration & Demo
 
-### T-604 — E2E happy path
-- Status: in-progress @prithwish 2026-06-06
-- Depends-on: T-601, T-602, T-603
-- Scope: integration
-- Acceptance: intent → thesis → debate → swap → on-chain log passes end-to-end (local fork or live Mantle Sepolia).
-
 ### T-605 — Demo polish + script
 - Status: pending
 - Depends-on: T-604
@@ -240,6 +234,12 @@ _(all done — see Done section)_
 ## Done
 
 _(newest first)_
+
+### T-604 — E2E happy path
+- Status: done @prithwish 2026-06-06 — `scripts/e2e.ts` (`bun run e2e`) drives the **real** integration surface end-to-end: boots the server in-process (`createApp`), configures the Mistral provider (`POST /api/keys`), discovers a model + assigns every role (`/api/models`, `PUT /api/roles`), generates a **thesis** (`POST /api/thesis`), runs the **debate** (`POST /api/debate`), then executes the highest-confidence option via `@autonoe/wallet` `executeOption` (real **swap** + DecisionLog write on Mantle Sepolia), records it off-chain (`POST /api/decisions`) and confirms `GET /api/history` surfaces the on-chain record (polls through public-RPC replica lag). Gated on `MISTRAL_API_KEY` + `DEPLOYER_PRIVATE_KEY` (prints `SKIP` without them, so CI is unaffected). **Ran green live**: intent → thesis `6e7dc6fc` → debate verdict → long WMNT → swap `0xa45161…` (50 mUSD → 0.0735 WMNT) → DecisionLog `0x491b9b…` → history contains the trade ✅. Added `viem` to root devDeps + the `e2e` script.
+- Depends-on: T-601, T-602, T-603
+- Scope: integration
+- Acceptance: intent → thesis → debate → swap → on-chain log passes end-to-end (local fork or live Mantle Sepolia).
 
 ### T-603 — On-chain logging live
 - Status: done @prithwish 2026-06-06 — closed the off-chain half so `/api/history` shows each executed option's on-chain record **with** model attribution. New `POST /api/decisions` (`server/src/app.ts` → `recordDecision`, validates a 0x 32-byte `thesisHash`, coerces the body to a `StoredDecision`) + `decisions` route & `DecisionRecordInput` in the `@autonoe/shared` contract + `recordDecision` best-effort client in `web/lib/api.ts`; `ExecuteDialog` (T-409) now records the decision off-chain on execute success, **reusing the same `thesisHash`** it passed to `executeOption` so it joins the on-chain `writeDecision` record (`buildHistory` merges by `thesisHash`). **Verified live on Mantle Sepolia**: a real `executeOption` swap (mUSD→WMNT, tx `0xbc1c6f…`) wrote DecisionLog `0x4ae72f…`; `GET /api/history?address=` then returned that on-chain record merged with the posted `txHash` + `modelsUsed`. `bun test` server 35/35 (5 new endpoint tests) + shared 4/4; full-workspace `typecheck` + `next build` green.
