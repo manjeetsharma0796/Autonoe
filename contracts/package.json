@@ -10,6 +10,8 @@
     "deploy:testnet": "HARDHAT_DISABLE_TELEMETRY_PROMPT=true DEPLOY_NETWORK=mantleSepolia hardhat run scripts/deploy.ts",
     "seed:extra": "HARDHAT_DISABLE_TELEMETRY_PROMPT=true hardhat run scripts/seedExtra.ts",
     "seed:extra:testnet": "HARDHAT_DISABLE_TELEMETRY_PROMPT=true DEPLOY_NETWORK=mantleSepolia hardhat run scripts/seedExtra.ts",
+    "deploy:all": "HARDHAT_DISABLE_TELEMETRY_PROMPT=true hardhat run scripts/deployAll.ts",
+    "deploy:all:testnet": "HARDHAT_DISABLE_TELEMETRY_PROMPT=true DEPLOY_NETWORK=mantleSepolia hardhat run scripts/deployAll.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test test-unit"
   },
