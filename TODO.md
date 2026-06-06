@@ -204,7 +204,7 @@ _(all done — see Done section)_
 - Acceptance: Supporter/Discriminator/Judge arguments (each with a reasoning trace), verdict, and refined options with predicted % + risk + caveats graphed; "Execute" per option.
 
 ### T-412 — Model performance leaderboard
-- Status: pending
+- Status: in-progress @jishnu 2026-06-06
 - Depends-on: T-411, T-207
 - Scope: web
 - Acceptance: on the Benchmark page, ranks models per role (thesis/supporter/discriminator/judge) by realized outcome; reads `/api/leaderboard`.
