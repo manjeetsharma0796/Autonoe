@@ -172,12 +172,6 @@ _(all done — see Done section)_
 - Scope: wallet
 - Acceptance: given a chosen option, builds + signs + submits a swap via the chain lib; returns `SwapResult`; triggers the DecisionLog write. Execution is manual-confirm (no auto-execute).
 
-### T-305 — Funding helpers
-- Status: in-progress @prithwish 2026-06-06
-- Depends-on: T-107
-- Scope: wallet
-- Acceptance: auto-seed mUSD on wallet creation + faucet re-mint call; native MNT faucet link surfaced.
-
 ---
 
 ## 4 — Frontend UI
@@ -293,6 +287,12 @@ _(newest first)_
 - Depends-on: T-107
 - Scope: chain
 - Acceptance: `packages/chain/src/{clients,swapExecutor,decisionLog}.ts` — `getQuote()`, `swap()` (approve + `swapExactTokensForTokens` + slippage), `writeDecision()`, `readHistory()`. An integration test executes a real swap on testnet.
+
+### T-305 — Funding helpers
+- Status: done @prithwish 2026-06-06 — `packages/wallet/src/funding.ts` (exported via the package barrel): **native MNT faucet link surfaced** (`MNT_FAUCET_URL` ← `@autonoe/chain` `FAUCET_URL`) + live `MUSD_ADDRESS` from `@autonoe/chain/addresses.json`; **faucet re-mint call** `claimMusdFaucet(privateKey)` (writes mUSD `faucet()`, waits receipt, throws on revert w/ cooldown/cap hint, returns `{ hash, explorerUrl }`); **auto-seed on creation** `seedAgentWallet(privateKey, address)` — guards on zero native MNT (a fresh EOA can't pay gas) returning `{ seeded:false, needsGas:true, mntFaucetUrl }`, else claims the faucet; plus `musdBalance(address)`. Clients are injectable (`PublicClientLike`/`WalletClientLike`) so it's unit-tested fully offline with fakes; real path uses inline viem clients on Mantle Sepolia. Added `@autonoe/chain` dep to the wallet package. `tsc -b` clean; `bun test` 22/22 (14 existing + 8 new).
+- Depends-on: T-107
+- Scope: wallet
+- Acceptance: auto-seed mUSD on wallet creation + faucet re-mint call; native MNT faucet link surfaced.
 
 ### T-209 — Web search / news tool
 - Status: done @prithwish 2026-06-06 — `server/src/market/news.ts` (`searchNews`, injectable `NewsFetcher` POST client) + a `search_news` tool registered in `server/src/agents/tools.ts` gated by `subagent.news`, recording a `subagent.news` reasoning trace. Surfaced to the thesis tool loop automatically (`subagent.news` ∈ `SUBAGENT_ROLES`), so theses can cite news/sentiment; the `thesis` SYSTEM prompt now lists news evidence, and the UI data-source toggles control it. **Degrades gracefully**: with no `TAVILY_API_KEY` the tool returns "not configured" and theses still run on price/indicators/on-chain — never throws. 6 new offline tests (injected fetcher: field mapping, no-key guard, HTTP-error throw, allow-list gating, trace recording). `bun test` server 26/26, `tsc` clean.
