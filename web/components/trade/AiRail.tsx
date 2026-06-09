@@ -5,70 +5,78 @@ import Link from "next/link";
 import type { ChatMessage, Thesis, ThesisOption } from "@autonoe/shared";
 import { streamSSE } from "@/lib/stream";
 import { LiveThinking } from "@/components/ai/LiveThinking";
+import { ModelChip } from "@/components/ai/ModelChip";
+import { AiAnswer } from "@/components/ai/AiAnswer";
+import { FollowUps } from "@/components/ai/FollowUps";
+import { Button } from "@/components/ui/Button";
 
 // ── inline icons ─────────────────────────────────────────────────────────────
 
 function BoltIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z" />
     </svg>
   );
 }
-
 function ChatIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
     </svg>
   );
 }
-
 function SendIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
     </svg>
   );
 }
+
+// AI sender header — makes "this is the AI" obvious
+function AiHead() {
+  return (
+    <div className="aimsg-head">
+      <span className="aidot">
+        <BoltIcon />
+      </span>
+      <span className="who">Autonoe</span>
+      <span className="aitag">AI</span>
+    </div>
+  );
+}
+
+// ── curated follow-ups (static set, per surface) ──────────────────────────────
+
+const THESIS_FOLLOWUPS = [
+  "Tighten the risk frame and invalidation",
+  "Make it a 1h scalp instead of a 4h swing",
+  "Compare a long versus a hedge here",
+  "Size this for 2% account risk",
+];
+const ASSISTANT_FOLLOWUPS = [
+  "What is the live mUSD/WMNT depth right now?",
+  "Summarize the risk on my agent wallet",
+  "Which asset has the strongest 4h trend?",
+  "Explain how the tribunal verdict works",
+];
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function dirLabel(d: ThesisOption["direction"]): string {
   return d.charAt(0).toUpperCase() + d.slice(1);
 }
-
 function retRange(lo: number, hi: number): string {
   const f = (n: number) => (n >= 0 ? "+" : "") + n.toFixed(1) + "%";
-  return `${f(lo)} – ${f(hi)}`;
+  return `${f(lo)} to ${f(hi)}`;
 }
 
 // ── ThesisPane ────────────────────────────────────────────────────────────────
 
 function ThesisPane() {
   const [intent, setIntent] = useState(
-    "I think WMNT runs into the Mantle upgrade. Build a 4h swing thesis against mUSD."
+    "I think WMNT runs into the Mantle upgrade. Build a 4h swing thesis against mUSD.",
   );
   const [thesis, setThesis] = useState<Thesis | null>(null);
   const [thinking, setThinking] = useState("");
@@ -76,8 +84,9 @@ function ThesisPane() {
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  async function handleGenerate() {
-    // Cancel any in-flight stream
+  async function handleGenerate(intentArg?: string) {
+    const useIntent = (intentArg ?? intent).trim();
+    if (!useIntent) return;
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -91,12 +100,8 @@ function ThesisPane() {
       await streamSSE(
         "/api/thesis/stream",
         {
-          intent,
-          activeSources: [
-            "subagent.onchain",
-            "subagent.market",
-            "subagent.indicators",
-          ],
+          intent: useIntent,
+          activeSources: ["subagent.onchain", "subagent.market", "subagent.indicators"],
         },
         {
           signal: ctrl.signal,
@@ -110,9 +115,8 @@ function ThesisPane() {
               const d = data as { error?: string };
               setError(d.error ?? "Unknown error");
             }
-            // "token" and "done" are not produced by /thesis/stream — ignore
           },
-        }
+        },
       );
     } catch (e) {
       if ((e as { name?: string }).name !== "AbortError") {
@@ -123,7 +127,11 @@ function ThesisPane() {
     }
   }
 
-  // Pick the first (best) option for the compact card
+  function pickFollowup(q: string) {
+    setIntent(q);
+    void handleGenerate(q);
+  }
+
   const topOption = thesis?.options[0] ?? null;
 
   return (
@@ -138,6 +146,10 @@ function ThesisPane() {
         </div>
       </div>
       <div className="railbody">
+        <div className="modelrow">
+          <span className="intentlab" style={{ marginBottom: 0 }}>Model</span>
+          <ModelChip role="thesis" />
+        </div>
         <div className="intentlab">Your intent</div>
         <textarea
           className="intent"
@@ -146,59 +158,57 @@ function ThesisPane() {
           onChange={(e) => setIntent(e.target.value)}
         />
         <div className="intentrow">
-          <button
-            type="button"
-            className="btn btn-violet btn-block"
+          <Button
+            variant="violet"
+            block
+            loading={loading}
             onClick={() => void handleGenerate()}
-            disabled={loading}
+            iconLeft={<BoltIcon />}
           >
-            {loading ? "Generating…" : "Generate thesis"}
-          </button>
+            {loading ? "Generating" : "Generate thesis"}
+          </Button>
         </div>
 
         {error && (
-          <div style={{ color: "var(--red, #FF6B6B)", fontSize: 13, marginTop: 10 }}>
+          <div className="ai-error" role="alert">
             {error}
           </div>
         )}
 
-        {/* Live thinking panel — visible while streaming and after */}
         <LiveThinking text={thinking} streaming={loading} />
 
         {topOption && thesis && (
-          <>
-            <div className="thesis">
-              <div className="th-top">
-                <span className={`dir ${topOption.direction}`}>{dirLabel(topOption.direction)}</span>
-                <span className="th-asset">{topOption.asset}</span>
-                <span className="th-tag">{topOption.id}</span>
-              </div>
-              <div className="th-body">
-                <div className="pills">
-                  <span className="pill size">
-                    <span className="k">size</span>{" "}
-                    {topOption.sizeMUSD.toLocaleString()} mUSD
-                  </span>
-                  <span className="pill ret">
-                    <span className="k">pred.</span>{" "}
-                    {retRange(
-                      topOption.predictedReturnPct.low,
-                      topOption.predictedReturnPct.high
-                    )}
-                  </span>
-                  <span className="pill risk">
-                    <span className="k">risk</span> {topOption.risk}
-                  </span>
-                </div>
-                <p className="th-desc">{topOption.rationale}</p>
-              </div>
-              <div className="th-foot">
-                <Link href="/studio" className="btn btn-gold btn-block">
-                  Refine in Judge Panel →
-                </Link>
-              </div>
+          <div className="thesis">
+            <div className="th-top">
+              <span className={`dir ${topOption.direction}`}>{dirLabel(topOption.direction)}</span>
+              <span className="th-asset">{topOption.asset}</span>
+              <span className="th-tag">{topOption.id}</span>
             </div>
-          </>
+            <div className="th-body">
+              <div className="pills">
+                <span className="pill size">
+                  <span className="k">size</span> {topOption.sizeMUSD.toLocaleString()} mUSD
+                </span>
+                <span className="pill ret">
+                  <span className="k">pred.</span>{" "}
+                  {retRange(topOption.predictedReturnPct.low, topOption.predictedReturnPct.high)}
+                </span>
+                <span className="pill risk">
+                  <span className="k">risk</span> {topOption.risk}
+                </span>
+              </div>
+              <p className="th-desc">{topOption.rationale}</p>
+            </div>
+            <div className="th-foot">
+              <Link href="/studio" className="ui-btn v-gold s-md block">
+                Refine in Judge Panel →
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {thesis && !loading && (
+          <FollowUps items={THESIS_FOLLOWUPS} onPick={pickFollowup} title="Refine this thesis" disabled={loading} />
         )}
       </div>
     </div>
@@ -211,7 +221,12 @@ const INITIAL_MESSAGES: ChatMessage[] = [
   {
     role: "assistant",
     content:
-      "Hey — I can read the live mUSD/WMNT book, your agent wallet, and the DecisionLog. What are you weighing?",
+      "I read the live mUSD book, your agent wallet, and the on-chain DecisionLog.\n\n" +
+      "## What I can do\n" +
+      "- **Market reads**: price, depth, funding and 4h structure for WMNT, BTC, ETH, SUI, SOL\n" +
+      "- **Wallet checks**: balances, exposure and risk on your agent wallet\n" +
+      "- **Thesis to verdict**: turn an idea into a tribunal verdict you can execute\n\n" +
+      "Ask me anything, or pick a starter below.",
   },
 ];
 
@@ -220,30 +235,19 @@ function AssistantPane() {
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Streaming in-progress bubble text (null = not streaming)
   const [streamingContent, setStreamingContent] = useState<string | null>(null);
   const streamedRef = useRef<string>("");
   const bottomRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   function scrollToBottom() {
-    setTimeout(() => {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 50);
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
   }
 
-  async function handleSend() {
-    const text = draft.trim();
-    if (!text || loading) return;
-
+  async function run(convo: ChatMessage[]) {
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
-
-    const userMsg: ChatMessage = { role: "user", content: text };
-    const nextMessages = [...messages, userMsg];
-    setMessages(nextMessages);
-    setDraft("");
     setLoading(true);
     setError(null);
     setStreamingContent("");
@@ -252,10 +256,9 @@ function AssistantPane() {
 
     try {
       let finalMessage: ChatMessage | null = null;
-
       await streamSSE(
         "/api/assistant/stream",
-        { messages: nextMessages },
+        { messages: convo },
         {
           signal: ctrl.signal,
           onEvent(event, data) {
@@ -273,19 +276,13 @@ function AssistantPane() {
               setError(d.error ?? "Unknown error");
             }
           },
-        }
+        },
       );
-
-      // Commit the final message, falling back to accumulated streamed tokens
       setStreamingContent(null);
       const committed: ChatMessage | null =
         finalMessage ??
-        (streamedRef.current
-          ? { role: "assistant", content: streamedRef.current }
-          : null);
-      if (committed) {
-        setMessages((prev) => [...prev, committed]);
-      }
+        (streamedRef.current ? { role: "assistant", content: streamedRef.current } : null);
+      if (committed) setMessages((prev) => [...prev, committed]);
     } catch (e) {
       if ((e as { name?: string }).name !== "AbortError") {
         setError(e instanceof Error ? e.message : "Unknown error");
@@ -297,12 +294,34 @@ function AssistantPane() {
     }
   }
 
+  async function handleSend(textArg?: string) {
+    const text = (textArg ?? draft).trim();
+    if (!text || loading) return;
+    const next = [...messages, { role: "user", content: text } as ChatMessage];
+    setMessages(next);
+    setDraft("");
+    await run(next);
+  }
+
+  function regenerate() {
+    if (loading) return;
+    // drop the trailing assistant reply, re-run from the last user turn
+    let cut = messages.length;
+    while (cut > 0 && messages[cut - 1].role === "assistant") cut -= 1;
+    const convo = messages.slice(0, cut);
+    if (!convo.length) return;
+    setMessages(convo);
+    void run(convo);
+  }
+
   function handleKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       void handleSend();
     }
   }
+
+  const lastIdx = messages.length - 1;
 
   return (
     <div role="tabpanel">
@@ -316,43 +335,60 @@ function AssistantPane() {
         </div>
       </div>
       <div className="railbody">
+        <div className="modelrow">
+          <span className="intentlab" style={{ marginBottom: 0 }}>Model</span>
+          <ModelChip role="assistant" />
+        </div>
+
         <div className="chat">
-          {messages.map((m, i) => (
-            <div key={i} className={`msg ${m.role === "assistant" ? "bot" : "me"}`}>
-              <div className="av">{m.role === "assistant" ? "A" : "YOU"}</div>
-              <div className="bubble">{m.content}</div>
-            </div>
-          ))}
-          {/* In-progress streaming bubble */}
-          {loading && (
-            <div className="msg bot">
-              <div className="av">A</div>
-              <div className="bubble">
-                {streamingContent ? (
-                  <>
-                    {streamingContent}
-                    <span style={{ opacity: 0.5 }}>▋</span>
-                  </>
-                ) : (
-                  <span style={{ opacity: 0.6 }}>Thinking…</span>
-                )}
+          {messages.map((m, i) =>
+            m.role === "assistant" ? (
+              <div key={i} className="aimsg">
+                <AiHead />
+                <AiAnswer
+                  text={m.content}
+                  onRegenerate={i === lastIdx && !loading ? regenerate : undefined}
+                />
               </div>
+            ) : (
+              <div key={i} className="umsg">
+                <div className="umsg-tag">You</div>
+                <div className="umsg-text">{m.content}</div>
+              </div>
+            ),
+          )}
+
+          {loading && (
+            <div className="aimsg">
+              <AiHead />
+              {streamingContent ? (
+                <AiAnswer text={streamingContent} streaming />
+              ) : (
+                <span className="ai-thinking">Thinking</span>
+              )}
             </div>
           )}
+
           {error && (
-            <div className="msg bot">
-              <div className="av">A</div>
-              <div className="bubble" style={{ color: "var(--red, #FF6B6B)" }}>
-                {error}
-              </div>
+            <div className="ai-error" role="alert" style={{ marginTop: 4 }}>
+              {error}
             </div>
           )}
           <div ref={bottomRef} />
         </div>
+
+        {!loading && (
+          <FollowUps
+            items={ASSISTANT_FOLLOWUPS}
+            onPick={(q) => void handleSend(q)}
+            disabled={loading}
+          />
+        )}
+
         <div className="composer">
           <textarea
             rows={1}
-            placeholder="Message the assistant…"
+            placeholder="Message the assistant..."
             aria-label="Message the assistant"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}

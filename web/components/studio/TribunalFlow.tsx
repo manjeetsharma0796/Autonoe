@@ -1,6 +1,6 @@
 import styles from "./studio.module.css";
 
-/** Tribunal flow diagram — gradient beams + <animateMotion> pulses.
+/** Tribunal flow diagram - gradient beams + <animateMotion> pulses.
  *  Ported as JSX from the landing/studio mockup. */
 export function TribunalFlow({ className }: { className?: string }) {
   return (

@@ -4,7 +4,7 @@
  * Cumulative PnL-over-time SVG area chart.
  * Sorts HistoryRecord[] by createdAt, accumulates pnlMUSD (null → 0),
  * and renders a line/area chart with gain=green / loss=red colouring.
- * No external dependencies — custom SVG only, matching the markets sparkline pattern.
+ * No external dependencies - custom SVG only, matching the markets sparkline pattern.
  */
 
 import type { HistoryRecord } from "@autonoe/shared";
@@ -112,7 +112,7 @@ export function PnlChart({ records }: { records: HistoryRecord[] }) {
           letterSpacing: ".06em",
         }}
       >
-        No PnL data yet — execute an AI thesis to populate the benchmark.
+        No PnL data yet - execute an AI thesis to populate the benchmark.
       </div>
     );
   }
@@ -139,7 +139,7 @@ export function PnlChart({ records }: { records: HistoryRecord[] }) {
   const fillPath = buildFillPath(pts, zeroY);
   const axisLabels = yAxisLabels(records);
 
-  // X-axis date labels — up to 5 evenly spaced
+  // X-axis date labels - up to 5 evenly spaced
   const xLabels: { x: number; label: string }[] = [];
   if (pts.length === 1) {
     xLabels.push({ x: pts[0].x, label: formatShortDate(pts[0].date) });

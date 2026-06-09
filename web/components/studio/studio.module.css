@@ -1,5 +1,5 @@
 /* ============================================================
-   Studio (AI Workspace) — page-local styles.
+   Studio (AI Workspace) - page-local styles.
    Tokens/helpers (.wrap, .btn, .eyebrow, .tag, .h2, .sub, orbs,
    vignette, nav) live in globals.css and the shell. Everything
    here is unique to the Studio stepped workspace.
@@ -13,7 +13,7 @@
   transform: translateY(30px);
 }
 
-/* step panels — display is driven inline by React; classes scope the
+/* step panels - display is driven inline by React; classes scope the
    GSAP reveal query and mirror the mockup's .panel/.active hooks. */
 .panel {
   position: relative;
@@ -108,13 +108,13 @@
   }
 }
 
-/* generic card / block */
+/* generic card / block - flat panel, no gradient */
 .block {
   border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 30px 28px;
-  background: linear-gradient(180deg, var(--panel), var(--bg2));
-  margin-top: 26px;
+  border-radius: 12px;
+  padding: 22px 22px;
+  background: var(--panel);
+  margin-top: 22px;
   position: relative;
   overflow: hidden;
 }
@@ -153,13 +153,13 @@
 .inp {
   width: 100%;
   font-family: var(--body);
-  font-weight: 300;
-  font-size: 15.5px;
+  font-weight: 400;
+  font-size: 15px;
   color: var(--ink);
-  padding: 14px 16px;
-  border-radius: 12px;
+  padding: 13px 14px;
+  border-radius: 8px;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(255, 255, 255, 0.02);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .inp::placeholder {
@@ -231,10 +231,10 @@ textarea.inp {
 /* mode toggle */
 .modes {
   display: inline-flex;
-  padding: 5px;
-  gap: 5px;
+  padding: 4px;
+  gap: 4px;
   border: 1px solid var(--line);
-  border-radius: 13px;
+  border-radius: 9px;
   background: rgba(255, 255, 255, 0.02);
   margin-top: 8px;
 }
@@ -293,7 +293,7 @@ textarea.inp {
 .think {
   margin-top: 18px;
   border: 1px solid var(--line2);
-  border-radius: 13px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.018);
   overflow: hidden;
 }
@@ -402,14 +402,13 @@ textarea.inp {
 .opt {
   position: relative;
   border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 24px 22px 22px;
-  background: linear-gradient(180deg, var(--panel), var(--bg2));
+  border-radius: 12px;
+  padding: 20px 18px 18px;
+  background: var(--panel);
   overflow: hidden;
-  transition: transform 0.3s ease, border-color 0.3s ease;
+  transition: border-color 0.2s ease;
 }
 .opt:hover {
-  transform: translateY(-6px);
   border-color: color-mix(in srgb, var(--rc) 45%, transparent);
 }
 .opt::before {
@@ -596,14 +595,13 @@ textarea.inp {
 .agent {
   position: relative;
   border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 28px 24px 24px;
-  background: linear-gradient(180deg, var(--panel), var(--bg2));
+  border-radius: 12px;
+  padding: 22px 20px 20px;
+  background: var(--panel);
   overflow: hidden;
-  transition: transform 0.3s ease, border-color 0.3s ease;
+  transition: border-color 0.2s ease;
 }
 .agent:hover {
-  transform: translateY(-6px);
   border-color: color-mix(in srgb, var(--c) 50%, transparent);
 }
 .agent::before {
@@ -662,6 +660,97 @@ textarea.inp {
   line-height: 1.6;
 }
 
+/* tribunal — a dedicated window per AI, full argument shown */
+.twins {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 28px;
+}
+.tw {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  overflow: hidden;
+}
+.tw::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--c);
+  opacity: 0.9;
+}
+.tw.sup {
+  --c: var(--green);
+}
+.tw.dis {
+  --c: var(--red);
+}
+.tw.jud {
+  --c: var(--gold);
+}
+.twHead {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px 18px 14px 20px;
+  border-bottom: 1px solid var(--line2);
+}
+.twIc {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  flex-shrink: 0;
+}
+.twIc i {
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
+  background: var(--c);
+  box-shadow: 0 0 16px var(--c);
+}
+.twMeta {
+  flex: 1;
+}
+.twRole {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--c);
+}
+.twHeading {
+  font-family: var(--disp);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink);
+  margin-top: 2px;
+}
+.twWait {
+  display: inline-flex;
+  color: var(--gold2);
+}
+.twBody {
+  padding: 16px 18px 18px 20px;
+}
+.twStatus {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  padding: 6px 0;
+}
+
 /* refined options */
 .refgrid {
   display: grid;
@@ -677,14 +766,13 @@ textarea.inp {
 .ref {
   position: relative;
   border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 24px 22px 22px;
-  background: linear-gradient(180deg, var(--panel2), var(--bg2));
+  border-radius: 12px;
+  padding: 20px 18px 18px;
+  background: var(--panel);
   overflow: hidden;
-  transition: transform 0.3s ease, border-color 0.3s ease;
+  transition: border-color 0.2s ease;
 }
 .ref:hover {
-  transform: translateY(-6px);
   border-color: rgba(245, 165, 36, 0.4);
 }
 .ref::before {
@@ -818,8 +906,8 @@ textarea.inp {
 .verdict {
   margin-top: 26px;
   border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 24px 26px;
+  border-radius: 12px;
+  padding: 22px 24px;
   background: linear-gradient(
     110deg,
     rgba(245, 165, 36, 0.07),

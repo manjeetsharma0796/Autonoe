@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { DebateResult, RefinedOption, Thesis } from "@autonoe/shared";
 import { keccak256, stringToHex } from "viem";
 import type { ExecuteResult } from "@autonoe/wallet";
@@ -10,10 +10,21 @@ import { TribunalFlow } from "./TribunalFlow";
 import { ArrowRightIcon, WarnIcon } from "./icons";
 import { streamSSE } from "@/lib/stream";
 import { LiveThinking } from "@/components/ai/LiveThinking";
+import { Markdown } from "@/components/ai/Markdown";
+import { ModelChip } from "@/components/ai/ModelChip";
+import { Spinner } from "@/components/ui/Spinner";
+import { Button } from "@/components/ui/Button";
 import { TradingViewChart } from "@/components/charts/TradingViewChart";
 import { useWallet } from "@/components/wallet/WalletProvider";
 import { ExecuteModal } from "@/components/wallet/ExecuteModal";
 import { ShareButton } from "@/components/share/ShareCard";
+
+// The three tribunal agents — each gets its own dedicated window.
+const AGENTS = [
+  { key: "sup", role: "Supporter", heading: "Argues for the thesis", trace: "supporter", status: "Building the strongest case for the thesis" },
+  { key: "dis", role: "Discriminator", heading: "Argues against the thesis", trace: "discriminator", status: "Stress-testing the thesis for weaknesses" },
+  { key: "jud", role: "Judge", heading: "Delivers the verdict", trace: "judge", status: "Weighing both sides and scoring confidence" },
+] as const;
 
 // ── Refined option card ───────────────────────────────────────────────────────
 
@@ -121,17 +132,16 @@ function RefinedCard({
         )}
 
         <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
-          <button
-            className="btn btn-gold"
-            type="button"
+          <Button
+            variant="gold"
             disabled={!canExecute}
-            title={!wallet.isCreated ? "Create an agent wallet to execute" : !matchingOpt ? "No matching thesis option found" : matchingOpt.direction === "hold" ? "Hold — no trade" : "Execute this option"}
+            title={!wallet.isCreated ? "Create an agent wallet to execute" : !matchingOpt ? "No matching thesis option found" : matchingOpt.direction === "hold" ? "Hold - no trade" : "Execute this option"}
             onClick={() => setModalOpen(true)}
-            style={{ flex: 1, justifyContent: "center", marginTop: 0 }}
+            style={{ flex: 1 }}
+            iconLeft={<ArrowRightIcon />}
           >
-            <ArrowRightIcon />
             Execute
-          </button>
+          </Button>
           {matchingOpt && (
             <ShareButton
               label="Share"
@@ -170,27 +180,17 @@ function RefinedCard({
   );
 }
 
-// ── Judge agent panel ─────────────────────────────────────────────────────────
-
-interface JudgePanel {
-  key: "sup" | "dis" | "jud";
-  role: string;
-  heading: string;
-  argument: string;
-  traceIndex?: number; // index into result.traces
-}
-
 // ── StepJudge ─────────────────────────────────────────────────────────────────
 
 export interface StepJudgeProps {
-  /** True when the user first lands on step 2 — drives the bar animation. */
+  /** True when the user first lands on step 2 - drives the bar animation. */
   active: boolean;
   /** The thesis produced by StepThesis. If null, shows a "go back" prompt. */
   thesis: Thesis | null;
 }
 
 /**
- * `active` flips true when the user lands on Step 2 — drives the
+ * `active` flips true when the user lands on Step 2 - drives the
  * confidence-bar fill animation.
  * `thesis` flows in from the Workspace after StepThesis completes.
  */
@@ -202,12 +202,8 @@ export function StepJudge({ active, thesis }: StepJudgeProps) {
   const [thinking, setThinking] = useState("");
   const abortRef = useRef<AbortController | null>(null);
 
-  // Auto-run the debate when thesis becomes available and we're on step 2
-  useEffect(() => {
-    if (!thesis || ran) return;
-    setRan(true);
-
-    // Cancel any previous stream.
+  const runDebate = useCallback(() => {
+    if (!thesis) return;
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
@@ -215,6 +211,7 @@ export function StepJudge({ active, thesis }: StepJudgeProps) {
     setLoading(true);
     setError(null);
     setThinking("");
+    setResult(null);
 
     streamSSE(
       "/api/debate/stream",
@@ -232,7 +229,7 @@ export function StepJudge({ active, thesis }: StepJudgeProps) {
             setError(d.error ?? "Unknown streaming error");
           }
         },
-      }
+      },
     )
       .catch((e) => {
         if ((e as Error).name !== "AbortError") {
@@ -240,33 +237,14 @@ export function StepJudge({ active, thesis }: StepJudgeProps) {
         }
       })
       .finally(() => setLoading(false));
-  }, [thesis, ran]);
+  }, [thesis]);
 
-  const panels: JudgePanel[] = result
-    ? [
-        {
-          key: "sup",
-          role: "Supporter",
-          heading: "Argues for",
-          argument: result.supporterArgument,
-          traceIndex: result.traces?.findIndex((t) => t.role === "supporter") ?? -1,
-        },
-        {
-          key: "dis",
-          role: "Discriminator",
-          heading: "Argues against",
-          argument: result.discriminatorArgument,
-          traceIndex: result.traces?.findIndex((t) => t.role === "discriminator") ?? -1,
-        },
-        {
-          key: "jud",
-          role: "Judge",
-          heading: "Delivers the verdict",
-          argument: result.judgeSummary,
-          traceIndex: result.traces?.findIndex((t) => t.role === "judge") ?? -1,
-        },
-      ]
-    : [];
+  // Auto-run once when the thesis first arrives on step 2.
+  useEffect(() => {
+    if (!thesis || ran) return;
+    setRan(true);
+    runDebate();
+  }, [thesis, ran, runDebate]);
 
   // Best refined option (highest confidence) for the verdict banner
   const bestOption = result
@@ -289,7 +267,7 @@ export function StepJudge({ active, thesis }: StepJudgeProps) {
 
       <TribunalFlow className="reveal" />
 
-      {/* No thesis yet — prompt user to go back */}
+      {/* No thesis yet - prompt user to go back */}
       {!thesis && (
         <div className={`${styles.notice} reveal`}>
           <WarnIcon />
@@ -297,14 +275,7 @@ export function StepJudge({ active, thesis }: StepJudgeProps) {
         </div>
       )}
 
-      {/* Loading state */}
-      {loading && (
-        <div className={`${styles.notice} reveal`} style={{ borderColor: "var(--gold2)" }}>
-          The tribunal is deliberating… this may take ~10 seconds.
-        </div>
-      )}
-
-      {/* Live streaming thinking panel — visible while deliberating and collapsible after */}
+      {/* Live streaming thinking panel - visible while deliberating and collapsible after */}
       {(thinking || loading) && (
         <div className="reveal" style={{ marginTop: 16 }}>
           <LiveThinking text={thinking} streaming={loading} />
@@ -319,44 +290,79 @@ export function StepJudge({ active, thesis }: StepJudgeProps) {
         </div>
       )}
 
-      {/* Judge panels */}
-      {result && (
+      {/* Tribunal — a dedicated window per AI: pick its model, see its full argument */}
+      {thesis && (
         <>
-          <div className={styles.tri}>
-            {panels.map((j) => {
-              const trace =
-                j.traceIndex !== undefined &&
-                j.traceIndex >= 0 &&
-                result.traces
-                  ? result.traces[j.traceIndex]
-                  : undefined;
+          <div className={styles.twins}>
+            {AGENTS.map((a) => {
+              const argument = result
+                ? a.key === "sup"
+                  ? result.supporterArgument
+                  : a.key === "dis"
+                    ? result.discriminatorArgument
+                    : result.judgeSummary
+                : "";
+              const trace = result?.traces?.find((t) => t.role === a.trace);
               return (
-                <div className={`${styles.agent} ${styles[j.key]} reveal`} key={j.key}>
-                  <div className={styles.ic}>
-                    <i />
+                <div className={`${styles.tw} ${styles[a.key]} reveal`} key={a.key}>
+                  <div className={styles.twHead}>
+                    <span className={styles.twIc}>
+                      <i />
+                    </span>
+                    <div className={styles.twMeta}>
+                      <div className={styles.twRole}>{a.role}</div>
+                      <div className={styles.twHeading}>{a.heading}</div>
+                    </div>
+                    {loading && (
+                      <span className={styles.twWait}>
+                        <Spinner size={16} />
+                      </span>
+                    )}
+                    <ModelChip role={a.trace} />
                   </div>
-                  <div className={styles.role}>{j.role}</div>
-                  <h4>{j.heading}</h4>
-                  <p className={styles.arg}>{j.argument}</p>
-                  {trace ? (
-                    <ThinkingTrace trace={trace} />
-                  ) : (
-                    <ThinkingTrace
-                      summary={`— ${j.role} reasoning`}
-                      steps={[{ label: "argument", detail: j.argument }]}
-                    />
-                  )}
+                  <div className={styles.twBody}>
+                    {result ? (
+                      <>
+                        <Markdown text={argument} />
+                        {trace && <ThinkingTrace trace={trace} />}
+                      </>
+                    ) : loading ? (
+                      <div className={styles.twStatus}>
+                        <Spinner size={15} />
+                        <span>{a.status}...</span>
+                      </div>
+                    ) : (
+                      <div className={styles.twStatus}>
+                        <span>Choose this panel&apos;s model above, then run the tribunal.</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
 
+          {!loading && (
+            <div className={styles.runrow} style={{ marginTop: 18 }}>
+              <Button variant="gold" onClick={runDebate} iconLeft={<ArrowRightIcon />}>
+                {result ? "Re-run the tribunal" : "Run the tribunal"}
+              </Button>
+              <span className={styles.hint}>
+                Each panel uses its own model. Missing a key? Add it on the panel&apos;s chip.
+              </span>
+            </div>
+          )}
+        </>
+      )}
+
+      {result && (
+        <>
           {/* Verdict banner */}
           {bestOption && (
             <div className={`${styles.verdict} reveal`}>
               <div>
                 <div className={styles.vk}>Verdict · preferred option</div>
-                <h4>{bestOption.optionRef} — confidence {bestOption.confidence.toFixed(2)}</h4>
+                <h4>{bestOption.optionRef} - confidence {bestOption.confidence.toFixed(2)}</h4>
               </div>
               <div className={styles.spacer} />
               <span className={`${styles.pill} ${styles.pillRet}`}>
@@ -401,7 +407,7 @@ export function StepJudge({ active, thesis }: StepJudgeProps) {
       <div className={`${styles.notice} reveal`}>
         <WarnIcon />
         Testnet · not financial advice. Executing routes to /trade where your
-        agent wallet signs the swap on Mantle — manual confirm.
+        agent wallet signs the swap on Mantle - manual confirm.
       </div>
     </section>
   );

@@ -12,7 +12,7 @@ interface ThinkingTraceProps {
   /**
    * One-line headline shown while collapsed.
    * Pass either:
-   *   - a `ReasoningTrace` (from the API) — its `.summary` and `.steps` are used, or
+   *   - a `ReasoningTrace` (from the API) - its `.summary` and `.steps` are used, or
    *   - a plain `summary` string + `steps` array (legacy / static data).
    */
   trace?: ReasoningTrace;

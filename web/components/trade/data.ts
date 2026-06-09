@@ -1,5 +1,5 @@
 // Sample/static terminal data ported from web/mockups/trade.html.
-// No real API calls yet — testnet placeholder values.
+// No real API calls yet - testnet placeholder values.
 
 export type Pair = {
   sym: string;
@@ -108,27 +108,27 @@ export const CANDLES: [number, number, number, number][] = [
 export const THINKING_STEPS: { head: string; rest: string }[] = [
   {
     head: "Parsed intent",
-    rest: " — directional swing, asset WMNT, base mUSD, ~4h horizon, bullish bias.",
+    rest: " - directional swing, asset WMNT, base mUSD, ~4h horizon, bullish bias.",
   },
   {
     head: "On-chain pull",
-    rest: " — WMNT/mUSD pool depth 3.91M, 24h vol 842k, net inflow positive over 3 sessions.",
+    rest: " - WMNT/mUSD pool depth 3.91M, 24h vol 842k, net inflow positive over 3 sessions.",
   },
   {
     head: "Indicators",
-    rest: " — 4H RSI 58 (room), price holding above 20/50 EMA cross, structure of higher lows intact.",
+    rest: " - 4H RSI 58 (room), price holding above 20/50 EMA cross, structure of higher lows intact.",
   },
   {
     head: "Risk frame",
-    rest: " — invalidation 1.198 (-2.0%); R:R ≈ 1:3.2 at first target 1.36.",
+    rest: " - invalidation 1.198 (-2.0%); R:R ≈ 1:3.2 at first target 1.36.",
   },
   {
     head: "Sizing",
-    rest: " — 8% of mUSD balance → 1,000 mUSD, scaled in two clips to respect slippage band.",
+    rest: " - 8% of mUSD balance → 1,000 mUSD, scaled in two clips to respect slippage band.",
   },
   {
     head: "Verdict draft",
-    rest: " — Long, medium risk, predicted +6.4%–11%. Ready for tribunal cross-examination.",
+    rest: " - Long, medium risk, predicted +6.4% - 11%. Ready for tribunal cross-examination.",
   },
 ];
 

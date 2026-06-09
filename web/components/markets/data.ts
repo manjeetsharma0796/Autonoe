@@ -1,5 +1,5 @@
 // Static sample data for the Markets overview (T-414).
-// No API calls yet — the market subagent feed wires in later.
+// No API calls yet - the market subagent feed wires in later.
 
 export type BadgeKind = "mnt" | "btc" | "eth";
 

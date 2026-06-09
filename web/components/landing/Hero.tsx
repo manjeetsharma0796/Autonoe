@@ -80,7 +80,7 @@ export function Hero() {
       <p className={s.lede}>
         Autonoe writes a trading thesis, then puts it on trial. A{" "}
         <b>Supporter</b>, a <b>Discriminator</b>, and a <b>Judge</b> argue it
-        out — and an autonomous wallet executes the verdict on-chain. Every
+        out - and an autonomous wallet executes the verdict on-chain. Every
         decision is recorded as an <b>AI performance benchmark</b>.
       </p>
 

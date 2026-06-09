@@ -5,7 +5,7 @@ import { MoversStrip } from "@/components/markets/MoversStrip";
 import { MarketsTable } from "@/components/markets/MarketsTable";
 
 export const metadata: Metadata = {
-  title: "Autonoe — Markets · trade against mUSD",
+  title: "Autonoe - Markets · trade against mUSD",
   description:
     "Track price, momentum and depth for every mUSD pair on Mantle Sepolia.",
 };

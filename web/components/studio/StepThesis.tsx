@@ -30,6 +30,7 @@ import {
 import { postThesisHuman } from "@/lib/api";
 import { streamSSE } from "@/lib/stream";
 import { LiveThinking } from "@/components/ai/LiveThinking";
+import { Button } from "@/components/ui/Button";
 import { useWallet } from "@/components/wallet/WalletProvider";
 import { ExecuteModal } from "@/components/wallet/ExecuteModal";
 import { ShareButton } from "@/components/share/ShareCard";
@@ -126,7 +127,7 @@ function ThesisOptionCard({
             className={`btn btn-ghost ${styles.btnSm}`}
             type="button"
             disabled={opt.direction === "hold" || !wallet.isCreated}
-            title={!wallet.isCreated ? "Create an agent wallet to execute" : opt.direction === "hold" ? "Hold — no trade" : "Execute this option"}
+            title={!wallet.isCreated ? "Create an agent wallet to execute" : opt.direction === "hold" ? "Hold - no trade" : "Execute this option"}
             onClick={() => setModalOpen(true)}
           >
             Execute
@@ -340,15 +341,14 @@ export function StepThesis({ onSendToJudge }: StepThesisProps) {
           {mode === "ai" ? (
             <div className={styles.modepane} id="pane-ai">
               <div className={styles.runrow}>
-                <button
-                  className="btn btn-gold"
-                  type="button"
+                <Button
+                  variant="gold"
+                  loading={loading}
                   onClick={handleGenerate}
-                  disabled={loading}
+                  iconLeft={<SparkSingleIcon />}
                 >
-                  <SparkSingleIcon />
-                  {loading ? "Generating…" : "Generate thesis"}
-                </button>
+                  {loading ? "Generating" : "Generate thesis"}
+                </Button>
                 <span className={styles.hint}>
                   <ClockIcon />
                   {enabledCount} subagent{enabledCount !== 1 ? "s" : ""} active · ~5s to multi-option thesis
@@ -362,21 +362,20 @@ export function StepThesis({ onSendToJudge }: StepThesisProps) {
                 <textarea
                   className={styles.inp}
                   id="human-case"
-                  placeholder="Write your own thesis — direction, asset, sizing logic and why. We'll structure it into options you can send to the Judge Panel."
+                  placeholder="Write your own thesis - direction, asset, sizing logic and why. We'll structure it into options you can send to the Judge Panel."
                   value={humanCase}
                   onChange={(e) => setHumanCase(e.target.value)}
                 />
               </div>
               <div className={styles.runrow}>
-                <button
-                  className="btn btn-gold"
-                  type="button"
+                <Button
+                  variant="gold"
+                  loading={loading}
                   onClick={handleStructure}
-                  disabled={loading}
+                  iconLeft={<ArrowRightIcon />}
                 >
-                  <ArrowRightIcon />
-                  {loading ? "Structuring…" : "Structure into options"}
-                </button>
+                  {loading ? "Structuring" : "Structure into options"}
+                </Button>
                 <span className={styles.hint}>
                   <PenIcon />
                   Human-authored · source tagged for the leaderboard
@@ -394,7 +393,7 @@ export function StepThesis({ onSendToJudge }: StepThesisProps) {
           </div>
         )}
 
-        {/* Live streaming thinking panel — visible while streaming and collapsible after */}
+        {/* Live streaming thinking panel - visible while streaming and collapsible after */}
         {(thinking || loading) && (
           <div style={{ marginTop: 16 }}>
             <LiveThinking text={thinking} streaming={loading} />
@@ -419,7 +418,7 @@ export function StepThesis({ onSendToJudge }: StepThesisProps) {
         )}
       </div>
 
-      {/* Options grid — only shown after a successful thesis call */}
+      {/* Options grid - only shown after a successful thesis call */}
       {thesis && thesis.options.length > 0 && (
         <>
           <div className={`${styles.opthead} reveal`}>
@@ -453,7 +452,7 @@ export function StepThesis({ onSendToJudge }: StepThesisProps) {
 
       <div className={`${styles.notice} reveal`}>
         <WarnIcon />
-        Testnet · not financial advice. The agent never auto-executes — you
+        Testnet · not financial advice. The agent never auto-executes - you
         confirm every trade.
       </div>
     </section>

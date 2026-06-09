@@ -53,8 +53,8 @@ export function MarketsPreview() {
         <span className="tag">Markets</span>
         <h2 className="h2">Trade against mUSD.</h2>
         <p className="sub">
-          One synthetic dollar, every pair. Pick a market and the terminal — and
-          the tribunal — are one click away.
+          One synthetic dollar, every pair. Pick a market and the terminal - and
+          the tribunal - are one click away.
         </p>
       </div>
 

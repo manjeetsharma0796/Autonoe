@@ -136,7 +136,7 @@ function HistoryTable({ records }: { records: HistoryRecord[] }) {
                     Judged
                   </span>
                 ) : (
-                  <span style={{ color: "var(--muted)", fontSize: 13 }}>—</span>
+                  <span style={{ color: "var(--muted)", fontSize: 13 }}> - </span>
                 )}
               </td>
               <td
@@ -149,7 +149,7 @@ function HistoryTable({ records }: { records: HistoryRecord[] }) {
               >
                 {rec.pnlMUSD !== null
                   ? `${rec.pnlMUSD >= 0 ? "+" : ""}${rec.pnlMUSD.toFixed(2)} mUSD`
-                  : "—"}
+                  : " - "}
               </td>
               <td style={{ padding: "12px" }}>
                 {rec.txHash ? (
@@ -167,7 +167,7 @@ function HistoryTable({ records }: { records: HistoryRecord[] }) {
                     {rec.txHash.slice(0, 8)}…{rec.txHash.slice(-6)} ↗
                   </a>
                 ) : (
-                  <span style={{ color: "var(--muted)", fontSize: 12 }}>—</span>
+                  <span style={{ color: "var(--muted)", fontSize: 12 }}> - </span>
                 )}
               </td>
             </tr>
@@ -213,7 +213,7 @@ export default function HistoryPage() {
       <span className="tag">Benchmark</span>
       <h1 className="h2">History</h1>
       <p className="sub">
-        On-chain DecisionLog records — every thesis judged, executed, and
+        On-chain DecisionLog records - every thesis judged, executed, and
         settled on Mantle Sepolia.
       </p>
 
@@ -222,10 +222,37 @@ export default function HistoryPage() {
         <p style={{ color: "var(--muted)", marginTop: 32 }}>Loading history…</p>
       )}
 
-      {historyError && (
-        <p style={{ color: "var(--red, #FF6B6B)", marginTop: 32 }}>
-          Could not load history: {historyError}
-        </p>
+      {historyError && !historyLoading && (
+        <div
+          style={{
+            marginTop: 48,
+            border: "1px solid var(--line)",
+            borderRadius: 12,
+            background: "var(--panel)",
+            padding: "40px 28px",
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--mono)",
+              fontSize: 13,
+              color: "var(--faint)",
+              letterSpacing: ".08em",
+              textTransform: "uppercase",
+              marginBottom: 12,
+            }}
+          >
+            Benchmark offline
+          </div>
+          <p style={{ color: "var(--muted)", maxWidth: 480, margin: "0 auto", fontSize: 15 }}>
+            Couldn&apos;t reach the DecisionLog backend. Start the API server, then
+            reload - judged theses and on-chain PnL will appear here.
+          </p>
+          <p style={{ color: "var(--faint)", fontFamily: "var(--mono)", fontSize: 11, marginTop: 14 }}>
+            {historyError}
+          </p>
+        </div>
       )}
 
       {/* ── Empty state ─────────────────────────────────────────────── */}
@@ -253,7 +280,7 @@ export default function HistoryPage() {
             No data yet
           </div>
           <p style={{ color: "var(--muted)", maxWidth: 480, margin: "0 auto", fontSize: 15 }}>
-            Execute an AI thesis in the Studio to populate the benchmark — PnL
+            Execute an AI thesis in the Studio to populate the benchmark - PnL
             charts, win-rate stats and model rankings will appear here once
             trades are settled on-chain.
           </p>

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { SLIPPAGES, formatTo, type Pair } from "./data";
+import { Button } from "@/components/ui/Button";
 
 function FlipIcon() {
   return (
@@ -165,18 +166,14 @@ export function SwapBox({ pair }: { pair: Pair }) {
           <InfoIcon />
           <span>
             Output is estimated at <b>{slip}</b> slippage. The agent wallet will
-            revert if you receive less than the minimum. Testnet only — not
+            revert if you receive less than the minimum. Testnet only - not
             financial advice.
           </span>
         </div>
 
-        <button
-          type="button"
-          className="btn btn-gold btn-block btn-lg"
-          style={{ marginTop: 16 }}
-        >
+        <Button variant="gold" size="lg" block style={{ marginTop: 16 }}>
           Execute swap →
-        </button>
+        </Button>
       </div>
     </section>
   );

@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { STATS, type Pair } from "./data";
 import { PairSelector } from "./PairSelector";
 import { TradingViewChart } from "@/components/charts/TradingViewChart";
+
+/** Fixed tall chart - presets/resize removed per design direction. */
+const CHART_HEIGHT = 520;
 
 export function ChartPanel({
   pair,
@@ -20,7 +22,7 @@ export function ChartPanel({
         <PairSelector pair={pair} onSelect={onSelectPair} />
 
         <div className="lastpx">
-          <span className="v">{pair.px}</span>
+          <span className="v num">{pair.px}</span>
           <span className={`ch ${up ? "up" : "down"}`}>
             {up ? "▲ " : "▼ "}
             {pair.ch}
@@ -30,16 +32,16 @@ export function ChartPanel({
         <span className="spacer" style={{ flex: 1 }} />
       </div>
 
-      <div className="pbody">
-        <div className="chartwrap">
-          <TradingViewChart asset={pair.sym} height={360} />
+      <div className="pbody chart-pbody">
+        <div className="chartshell" style={{ height: CHART_HEIGHT }}>
+          <TradingViewChart asset={pair.sym} height="100%" />
         </div>
 
-        <div className="stats4">
+        <div className="stat-strip">
           {STATS.map((s) => (
-            <div className="c" key={s.k}>
+            <div className="cell" key={s.k}>
               <div className="k">{s.k}</div>
-              <div className={`n ${s.tone ?? ""}`}>{s.n}</div>
+              <div className={`v num ${s.tone ?? ""}`}>{s.n}</div>
             </div>
           ))}
         </div>

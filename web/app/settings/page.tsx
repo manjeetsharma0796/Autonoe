@@ -1,22 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import type { ModelInfo, ProviderId } from "@autonoe/shared";
 import { ProviderKeyPanel } from "@/components/keys/ProviderKeyPanel";
 import { RoleModelPanel } from "@/components/settings/RoleModelPanel";
 import { DataSourcePanel } from "@/components/settings/DataSourcePanel";
 
-type ModelsByProvider = Partial<Record<ProviderId, ModelInfo[]>>;
-
 // ── Settings page ─────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const [modelsByProvider, setModelsByProvider] = useState<ModelsByProvider>({});
-
-  function handleModelsLoaded(providerId: ProviderId, models: ModelInfo[]) {
-    setModelsByProvider((prev) => ({ ...prev, [providerId]: models }));
-  }
-
   return (
     <main className="wrap" style={{ paddingTop: 140, minHeight: "100vh", paddingBottom: 96 }}>
       {/* ── Page header ───────────────────────────────────────────────────── */}
@@ -35,7 +25,7 @@ export default function SettingsPage() {
           sub="Save a key to instantly see that provider's live model list. Keys are stored server-side and never exposed to the browser."
         />
         <div style={{ marginTop: 24, maxWidth: 780 }}>
-          <ProviderKeyPanel onModelsLoaded={handleModelsLoaded} />
+          <ProviderKeyPanel onModelsLoaded={() => {}} />
         </div>
       </section>
 
@@ -46,10 +36,10 @@ export default function SettingsPage() {
         <SectionHeader
           label="02"
           title="Role Model Assignments"
-          sub="Assign a provider and model to each AI role. Assignments persist server-side and apply to every thesis run."
+          sub="Give each AI role its own provider and model. Changes save instantly and apply to every run - and you can paste a missing key right on the chip."
         />
-        <div style={{ marginTop: 24 }}>
-          <RoleModelPanel modelsByProvider={modelsByProvider} />
+        <div style={{ marginTop: 24, maxWidth: 780 }}>
+          <RoleModelPanel />
         </div>
       </section>
 
@@ -60,7 +50,7 @@ export default function SettingsPage() {
         <SectionHeader
           label="03"
           title="Data Sources"
-          sub="Toggle subagents on or off. Disabled subagents are excluded from thesis generation — useful for faster runs or when a provider is unavailable."
+          sub="Toggle subagents on or off. Disabled subagents are excluded from thesis generation - useful for faster runs or when a provider is unavailable."
         />
         <div style={{ marginTop: 24 }}>
           <DataSourcePanel />

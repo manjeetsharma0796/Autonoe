@@ -41,7 +41,7 @@ export default function RootLayout({
       <body
         className={`${orbitron.variable} ${exo2.variable} ${jetbrainsMono.variable}`}
       >
-        {/* Atmosphere — gradient orbs + vignette behind everything */}
+        {/* Atmosphere - gradient orbs + vignette behind everything */}
         <div className="orb g" aria-hidden />
         <div className="orb v" aria-hidden />
         <div className="orb t" aria-hidden />

@@ -280,7 +280,7 @@ export function ExecuteModal({ option, onConfirm, onClose, isUnlocked }: Props) 
               </div>
             )}
 
-            {/* Non-blocking logError warning — trade already committed */}
+            {/* Non-blocking logError warning - trade already committed */}
             {result.logError && (
               <div style={{
                 background: 'rgba(245,165,36,0.07)',
@@ -293,7 +293,7 @@ export function ExecuteModal({ option, onConfirm, onClose, isUnlocked }: Props) 
                   Warning
                 </div>
                 <p style={{ fontFamily: 'var(--body)', fontSize: 13, color: 'var(--muted)', lineHeight: 1.5 }}>
-                  Trade succeeded but on-chain logging failed — do NOT retry.
+                  Trade succeeded but on-chain logging failed - do NOT retry.
                 </p>
                 <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--faint)', marginTop: 4 }}>
                   {result.logError}

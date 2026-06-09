@@ -104,7 +104,7 @@ export function MarketStats() {
             Markets <span>against mUSD.</span>
           </h1>
           <p className={styles.sub}>
-            One synthetic dollar, every pair. Track price, momentum and depth —
+            One synthetic dollar, every pair. Track price, momentum and depth - 
             then click into the <b>terminal</b> where the tribunal is one step
             away.
           </p>

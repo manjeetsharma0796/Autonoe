@@ -83,7 +83,7 @@ export function Benchmark() {
           </h2>
           <p className="sub">
             Not a leaderboard of vibes. Each thesis, verdict and outcome is
-            written to a DecisionLog contract — a permanent, public record of
+            written to a DecisionLog contract - a permanent, public record of
             which models actually make money.
           </p>
         </div>

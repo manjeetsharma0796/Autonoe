@@ -8,13 +8,13 @@ const AGENTS = [
     cls: s.sup,
     role: "Supporter",
     h: "Argues for",
-    p: "Builds the strongest bull case for the thesis — catalysts, momentum, asymmetry.",
+    p: "Builds the strongest bull case for the thesis - catalysts, momentum, asymmetry.",
   },
   {
     cls: s.dis,
     role: "Discriminator",
     h: "Argues against",
-    p: "The devil's advocate — liquidity traps, drawdown, every way this loses money.",
+    p: "The devil's advocate - liquidity traps, drawdown, every way this loses money.",
   },
   {
     cls: s.jud,
@@ -33,7 +33,7 @@ export function Tribunal() {
         <span className="tag">The signature</span>
         <h2 className="h2">Your thesis goes on trial.</h2>
         <p className="sub">
-          Three specialist agents — each on a model you choose — argue the case.
+          Three specialist agents - each on a model you choose - argue the case.
           You see every line of their reasoning, collapsed until you want it.
         </p>
       </div>
@@ -268,10 +268,10 @@ export function Tribunal() {
       <div className={`${s.verdict} ${s.reveal}`}>
         <div>
           <div className={s.vk}>Verdict · option A</div>
-          <h4>Long WMNT — scaled entry</h4>
+          <h4>Long WMNT - scaled entry</h4>
         </div>
         <div className={s.spacer} />
-        <span className={`${s.pill} ${s.ret}`}>predicted +6.4% – +11%</span>
+        <span className={`${s.pill} ${s.ret}`}>predicted +6.4% - +11%</span>
         <span className={`${s.pill} ${s.risk}`}>risk: medium</span>
         <button className="btn btn-gold" type="button">
           Execute →

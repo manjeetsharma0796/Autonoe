@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ProviderKeyPanel — the Mono compact pattern:
+ * ProviderKeyPanel - the Mono compact pattern:
  *   - Horizontal row of provider chips with status dots
  *   - One full-width key input with inline Save / clear / get-key actions
  *   - Live model list (filterable) appears instantly after a key is saved
@@ -389,7 +389,7 @@ export function ProviderKeyPanel({ onModelsLoaded, compact }: ProviderKeyPanelPr
         <div style={{ marginTop: 6, minHeight: 18, display: "flex", alignItems: "center" }}>
           {saveStatus === "ok" && (
             <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--green)" }}>
-              Key saved — models loaded.
+              Key saved - models loaded.
             </span>
           )}
           {saveStatus === "error" && (
@@ -552,7 +552,7 @@ export function ProviderKeyPanel({ onModelsLoaded, compact }: ProviderKeyPanelPr
 
           {!loadingModels && !modelError && models.length === 0 && (
             <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--faint)" }}>
-              No models returned — try a different key.
+              No models returned - try a different key.
             </div>
           )}
         </div>
@@ -576,7 +576,7 @@ export function ProviderKeyPanel({ onModelsLoaded, compact }: ProviderKeyPanelPr
               letterSpacing: "0.12em",
             }}
           >
-            NEEDS KEY — paste your {currentProvider?.label ?? selected} key above and press Save (or Enter).
+            NEEDS KEY - paste your {currentProvider?.label ?? selected} key above and press Save (or Enter).
           </span>
         </div>
       )}

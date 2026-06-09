@@ -240,8 +240,8 @@ export function Leaderboard({
       )}
 
       {error && (
-        <p style={{ color: "var(--red)", fontSize: 14 }}>
-          Could not load leaderboard: {error}
+        <p style={{ color: "var(--faint)", fontFamily: "var(--mono)", fontSize: 12.5 }}>
+          Leaderboard unavailable - start the API server and reload.
         </p>
       )}
 
@@ -274,7 +274,7 @@ export function Leaderboard({
               margin: "10px auto 0",
             }}
           >
-            Execute an AI thesis to start populating the leaderboard — each role's
+            Execute an AI thesis to start populating the leaderboard - each role's
             model will be tracked and ranked here.
           </div>
         </div>

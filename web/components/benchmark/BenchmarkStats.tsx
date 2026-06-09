@@ -174,7 +174,7 @@ export function BenchmarkStats({ records }: { records: HistoryRecord[] }) {
 
         <StatCell
           label="Win rate"
-          value={s.total === 0 ? "—" : `${s.winRate.toFixed(1)}%`}
+          value={s.total === 0 ? " - " : `${s.winRate.toFixed(1)}%`}
           valueColor={s.total === 0 ? "var(--faint)" : winRateColor}
           sub={
             s.total === 0
@@ -185,20 +185,20 @@ export function BenchmarkStats({ records }: { records: HistoryRecord[] }) {
 
         <StatCell
           label="Total PnL"
-          value={s.total === 0 ? "—" : `${fmt(s.totalPnl)} mUSD`}
+          value={s.total === 0 ? " - " : `${fmt(s.totalPnl)} mUSD`}
           valueColor={s.total === 0 ? "var(--faint)" : pnlColor}
           sub="cumulative realised"
         />
 
         <StatCell
           label="Best trade"
-          value={s.best !== null ? `${fmt(s.best)} mUSD` : "—"}
+          value={s.best !== null ? `${fmt(s.best)} mUSD` : " - "}
           valueColor={s.best !== null && s.best > 0 ? "var(--green)" : "var(--faint)"}
         />
 
         <StatCell
           label="Worst trade"
-          value={s.worst !== null ? `${fmt(s.worst)} mUSD` : "—"}
+          value={s.worst !== null ? `${fmt(s.worst)} mUSD` : " - "}
           valueColor={
             s.worst !== null && s.worst < 0 ? "var(--red)" : "var(--faint)"
           }

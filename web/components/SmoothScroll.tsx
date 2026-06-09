@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 
 /**
- * Lenis smooth-scroll — LANDING PAGE ONLY. On the app routes (markets, trade,
+ * Lenis smooth-scroll - LANDING PAGE ONLY. On the app routes (markets, trade,
  * studio, history, settings) smooth scroll feels laggy/annoying, so native
  * scrolling is used there. Honors prefers-reduced-motion by skipping entirely.
  */

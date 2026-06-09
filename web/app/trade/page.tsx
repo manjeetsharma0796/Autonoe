@@ -14,7 +14,7 @@ export default function TradePage() {
 
   return (
     <main className="trade-root">
-      <div className="terminal wrap">
+      <div className="terminal wrap-wide">
         <div className="crumbs">
           <span className="tag">Terminal</span>
           <span className="ttl">Trade</span>

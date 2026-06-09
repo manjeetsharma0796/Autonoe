@@ -17,7 +17,7 @@ export interface ShareCardData {
   predictedReturnLabel: string;
   /** e.g. "low" | "medium" | "high" */
   risk: string;
-  /** Optional — present for judge verdicts */
+  /** Optional - present for judge verdicts */
   verdict?: {
     /** One-line judge summary */
     summary: string;
@@ -108,7 +108,7 @@ export function buildShareSvg(data: ShareCardData): string {
     ? wrapText(clamp(verdict.summary, 160), 78).slice(0, 2)
     : [];
 
-  // Accent strip color at the top — gold for thesis, violet for verdict
+  // Accent strip color at the top - gold for thesis, violet for verdict
   const accentColor = isVerdict ? C.violet : C.gold;
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
@@ -133,14 +133,14 @@ export function buildShareSvg(data: ShareCardData): string {
   <!-- Background -->
   <rect width="${W}" height="${H}" fill="url(#bgGrad)"/>
 
-  <!-- Subtle radial glow — top-left gold -->
+  <!-- Subtle radial glow - top-left gold -->
   <radialGradient id="glow1" cx="10%" cy="0%" r="55%">
     <stop offset="0%" stop-color="${C.gold}" stop-opacity="0.12"/>
     <stop offset="100%" stop-color="${C.gold}" stop-opacity="0"/>
   </radialGradient>
   <rect width="${W}" height="${H}" fill="url(#glow1)"/>
 
-  <!-- Subtle radial glow — bottom-right violet -->
+  <!-- Subtle radial glow - bottom-right violet -->
   <radialGradient id="glow2" cx="90%" cy="100%" r="55%">
     <stop offset="0%" stop-color="${C.violet}" stop-opacity="0.10"/>
     <stop offset="100%" stop-color="${C.violet}" stop-opacity="0"/>
@@ -311,7 +311,7 @@ export function buildTextSummary(data: ShareCardData): string {
   const { intent, direction, asset, sizeMUSD, predictedReturnLabel, risk, verdict } = data;
   const dirLabel = direction.charAt(0).toUpperCase() + direction.slice(1);
   let text =
-    `AUTONOE — ${verdict ? "Judge Verdict" : "Thesis Option"}\n` +
+    `AUTONOE - ${verdict ? "Judge Verdict" : "Thesis Option"}\n` +
     `${"─".repeat(48)}\n` +
     `Intent:   ${intent}\n` +
     `Trade:    ${dirLabel} ${asset}\n` +
@@ -365,7 +365,7 @@ function SharePopover({ data, onClose }: SharePopoverProps) {
       const svg = buildShareSvg(data);
       await downloadSvgAsPng(svg);
     } catch {
-      // Non-fatal — silently fail; user can try again
+      // Non-fatal - silently fail; user can try again
     } finally {
       setDownloading(false);
     }
@@ -378,7 +378,7 @@ function SharePopover({ data, onClose }: SharePopoverProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Clipboard access denied — no-op
+      // Clipboard access denied - no-op
     }
   }
 

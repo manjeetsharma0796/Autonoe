@@ -89,7 +89,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [balances, setBalances] = useState<AgentBalances | null>(null);
   const [policy, setLocalPolicy] = useState<SpendingPolicy>(DEFAULT_POLICY);
 
-  // The private key lives only in this ref — never in state (avoids React
+  // The private key lives only in this ref - never in state (avoids React
   // DevTools exposure) and never written to localStorage.
   const privateKeyRef = useRef<`0x${string}` | null>(null);
 
@@ -112,7 +112,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           if (ks) setAddress(ks.address);
         }
       } catch {
-        // Non-fatal — wallet may simply not exist yet.
+        // Non-fatal - wallet may simply not exist yet.
       }
     })();
   }, []);
@@ -124,7 +124,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       const b = await getAgentBalances(address as `0x${string}`);
       setBalances(b);
     } catch {
-      // Best-effort — RPC may be unavailable.
+      // Best-effort - RPC may be unavailable.
     }
   }, [address]);
 
@@ -187,7 +187,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   // ── Fund mUSD ────────────────────────────────────────────────────────────────
   const fundMusd = useCallback(async () => {
-    if (!privateKeyRef.current) throw new Error('Wallet is locked — unlock first');
+    if (!privateKeyRef.current) throw new Error('Wallet is locked - unlock first');
     const result = await fundMUSD(privateKeyRef.current);
     void refreshBalances();
     return result;
@@ -199,7 +199,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       opt: Omit<ExecuteOptionInput, 'privateKey' | 'policy' | 'thesisHash' | 'verdictHash'>,
       ctx: ExecuteContext,
     ): Promise<ExecuteResult> => {
-      if (!privateKeyRef.current) throw new Error('Wallet is locked — unlock first');
+      if (!privateKeyRef.current) throw new Error('Wallet is locked - unlock first');
       const result = await executeOption({
         ...opt,
         thesisHash: ctx.thesisHash,

@@ -7,6 +7,7 @@
  * final answer/result the caller renders.
  */
 import { useEffect, useRef, useState } from 'react';
+import { Markdown } from './Markdown';
 
 export interface LiveThinkingProps {
   text: string;
@@ -32,10 +33,8 @@ export function LiveThinking({ text, streaming, defaultOpen }: LiveThinkingProps
   return (
     <div
       style={{
-        border: '1px solid var(--line)',
-        borderRadius: 10,
-        background: 'rgba(255,255,255,0.015)',
-        margin: '10px 0',
+        borderTop: '1px solid var(--line2)',
+        margin: '14px 0 0',
       }}
     >
       <button
@@ -46,7 +45,7 @@ export function LiveThinking({ text, streaming, defaultOpen }: LiveThinkingProps
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          padding: '8px 12px',
+          padding: '10px 0',
           background: 'transparent',
           border: 'none',
           cursor: 'pointer',
@@ -73,19 +72,11 @@ export function LiveThinking({ text, streaming, defaultOpen }: LiveThinkingProps
       {open && (
         <div
           ref={bodyRef}
-          style={{
-            maxHeight: 220,
-            overflowY: 'auto',
-            padding: '2px 14px 12px',
-            color: 'var(--faint)',
-            fontFamily: 'var(--mono)',
-            fontSize: 11.5,
-            lineHeight: 1.6,
-            whiteSpace: 'pre-wrap',
-          }}
+          className="md-think"
+          style={{ maxHeight: 240, overflowY: 'auto', padding: '2px 0 12px' }}
         >
-          {text}
-          {streaming && <span style={{ opacity: 0.55 }}>▋</span>}
+          <Markdown text={text} />
+          {streaming && <span className="ai-cursor">▋</span>}
         </div>
       )}
     </div>

@@ -232,7 +232,7 @@ function WalletDrawer({ onClose }: { onClose: () => void }) {
         {/* ── Section 2: Agent wallet (autonomous acting wallet) ── */}
         {sectionTitle("Agent wallet (acting wallet)")}
 
-        {/* Acting indicator — shown whenever we have an address */}
+        {/* Acting indicator - shown whenever we have an address */}
         {wallet.address && (
           <div style={{
             display: "flex",
@@ -255,7 +255,7 @@ function WalletDrawer({ onClose }: { onClose: () => void }) {
         {!wallet.isCreated && (
           <>
             <p style={{ fontFamily: "var(--body)", fontSize: 13, color: "var(--muted)", marginBottom: 14, lineHeight: 1.5 }}>
-              Create a dedicated autonomous wallet. The private key is encrypted locally — it never leaves your browser.
+              Create a dedicated autonomous wallet. The private key is encrypted locally - it never leaves your browser.
             </p>
             {label("Passphrase")}
             <input
@@ -462,7 +462,7 @@ function WalletDrawer({ onClose }: { onClose: () => void }) {
               {revealedKey && (
                 <div style={{ marginTop: 12, background: "rgba(255,107,107,0.06)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 10, padding: "12px 14px" }}>
                   <p style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--red)", letterSpacing: "0.14em", textTransform: "uppercase" as const, marginBottom: 6 }}>
-                    Private key — keep secret
+                    Private key - keep secret
                   </p>
                   <p style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink)", wordBreak: "break-all" }}>
                     {revealedKey}
@@ -621,7 +621,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               ))}
             </div>
 
-            {/* Key/model quick-panel trigger — additive, isolated from wallet drawer */}
+            {/* Key/model quick-panel trigger - additive, isolated from wallet drawer */}
             <button
               className="btn btn-ghost"
               type="button"
@@ -648,7 +648,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {drawerOpen && <WalletDrawer onClose={() => setDrawerOpen(false)} />}
 
-      {/* Key/model quick-panel overlay — additive, isolated from wallet drawer */}
+      {/* Key/model quick-panel overlay - additive, isolated from wallet drawer */}
       {keyPanelOpen && <KeyQuickPanel onClose={() => setKeyPanelOpen(false)} />}
     </>
   );

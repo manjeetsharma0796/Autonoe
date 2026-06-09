@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * KeyQuickPanel — a top-anchored overlay panel containing the compact
+ * KeyQuickPanel - a top-anchored overlay panel containing the compact
  * ProviderKeyPanel. Opened from the global nav trigger in AppShell.
  * Closes on overlay click or Escape key.
  */
@@ -50,7 +50,7 @@ export function KeyQuickPanel({ onClose, onModelsLoaded }: KeyQuickPanelProps) {
         }}
       />
 
-      {/* Panel — top-anchored, centred */}
+      {/* Panel - top-anchored, centred */}
       <div
         ref={panelRef}
         role="dialog"
@@ -120,7 +120,7 @@ export function KeyQuickPanel({ onClose, onModelsLoaded }: KeyQuickPanelProps) {
         </div>
       </div>
 
-      {/* Drop-in keyframe — injected inline so it works without a CSS module */}
+      {/* Drop-in keyframe - injected inline so it works without a CSS module */}
       <style>{`
         @keyframes kqp-drop {
           from { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(0.97); }

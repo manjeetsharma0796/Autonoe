@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ProviderCard — legacy per-provider card, now superseded by the compact
+ * ProviderCard - legacy per-provider card, now superseded by the compact
  * ProviderKeyPanel in /settings and KeyQuickPanel. Kept for any external
  * callers; re-exports from the new implementation so there is a single source
  * of truth for provider key handling.
@@ -11,7 +11,7 @@
 
 import type { ProviderInfo, ModelInfo, ProviderId } from "@autonoe/shared";
 
-// Unused — kept to avoid breaking any stale import that hasn't been updated.
+// Unused - kept to avoid breaking any stale import that hasn't been updated.
 export interface ProviderCardProps {
   provider: ProviderInfo;
   onModelsLoaded: (providerId: ProviderId, models: ModelInfo[]) => void;

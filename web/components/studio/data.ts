@@ -26,10 +26,10 @@ export const DEFAULT_SOURCES: Record<DataSourceKey, boolean> = {
 };
 
 export const DEFAULT_INTENT =
-  "WMNT looks oversold after the testnet incentive cliff — is there a scaled long worth taking against mUSD?";
+  "WMNT looks oversold after the testnet incentive cliff - is there a scaled long worth taking against mUSD?";
 
 export const DEFAULT_HUMAN_CASE =
-  "WMNT has round-tripped to its pre-incentive range while on-chain TVL held flat — sellers look exhausted. I'd scale a long against mUSD, sized small, adding only on a reclaim of the 1.30 level. Invalidation: a daily close back under 1.18.";
+  "WMNT has round-tripped to its pre-incentive range while on-chain TVL held flat - sellers look exhausted. I'd scale a long against mUSD, sized small, adding only on a reclaim of the 1.30 level. Invalidation: a daily close back under 1.18.";
 
 export interface TraceStep {
   label: string;
@@ -55,7 +55,7 @@ export const THESIS_TRACE: TraceStep[] = [
   {
     label: "thesis · synthesis",
     detail:
-      "Asymmetry favors a scaled long against mUSD across three risk tiers. News source disabled — no catalyst weighting applied.",
+      "Asymmetry favors a scaled long against mUSD across three risk tiers. News source disabled - no catalyst weighting applied.",
   },
 ];
 
@@ -105,7 +105,7 @@ export const THESIS_OPTIONS: ThesisOption[] = [
     sizeValue: "1,200 mUSD",
     sizeLabel: "opt-3 · full size",
     rationale:
-      "Conviction long, full size at market on the oversold thesis. Largest drawdown exposure if 1.18 fails — only for a high risk appetite.",
+      "Conviction long, full size at market on the oversold thesis. Largest drawdown exposure if 1.18 fails - only for a high risk appetite.",
     predicted: "+12.0% to +21.0%",
   },
 ];
@@ -126,7 +126,7 @@ export const JUDGES: Judge[] = [
     heading: "Argues for",
     argument:
       "The oversold reclaim is real: a higher low at 1.21, positive net DEX inflow and an RSI turn give a clean asymmetric long. The two-tranche entry caps risk while keeping upside into a 1.30 reclaim.",
-    summary: "— 3 confluent buy signals",
+    summary: " - 3 confluent buy signals",
     trace: [
       {
         label: "structure",
@@ -135,7 +135,7 @@ export const JUDGES: Judge[] = [
       { label: "flow", detail: "72h net inflow positive; holders not distributing." },
       {
         label: "risk/reward",
-        detail: "Stop at 1.18 risks ~5% to capture +6–11% — favorable R.",
+        detail: "Stop at 1.18 risks ~5% to capture +6 - 11% - favorable R.",
       },
     ],
   },
@@ -145,7 +145,7 @@ export const JUDGES: Judge[] = [
     heading: "Argues against",
     argument:
       "An incentive cliff is a structural seller, not noise. Thin testnet liquidity makes the 1.30 reclaim a low-conviction breakout prone to a fade. Full size here invites a sharp drawdown if 1.18 cracks.",
-    summary: "— 2 material objections",
+    summary: " - 2 material objections",
     trace: [
       {
         label: "liquidity",
@@ -153,7 +153,7 @@ export const JUDGES: Judge[] = [
       },
       {
         label: "catalyst gap",
-        detail: "News source disabled — an unpriced cliff headline is a tail risk.",
+        detail: "News source disabled - an unpriced cliff headline is a tail risk.",
       },
     ],
   },
@@ -163,7 +163,7 @@ export const JUDGES: Judge[] = [
     heading: "Delivers the verdict",
     argument:
       "The long has an edge but the Discriminator's liquidity caveat is valid. Verdict: favor the scaled medium-risk entry, trim the full-size tier, and require a confirmed 1.30 reclaim before adding. Confidence is moderate.",
-    summary: "— weighed both, downsized tail risk",
+    summary: " - weighed both, downsized tail risk",
     trace: [
       {
         label: "weighting",
@@ -172,7 +172,7 @@ export const JUDGES: Judge[] = [
       { label: "sizing", detail: "Cut high-risk tier; gate adds on a confirmed reclaim." },
       {
         label: "confidence",
-        detail: "0.62 — directional edge, execution-path uncertainty.",
+        detail: "0.62 - directional edge, execution-path uncertainty.",
       },
     ],
   },
@@ -225,7 +225,7 @@ export const REFINED_OPTIONS: RefinedOption[] = [
     riskLabel: "High",
     predicted: "+14.0%",
     caveats: [
-      "Panel trimmed sizing — drawdown exposure is steep.",
+      "Panel trimmed sizing - drawdown exposure is steep.",
       "Liquidity-grab risk on the 1.30 reclaim.",
       "Only for a high risk appetite.",
     ],

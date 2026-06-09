@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * TradingView Advanced Chart widget — full default UI (timeframes, indicators,
+ * TradingView Advanced Chart widget - full default UI (timeframes, indicators,
  * drawing tools). Renders real market data for the asset's USDT pair. Used on
  * /trade and the /studio verdict view.
  */
@@ -21,8 +21,8 @@ function tvSymbol(asset: string): string {
 
 export interface TradingViewChartProps {
   asset: string;
-  /** Pixel height; use a number for fixed, or pass via style for responsive. */
-  height?: number;
+  /** Pixel height (number) or any CSS height string ('100%', 'min(78vh,860px)'…). */
+  height?: number | string;
   interval?: string; // '60', 'D', etc.
 }
 
