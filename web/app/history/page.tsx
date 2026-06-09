@@ -261,7 +261,7 @@ export default function HistoryPage() {
           style={{
             marginTop: 48,
             border: "1px solid rgba(255,255,255,.08)",
-            borderRadius: 16,
+            borderRadius: 12,
             background: "var(--panel)",
             padding: "48px 32px",
             textAlign: "center",
@@ -316,7 +316,7 @@ export default function HistoryPage() {
           <div
             style={{
               border: "1px solid rgba(255,255,255,.08)",
-              borderRadius: 16,
+              borderRadius: 12,
               background: "var(--panel)",
               overflow: "hidden",
             }}

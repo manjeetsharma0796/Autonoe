@@ -94,23 +94,12 @@
 
 /* ── market-stats header row ───────────────────────────── */
 .statband {
-  margin-top: 42px;
+  margin-top: 34px;
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: 12px;
   overflow: hidden;
-  background: linear-gradient(180deg, var(--panel2), var(--bg2));
+  background: var(--panel);
   position: relative;
-}
-.statband::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(
-    80% 120% at 100% 0%,
-    rgba(139, 92, 246, 0.13),
-    transparent 60%
-  );
 }
 .sgrid {
   display: grid;
@@ -129,7 +118,7 @@
   }
 }
 .scell {
-  padding: 26px 28px;
+  padding: 18px 20px;
   border-left: 1px solid var(--line2);
 }
 .scell:first-child {
@@ -241,16 +230,16 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px 18px;
+  padding: 14px 16px;
   border: 1px solid var(--line);
-  border-radius: 16px;
-  background: linear-gradient(180deg, var(--panel), var(--bg2));
+  border-radius: 10px;
+  background: var(--panel);
   cursor: pointer;
-  transition: transform 0.25s ease, border-color 0.25s ease;
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
 .gcard:hover {
-  transform: translateY(-4px);
   border-color: rgba(245, 165, 36, 0.4);
+  background: var(--panel2);
 }
 .gcard :global(.b) {
   width: 36px;
@@ -294,7 +283,7 @@
 .mk {
   margin-top: 30px;
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: 12px;
   overflow: hidden;
   background: var(--panel);
 }
@@ -304,7 +293,7 @@
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  padding: 20px 26px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--line2);
 }
 .mhead h2 {
@@ -346,7 +335,7 @@
   grid-template-columns: 42px 1.6fr 1fr 0.9fr 1.1fr 1.3fr;
   gap: 16px;
   align-items: center;
-  padding: 18px 26px;
+  padding: 13px 18px;
   border-top: 1px solid var(--line2);
   transition: background 0.2s;
 }

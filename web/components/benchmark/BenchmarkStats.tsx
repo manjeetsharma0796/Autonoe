@@ -50,7 +50,7 @@ function StatCell({ label, value, valueColor, sub }: StatCellProps) {
   return (
     <div
       style={{
-        padding: "24px 26px",
+        padding: "18px 20px",
         borderLeft: "1px solid rgba(255,255,255,.045)",
         flex: "1 1 0",
         minWidth: 140,
@@ -110,25 +110,13 @@ export function BenchmarkStats({ records }: { records: HistoryRecord[] }) {
   return (
     <div
       style={{
-        border: "1px solid rgba(255,255,255,.08)",
-        borderRadius: 16,
-        background: "linear-gradient(180deg, var(--panel2), var(--bg2))",
+        border: "1px solid var(--line)",
+        borderRadius: 12,
+        background: "var(--panel)",
         overflow: "hidden",
         position: "relative",
       }}
     >
-      {/* Subtle violet accent top-right */}
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          background:
-            "radial-gradient(80% 120% at 100% 0%, rgba(139,92,246,.1), transparent 60%)",
-        }}
-      />
-
       <div
         style={{
           display: "flex",
@@ -140,7 +128,7 @@ export function BenchmarkStats({ records }: { records: HistoryRecord[] }) {
         {/* First cell has no left border */}
         <div
           style={{
-            padding: "24px 26px",
+            padding: "18px 20px",
             flex: "1 1 0",
             minWidth: 140,
           }}
