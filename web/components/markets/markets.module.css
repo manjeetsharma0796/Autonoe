@@ -405,6 +405,12 @@
   width: 17px;
   height: 17px;
 }
+.fav:focus-visible,
+.chip:focus-visible,
+.gcard:focus-visible {
+  outline: 2px solid var(--gold2);
+  outline-offset: 2px;
+}
 .fav.on {
   color: var(--gold);
 }

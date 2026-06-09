@@ -11,7 +11,7 @@
   --panel2: #121a2c;
   --ink: #f4f7fb;
   --muted: #aab8cd;
-  --faint: #75839b;
+  --faint: #8b97ad;
   --gold: #f5a524;
   --gold2: #ffcc66;
   --violet: #8b5cf6;
@@ -113,6 +113,7 @@
 html {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  color-scheme: dark;
 }
 body {
   background: var(--bg);
@@ -440,5 +441,9 @@ main {
   * {
     animation: none !important;
     transition: none !important;
+  }
+  /* keep a (gentle) loading cue — a frozen spinner reads as "stuck" */
+  .ui-spin {
+    animation: ui-spin 1.6s linear infinite !important;
   }
 }

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Orbitron, Exo_2, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
@@ -29,6 +29,11 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Autonoe",
   description: "Your autonomous mind for on-chain trades.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#080b12",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({

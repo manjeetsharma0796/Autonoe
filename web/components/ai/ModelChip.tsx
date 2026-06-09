@@ -203,7 +203,11 @@ export function ModelChip({ role = "thesis" as AIRole }: { role?: AIRole }) {
                     <input
                       type="password"
                       className="mpop-key-input"
-                      placeholder="paste key"
+                      placeholder="paste key…"
+                      name="apiKey"
+                      autoComplete="off"
+                      spellCheck={false}
+                      aria-label={`${activeInfo.label} API key`}
                       value={keyInput}
                       onChange={(e) => setKeyInput(e.target.value)}
                       onKeyDown={(e) => {

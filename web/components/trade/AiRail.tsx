@@ -150,10 +150,11 @@ function ThesisPane() {
           <span className="intentlab" style={{ marginBottom: 0 }}>Model</span>
           <ModelChip role="thesis" />
         </div>
-        <div className="intentlab">Your intent</div>
+        <div className="intentlab" id="intent-label">Your intent</div>
         <textarea
           className="intent"
           rows={3}
+          aria-labelledby="intent-label"
           value={intent}
           onChange={(e) => setIntent(e.target.value)}
         />
@@ -165,7 +166,7 @@ function ThesisPane() {
             onClick={() => void handleGenerate()}
             iconLeft={<BoltIcon />}
           >
-            {loading ? "Generating" : "Generate thesis"}
+            {loading ? "Generating…" : "Generate thesis"}
           </Button>
         </div>
 
@@ -241,7 +242,14 @@ function AssistantPane() {
   const abortRef = useRef<AbortController | null>(null);
 
   function scrollToBottom() {
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    // only follow the stream if the user is already pinned to the bottom,
+    // and jump instantly (smooth-per-token fights the reader)
+    setTimeout(() => {
+      const el = bottomRef.current?.parentElement;
+      if (!el) return;
+      const pinned = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+      if (pinned) el.scrollTop = el.scrollHeight;
+    }, 30);
   }
 
   async function run(convo: ChatMessage[]) {

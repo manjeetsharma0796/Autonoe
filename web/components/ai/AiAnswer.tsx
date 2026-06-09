@@ -55,6 +55,7 @@ export function AiAnswer({
             tone="good"
             active={rating === "up"}
             aria-label="Good answer"
+            aria-pressed={rating === "up"}
             onClick={() => setRating((r) => (r === "up" ? null : "up"))}
           >
             <Ic d={UP} />
@@ -64,6 +65,7 @@ export function AiAnswer({
             tone="bad"
             active={rating === "down"}
             aria-label="Bad answer"
+            aria-pressed={rating === "down"}
             onClick={() => setRating((r) => (r === "down" ? null : "down"))}
           >
             <Ic d={DOWN} />

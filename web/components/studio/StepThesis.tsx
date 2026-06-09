@@ -347,7 +347,7 @@ export function StepThesis({ onSendToJudge }: StepThesisProps) {
                   onClick={handleGenerate}
                   iconLeft={<SparkSingleIcon />}
                 >
-                  {loading ? "Generating" : "Generate thesis"}
+                  {loading ? "Generating…" : "Generate thesis"}
                 </Button>
                 <span className={styles.hint}>
                   <ClockIcon />
@@ -374,7 +374,7 @@ export function StepThesis({ onSendToJudge }: StepThesisProps) {
                   onClick={handleStructure}
                   iconLeft={<ArrowRightIcon />}
                 >
-                  {loading ? "Structuring" : "Structure into options"}
+                  {loading ? "Structuring…" : "Structure into options"}
                 </Button>
                 <span className={styles.hint}>
                   <PenIcon />

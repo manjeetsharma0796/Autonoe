@@ -187,11 +187,16 @@
   border-radius: var(--r-md);
   padding: 10px 13px;
   cursor: pointer;
+  touch-action: manipulation;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
 .fu-pill:hover:not(:disabled) {
   border-color: var(--violet);
   background: rgba(139, 92, 246, 0.12);
+}
+.fu-pill:focus-visible {
+  outline: 2px solid var(--gold2);
+  outline-offset: 2px;
 }
 .fu-pill:disabled {
   opacity: 0.5;

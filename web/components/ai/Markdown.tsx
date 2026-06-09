@@ -142,7 +142,9 @@ export function Markdown({ text, className = "" }: { text: string; className?: s
             <thead>
               <tr>
                 {header.map((h, i) => (
-                  <th key={i}>{inline(h, `th${k}_${i}_`)}</th>
+                  <th key={i} scope="col">
+                    {inline(h, `th${k}_${i}_`)}
+                  </th>
                 ))}
               </tr>
             </thead>

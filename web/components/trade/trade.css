@@ -95,6 +95,24 @@
     padding: 0;
   }
 
+  /* a11y: visible keyboard focus + touch behavior on tool controls */
+  .tab:focus-visible,
+  .send:focus-visible,
+  .chip:focus-visible,
+  .pairbtn:focus-visible,
+  .pairopt:focus-visible,
+  .sf-asset:focus-visible,
+  .swapmid button:focus-visible {
+    outline: 2px solid var(--gold2);
+    outline-offset: 2px;
+  }
+  .tab,
+  .send,
+  .chip,
+  .swapmid button {
+    touch-action: manipulation;
+  }
+
   /* pair selector */
   .pairsel {
     position: relative;
@@ -267,7 +285,7 @@
     background: rgba(255, 255, 255, 0.015);
     padding: 6px 12px;
     border-radius: 9px;
-    transition: all 0.18s;
+    transition: color 0.18s, border-color 0.18s, background 0.18s;
   }
   .chip:hover {
     color: var(--ink);
@@ -606,7 +624,7 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: all 0.18s;
+    transition: color 0.18s, background 0.18s, border-color 0.18s;
     background: transparent;
   }
   .tab svg {
