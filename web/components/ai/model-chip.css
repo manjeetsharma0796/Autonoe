@@ -148,12 +148,12 @@
   display: inline-flex;
 }
 .mpop {
-  position: absolute;
-  z-index: 60;
-  top: calc(100% + 8px);
-  right: 0;
+  position: fixed;
+  z-index: 200;
   width: 300px;
-  max-width: 86vw;
+  max-width: 92vw;
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   background: rgba(12, 17, 28, 0.96);
@@ -229,7 +229,9 @@
   outline: none;
 }
 .mpop-list {
-  max-height: 220px;
+  max-height: 320px;
+  min-height: 0;
+  flex: 0 1 auto;
   overflow-y: auto;
 }
 .mpop-opt {

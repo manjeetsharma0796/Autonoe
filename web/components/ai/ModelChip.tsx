@@ -9,6 +9,7 @@
  * default via PUT /api/roles.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import type {
   AIRole,
@@ -50,6 +51,26 @@ export function ModelChip({ role = "thesis" as AIRole }: { role?: AIRole }) {
   const [keySaving, setKeySaving] = useState(false);
   const [keyErr, setKeyErr] = useState<string | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<HTMLButtonElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ left: number; top?: number; bottom?: number; maxHeight: number } | null>(null);
+
+  // Position the portaled popover relative to the chip, flipping above when
+  // there isn't room below. Fixed positioning escapes any overflow:hidden ancestor.
+  const place = useCallback(() => {
+    const el = anchorRef.current;
+    if (!el || typeof window === "undefined") return;
+    const r = el.getBoundingClientRect();
+    const W = 300;
+    const left = Math.max(8, Math.min(r.right - W, window.innerWidth - W - 8));
+    const spaceBelow = window.innerHeight - r.bottom - 12;
+    const spaceAbove = r.top - 12;
+    if (spaceBelow >= 300 || spaceBelow >= spaceAbove) {
+      setPos({ left, top: r.bottom + 8, maxHeight: Math.max(200, spaceBelow) });
+    } else {
+      setPos({ left, bottom: window.innerHeight - r.top + 8, maxHeight: Math.max(200, spaceAbove) });
+    }
+  }, []);
 
   const current = roles?.[role] ?? null;
   const providerOf = (id?: ProviderId) => providers.find((p) => p.id === id);
@@ -71,18 +92,25 @@ export function ModelChip({ role = "thesis" as AIRole }: { role?: AIRole }) {
   useEffect(() => {
     if (!open) return;
     function onDown(e: MouseEvent) {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (wrapRef.current?.contains(t)) return;
+      if (popRef.current?.contains(t)) return; // popover is portaled outside wrapRef
+      setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
     return () => {
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
     };
-  }, [open]);
+  }, [open, place]);
 
   const selectProvider = useCallback((prov: ProviderId, hasKey: boolean) => {
     setActiveProv(prov);
@@ -102,6 +130,7 @@ export function ModelChip({ role = "thesis" as AIRole }: { role?: AIRole }) {
     const next = !open;
     setOpen(next);
     if (!next) return;
+    place();
     refreshProviders().then(() => {
       getProviders()
         .then((ps) => {
@@ -153,6 +182,7 @@ export function ModelChip({ role = "thesis" as AIRole }: { role?: AIRole }) {
   return (
     <div className="mchip-wrap" ref={wrapRef}>
       <button
+        ref={anchorRef}
         type="button"
         className={`mchip ${unset ? "unset" : ""} ${needsKey ? "warn" : ""}`}
         onClick={togglePopover}
@@ -173,8 +203,14 @@ export function ModelChip({ role = "thesis" as AIRole }: { role?: AIRole }) {
         <Caret />
       </button>
 
-      {open && (
-        <div className="mpop" role="dialog" aria-label={`Model for ${role}`}>
+      {open && pos && createPortal(
+        <div
+          className="mpop"
+          ref={popRef}
+          role="dialog"
+          aria-label={`Model for ${role}`}
+          style={{ left: pos.left, top: pos.top, bottom: pos.bottom, maxHeight: pos.maxHeight }}
+        >
           <div className="mpop-head">
             Model · <span className="role">{ROLE_LABEL[role] ?? role}</span>
           </div>
@@ -289,7 +325,8 @@ export function ModelChip({ role = "thesis" as AIRole }: { role?: AIRole }) {
           <div className="mpop-foot">
             <Link href="/settings">Manage all roles in Settings →</Link>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
