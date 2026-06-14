@@ -13,7 +13,7 @@ import { chatConversational, clearSession } from './agents/chatAgent.ts';
 import { askDebater, type DebaterRole } from './agents/debateFollowup.ts';
 import { extractIntake } from './agents/extract.ts';
 import { signPrice } from './oracle.ts';
-import { getHistory, getLeaderboard } from './history.ts';
+import { getHistory, getLeaderboard, invalidateHistoryCache } from './history.ts';
 import { makeModel, type ChatModelLike, type ModelResolver } from './models.ts';
 import { resolveRole } from './roles.ts';
 import { sse } from './stream.ts';
@@ -331,6 +331,7 @@ export function createApp() {
         createdAt: typeof b.createdAt === 'string' ? b.createdAt : new Date().toISOString(),
       };
       recordTrade(meta);
+      invalidateHistoryCache(); // surface the new trade on History without the TTL wait
       res.json({ ok: true });
     }),
   );

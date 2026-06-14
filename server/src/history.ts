@@ -6,15 +6,53 @@ import type { AIRole, ProviderId } from '@autonoe/shared';
 import type { HistoryRecord, LeaderboardRow } from '@autonoe/shared';
 import { listTrades } from './store.ts';
 
-/**
- * Return all decisions from the on-chain DecisionLog, enriched with
- * off-chain trade metadata. Returns [] if contracts are not yet deployed.
- */
-export async function getHistory(): Promise<HistoryRecord[]> {
-  if (!isDeployed()) return [];
+type Decisions = Awaited<ReturnType<typeof readHistory>>;
 
-  const client = getPublicClient();
-  const decisions = await readHistory(client);
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Read the on-chain DecisionLog with a couple of retries on transient RPC
+ * rate-limits / 5xx. The DecisionLog is read one `getDecision(id)` call per
+ * record, so a burst against the free public RPC can be throttled - retrying
+ * with backoff turns a transient 429/503 into data instead of a 500.
+ */
+async function readWithRetry(): Promise<Decisions> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      return await readHistory(getPublicClient());
+    } catch (e) {
+      lastErr = e;
+      const msg = String((e as Error)?.message ?? e).toLowerCase();
+      const transient =
+        msg.includes('rate limit') ||
+        msg.includes('429') ||
+        msg.includes('503') ||
+        msg.includes('timeout');
+      if (!transient || attempt === 2) break;
+      await sleep(400 * (attempt + 1)); // 400ms, then 800ms
+    }
+  }
+  throw lastErr;
+}
+
+// Short-TTL cache + in-flight de-dup for the (expensive) on-chain read. A single
+// History page load fetches /api/history AND /api/leaderboard *in parallel*, and
+// getLeaderboard() calls getHistory() again - 2x per load, 4x under React
+// StrictMode in dev. Without this, those concurrent bursts of sequential
+// eth_calls trip the public RPC's rate limit. The cache serves repeat loads; the
+// in-flight promise collapses concurrent loads into a single chain read.
+let cache: { at: number; data: HistoryRecord[] } | null = null;
+let inflight: Promise<HistoryRecord[]> | null = null;
+const TTL_MS = 8_000;
+
+/** Force the next getHistory() to re-read the chain (e.g. just after a trade). */
+export function invalidateHistoryCache(): void {
+  cache = null;
+}
+
+async function loadHistory(): Promise<HistoryRecord[]> {
+  const decisions = await readWithRetry();
 
   // Build a lookup map: lowercase thesisHash → TradeMeta
   const trades = listTrades();
@@ -39,6 +77,27 @@ export async function getHistory(): Promise<HistoryRecord[]> {
   // Sort newest-first
   records.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   return records;
+}
+
+/**
+ * Return all decisions from the on-chain DecisionLog, enriched with
+ * off-chain trade metadata. Returns [] if contracts are not yet deployed.
+ * Cached for a few seconds, with concurrent callers sharing one read.
+ */
+export async function getHistory(): Promise<HistoryRecord[]> {
+  if (!isDeployed()) return [];
+  if (cache && Date.now() - cache.at < TTL_MS) return cache.data;
+  if (inflight) return inflight; // concurrent callers join the in-flight read
+
+  inflight = loadHistory()
+    .then((records) => {
+      cache = { at: Date.now(), data: records };
+      return records;
+    })
+    .finally(() => {
+      inflight = null;
+    });
+  return inflight;
 }
 
 /**
