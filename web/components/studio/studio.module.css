@@ -660,7 +660,7 @@ textarea.inp {
   line-height: 1.6;
 }
 
-/* tribunal — a dedicated window per AI, full argument shown */
+/* tribunal - a dedicated window per AI, full argument shown */
 .twins {
   display: flex;
   flex-direction: column;
@@ -673,6 +673,11 @@ textarea.inp {
   border-radius: 12px;
   background: var(--panel);
   overflow: hidden;
+  /* chat window: grows with the debate, then CAPS at ~one screen and scrolls
+     internally (header + chip stay pinned, ask input sticks to the bottom). */
+  display: flex;
+  flex-direction: column;
+  max-height: clamp(440px, 66vh, 720px);
 }
 .tw::before {
   content: "";
@@ -697,8 +702,8 @@ textarea.inp {
   display: flex;
   align-items: center;
   gap: 13px;
-  padding: 14px 18px 14px 20px;
-  border-bottom: 1px solid var(--line2);
+  padding: 14px 18px 4px 20px;
+  flex: 0 0 auto;
 }
 .twIc {
   width: 34px;
@@ -719,6 +724,19 @@ textarea.inp {
 }
 .twMeta {
   flex: 1;
+  min-width: 0;
+}
+
+/* model chip sits on its own row under the title: the full model name fits and
+   every panel header looks identical (no truncation / edge-clipping). */
+.twChip {
+  padding: 4px 18px 13px 20px;
+  border-bottom: 1px solid var(--line2);
+  flex: 0 0 auto;
+}
+.twChip :global(.mchip) {
+  max-width: 100%;
+  min-width: 0;
 }
 .twRole {
   font-family: var(--mono);
@@ -740,6 +758,16 @@ textarea.inp {
 }
 .twBody {
   padding: 16px 18px 18px 20px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+/* inner wrapper fills the scroll area so the sticky Ask input can sit at the
+   very bottom (chat-window layout) even when the conversation is short. */
+.twScrollInner {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
 }
 .twStatus {
   display: flex;
@@ -993,4 +1021,214 @@ footer.foot .brand {
     opacity: 1;
     transform: none;
   }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Token picker ─────────────────────────────────────────────────────────── */
+
+.tokenPicker {
+  position: relative;
+}
+
+.tokenSelected {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  font-family: var(--body);
+  font-size: 15px;
+  color: var(--ink);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.tokenSelected:focus-visible,
+.tokenSelected[aria-expanded="true"] {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(245, 165, 36, 0.14);
+}
+.tokenSelectedSymbol {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 14px;
+  flex: 1;
+}
+.tokenSelectedMeta {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tokenOnchainBadge {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--green);
+  border: 1px solid rgba(63, 224, 166, 0.35);
+  background: rgba(63, 224, 166, 0.08);
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.tokenCaret {
+  width: 14px;
+  height: 14px;
+  color: var(--faint);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.tokenCaret.open {
+  transform: rotate(180deg);
+}
+
+.tokenDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.tokenSearch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line2);
+}
+.tokenSearchIcon {
+  width: 14px;
+  height: 14px;
+  color: var(--faint);
+  flex-shrink: 0;
+}
+.tokenSearchInput {
+  flex: 1;
+  background: none;
+  border: none;
+  font-family: var(--body);
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+}
+.tokenSearchInput::placeholder {
+  color: var(--faint);
+}
+
+.tokenList {
+  max-height: 260px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.tokenList::-webkit-scrollbar {
+  width: 4px;
+}
+.tokenList::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 999px;
+}
+
+.tokenRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  transition: background 0.15s;
+}
+.tokenRow:hover,
+.tokenRow.active {
+  background: rgba(255, 255, 255, 0.04);
+}
+.tokenRow.active {
+  background: rgba(245, 165, 36, 0.07);
+}
+.tokenRowSymbol {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink);
+  min-width: 56px;
+}
+.tokenRowPrice {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  flex: 1;
+}
+.tokenRowChange {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+.tokenRowChange.pos {
+  color: var(--green);
+}
+.tokenRowChange.neg {
+  color: var(--red);
+}
+.tokenRowOnchain {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--green);
+  border: 1px solid rgba(63, 224, 166, 0.3);
+  background: rgba(63, 224, 166, 0.07);
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+
+.tokenEmpty {
+  padding: 20px 14px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--faint);
+}
+.tokenLoading {
+  padding: 20px 14px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ── Intake conversational column (Step 1 - IntakeChat) ───────────────────── */
+
+/* The panel that wraps IntakeChat needs a centered, max-720 px column layout
+   to match the prototype's single-column chat aesthetic. Step-2 (judge) keeps
+   its full-width grid layout unchanged. */
+.panel[data-step="1"] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 16px 80px;
+}
+
+.panel[data-step="1"] > * {
+  width: 100%;
+  max-width: 720px;
 }

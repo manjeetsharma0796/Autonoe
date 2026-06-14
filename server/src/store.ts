@@ -1,4 +1,4 @@
-// T-201 — tiny key/value store on bun:sqlite (Mono pattern), plus encrypted
+// T-201 - tiny key/value store on bun:sqlite (Mono pattern), plus encrypted
 // storage for provider API keys. Single source of truth for server-side state.
 
 import { Database } from 'bun:sqlite';

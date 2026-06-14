@@ -1,4 +1,4 @@
-// T-202 — provider registry (ported from the "Mono" pattern). All five providers
+// T-202 - provider registry (ported from the "Mono" pattern). All five providers
 // are OpenAI-compatible for chat, so the agent layer talks to one shape.
 
 import type { ProviderId } from '@autonoe/shared';

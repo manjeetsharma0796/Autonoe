@@ -117,12 +117,25 @@ export interface RefinedOption {
   confidence: number;
 }
 
+/** One turn in the adversarial debate. Openings are independent; rebuttals
+ *  answer the opponent's prior turn (`repliesTo` names what they're countering). */
+export interface DebateTurn {
+  role: 'supporter' | 'discriminator';
+  kind: 'opening' | 'rebuttal';
+  text: string;
+  /** Short label of the opponent point this turn answers (rebuttals only). */
+  repliesTo?: string;
+}
+
 export interface DebateResult {
   thesisId: string;
   supporterArgument: string;
   discriminatorArgument: string;
   judgeSummary: string;
   refinedOptions: RefinedOption[];
+  /** Ordered turn-by-turn transcript: parallel openings, then alternating
+   *  rebuttals. Drives the turn-taking UI; absent on legacy/one-shot results. */
+  turns?: DebateTurn[];
   /** Per-judge "show thinking" (supporter/discriminator/judge). */
   traces?: ReasoningTrace[];
 }
@@ -130,6 +143,44 @@ export interface DebateResult {
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+}
+
+// ── Step-1 intake extraction ─────────────────────────────────────────────────
+
+/** Trade-scoping fields an LLM pulls out of a free-form intake answer. Every
+ *  field is optional: the extractor only sets one when the user clearly stated
+ *  or strongly implied it. Values are canonical (see the intake question schema). */
+export interface IntakeFields {
+  /** {grow, hedge, scalp, swing} - buy/accumulate/long maps to grow. */
+  goal?: string;
+  /** Ticker symbol, uppercase (e.g. SOL, BTC, WMNT). */
+  asset?: string;
+  /** Position size as the user expressed it (e.g. "10 SOL" or "$500"). */
+  capital?: string;
+  /** {low, med, high}. */
+  risk?: string;
+  /** {intraday, days, week, month}. */
+  horizon?: string;
+  /** {spot, convert, leverage}. */
+  type?: string;
+  /** Profit target (e.g. "+$100" or "+10%"). */
+  target?: string;
+  /** {tight, wide, none}. */
+  stop?: string;
+}
+
+// ── Market symbols (dynamic, from /api/symbols) ──────────────────────────────
+
+export interface TokenInfo {
+  /** Base symbol, e.g. "BTC". WMNT is the display name for MNT. */
+  symbol: string;
+  /** Bybit spot symbol, e.g. "BTCUSDT". */
+  bybitSymbol: string;
+  price: number;
+  change24hPct: number;
+  volume24h: number;
+  /** true only for WMNT (on-chain AMM execution available). */
+  onchain: boolean;
 }
 
 // ── Execution ────────────────────────────────────────────────────────────────

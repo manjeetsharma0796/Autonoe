@@ -1,4 +1,4 @@
-// Candles endpoint logic — validates symbol and delegates to the Bybit kline helper.
+// Candles endpoint logic - validates symbol and delegates to the Bybit kline helper.
 
 import { ASSET_SYMBOLS, type AssetSymbol } from '@autonoe/shared';
 import { getKline, type Candle } from './market/bybit.ts';

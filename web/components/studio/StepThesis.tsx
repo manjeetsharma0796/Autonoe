@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import type { AIRole, AssetSymbol, Thesis, ThesisOption } from "@autonoe/shared";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { AIRole, Thesis, ThesisOption, TokenInfo } from "@autonoe/shared";
 import { SUBAGENT_ROLES } from "@autonoe/shared";
 import { keccak256, stringToHex } from "viem";
 import type { ExecuteResult } from "@autonoe/wallet";
@@ -27,7 +27,7 @@ import {
   DEFAULT_SOURCES,
   type DataSourceKey,
 } from "./data";
-import { postThesisHuman } from "@/lib/api";
+import { getSymbols, postThesisHuman } from "@/lib/api";
 import { streamSSE } from "@/lib/stream";
 import { LiveThinking } from "@/components/ai/LiveThinking";
 import { Button } from "@/components/ui/Button";
@@ -174,6 +174,184 @@ function ThesisOptionCard({
   );
 }
 
+// ── Popular default symbols shown before any search ──────────────────────────
+const POPULAR_SYMBOLS = ["WMNT", "BTC", "ETH", "SOL", "SUI", "BNB", "XRP", "DOGE"];
+
+// ── TokenPicker ───────────────────────────────────────────────────────────────
+
+function formatPrice(p: number): string {
+  if (p === 0) return "-";
+  if (p >= 1000) return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  if (p >= 1) return `$${p.toFixed(4)}`;
+  return `$${p.toPrecision(4)}`;
+}
+
+interface TokenPickerProps {
+  value: string;
+  onChange: (symbol: string) => void;
+}
+
+function TokenPicker({ value, onChange }: TokenPickerProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [tokens, setTokens] = useState<TokenInfo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // Load tokens: popular defaults when no query, search results otherwise.
+  const load = useCallback(async (q: string) => {
+    setLoading(true);
+    try {
+      const results = await getSymbols(q || undefined, q ? 40 : 20);
+      if (!q) {
+        // Reorder: WMNT first, then popular symbols, then rest by volume.
+        const popularSet = new Set(POPULAR_SYMBOLS);
+        const popular = POPULAR_SYMBOLS
+          .map((sym) => results.find((t) => t.symbol === sym))
+          .filter((t): t is TokenInfo => t !== undefined);
+        const rest = results.filter((t) => !popularSet.has(t.symbol));
+        setTokens([...popular, ...rest]);
+      } else {
+        setTokens(results);
+      }
+    } catch {
+      setTokens([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Load defaults on mount and when opened with no query.
+  useEffect(() => {
+    if (open) {
+      load(query);
+      setTimeout(() => searchRef.current?.focus(), 10);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  // Debounce search.
+  useEffect(() => {
+    if (!open) return;
+    const id = setTimeout(() => load(query), 250);
+    return () => clearTimeout(id);
+  }, [query, open, load]);
+
+  // Close on outside click.
+  useEffect(() => {
+    if (!open) return;
+    function onOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onOutside);
+    return () => document.removeEventListener("mousedown", onOutside);
+  }, [open]);
+
+  const selectedToken = tokens.find((t) => t.symbol === value);
+
+  function select(sym: string) {
+    onChange(sym);
+    setOpen(false);
+    setQuery("");
+  }
+
+  return (
+    <div className={styles.tokenPicker} ref={containerRef}>
+      <button
+        type="button"
+        className={styles.tokenSelected}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span className={styles.tokenSelectedSymbol}>{value}</span>
+        {selectedToken && (
+          <span className={styles.tokenSelectedMeta}>
+            <span>{formatPrice(selectedToken.price)}</span>
+            <span style={{ color: selectedToken.change24hPct >= 0 ? "var(--green)" : "var(--red)" }}>
+              {selectedToken.change24hPct >= 0 ? "+" : ""}
+              {selectedToken.change24hPct.toFixed(2)}%
+            </span>
+          </span>
+        )}
+        {selectedToken?.onchain && (
+          <span className={styles.tokenOnchainBadge}>on-chain</span>
+        )}
+        {/* Caret icon */}
+        <svg
+          className={`${styles.tokenCaret}${open ? ` ${styles.open}` : ""}`}
+          viewBox="0 0 16 16"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className={styles.tokenDropdown} role="listbox" aria-label="Select token">
+          <div className={styles.tokenSearch}>
+            {/* Search icon */}
+            <svg className={styles.tokenSearchIcon} viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.4" />
+              <path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
+            <input
+              ref={searchRef}
+              className={styles.tokenSearchInput}
+              type="text"
+              placeholder="Search any token…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") { setOpen(false); setQuery(""); }
+                if (e.key === "Enter" && tokens.length > 0) select(tokens[0].symbol);
+              }}
+            />
+          </div>
+          <div className={styles.tokenList}>
+            {loading && (
+              <div className={styles.tokenLoading}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"
+                  style={{ animation: "spin 0.8s linear infinite" }}>
+                  <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="14 6" />
+                </svg>
+                Loading…
+              </div>
+            )}
+            {!loading && tokens.length === 0 && (
+              <div className={styles.tokenEmpty}>No tokens found for "{query}"</div>
+            )}
+            {!loading && tokens.map((t) => {
+              const pos = t.change24hPct >= 0;
+              return (
+                <button
+                  key={t.bybitSymbol}
+                  type="button"
+                  role="option"
+                  aria-selected={t.symbol === value}
+                  className={`${styles.tokenRow}${t.symbol === value ? ` ${styles.active}` : ""}`}
+                  onClick={() => select(t.symbol)}
+                >
+                  <span className={styles.tokenRowSymbol}>{t.symbol}</span>
+                  <span className={styles.tokenRowPrice}>{formatPrice(t.price)}</span>
+                  <span className={`${styles.tokenRowChange}${pos ? ` ${styles.pos}` : ` ${styles.neg}`}`}>
+                    {pos ? "+" : ""}{t.change24hPct.toFixed(2)}%
+                  </span>
+                  {t.onchain && <span className={styles.tokenRowOnchain}>on-chain</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export interface StepThesisProps {
   /** Called when the user clicks "To Judge" on any option. */
   onSendToJudge: (thesis: Thesis) => void;
@@ -182,6 +360,7 @@ export interface StepThesisProps {
 export function StepThesis({ onSendToJudge }: StepThesisProps) {
   const [intent, setIntent] = useState(DEFAULT_INTENT);
   const [humanCase, setHumanCase] = useState(DEFAULT_HUMAN_CASE);
+  const [suggestedPair, setSuggestedPair] = useState("WMNT");
   const [mode, setMode] = useState<Mode>("ai");
   const [sources, setSources] =
     useState<Record<DataSourceKey, boolean>>(DEFAULT_SOURCES);
@@ -249,8 +428,6 @@ export function StepThesis({ onSendToJudge }: StepThesisProps) {
     setError(null);
     setThesis(null);
     try {
-      // Default to WMNT as suggestedPair; user can adjust intent to imply different asset
-      const suggestedPair: AssetSymbol = "WMNT";
       const result = await postThesisHuman({
         intent,
         body: humanCase,
@@ -358,6 +535,15 @@ export function StepThesis({ onSendToJudge }: StepThesisProps) {
           ) : (
             <div className={styles.modepane} id="pane-human">
               <div className={styles.field} style={{ marginTop: 18 }}>
+                <label>Token to trade</label>
+                <TokenPicker value={suggestedPair} onChange={setSuggestedPair} />
+                {suggestedPair !== "WMNT" && (
+                  <p style={{ marginTop: 6, fontSize: 12, color: "var(--muted)", fontFamily: "var(--mono)" }}>
+                    Advise-only · only WMNT is executable on-chain
+                  </p>
+                )}
+              </div>
+              <div className={styles.field}>
                 <label htmlFor="human-case">Your case</label>
                 <textarea
                   className={styles.inp}

@@ -1,9 +1,10 @@
-// T-206 — the debate panel. Supporter argues for the thesis, Discriminator
+// T-206 - the debate panel. Supporter argues for the thesis, Discriminator
 // argues against, Judge synthesizes both into refined, risk-graded options.
 // Each role runs on its own configured model and contributes a reasoning trace.
 
 import { z } from 'zod';
-import type { DebateResult, ReasoningTrace, Thesis } from '@autonoe/shared';
+import type { DebateResult, DebateTurn, ReasoningTrace, Thesis } from '@autonoe/shared';
+import { humanizeDeep, stripMarkdown } from '@autonoe/shared';
 import { defaultResolver, type ChatModelLike, type ModelResolver } from '../models.ts';
 
 const JudgeOut = z.object({
@@ -22,6 +23,11 @@ const JudgeOut = z.object({
 });
 type JudgeOut = z.infer<typeof JudgeOut>;
 
+// Appended to every debater/judge prompt: keep their output as plain prose so the
+// studio panels never render literal markdown markers.
+const NO_MD =
+  'Write PLAIN PROSE only. Do NOT use any markdown formatting - no ** bold, no ## headers, no backticks, no bullet lists.';
+
 function asText(r: { content: unknown }): string {
   const c = r.content;
   if (typeof c === 'string') return c;
@@ -31,7 +37,7 @@ function asText(r: { content: unknown }): string {
 
 function summarize(intent: string, options: Thesis['options']): string {
   const opts = options
-    .map((o) => `${o.id}: ${o.direction} ${o.asset} ${o.sizeMUSD} mUSD (risk ${o.risk}) — ${o.rationale}`)
+    .map((o) => `${o.id}: ${o.direction} ${o.asset} ${o.sizeMUSD} mUSD (risk ${o.risk}) - ${o.rationale}`)
     .join('\n');
   return `INTENT: ${intent}\n\nOPTIONS:\n${opts}`;
 }
@@ -39,48 +45,133 @@ function summarize(intent: string, options: Thesis['options']): string {
 export async function runDebate(
   thesis: Thesis,
   resolve: ModelResolver = defaultResolver,
+  rounds = 4,
 ): Promise<DebateResult> {
+  // How many Supporter<->Discriminator rebuttal exchanges to run, on top of the
+  // openings. Coerce to an integer and clamp to a sane range.
+  const exchanges = Math.min(6, Math.max(1, Math.trunc(Number(rounds)) || 1));
+
   const brief = summarize(thesis.intent, thesis.options);
 
   const supporter = resolve('supporter', { temperature: 0.6 });
   const discriminator = resolve('discriminator', { temperature: 0.6 });
   const judge = resolve('judge', { temperature: 0.3 });
 
-  const supporterArgument = asText(
-    await supporter.invoke(
-      `You are the SUPPORTER on a trading tribunal. Make the strongest evidence-based bull case ` +
-        `for this thesis. Be specific, 3-5 sentences.\n\n${brief}`,
-    ),
-  );
+  // ── Phase 1: opening statements, generated in parallel (independent) ──
+  const [supOpening, disOpening] = await Promise.all([
+    supporter
+      .invoke(
+        `You are the SUPPORTER on a trading tribunal. Open with the strongest evidence-based bull ` +
+          `case for this thesis. Cite concrete numbers (price, RSI, %). 3-4 sentences. ${NO_MD}\n\n${brief}`,
+      )
+      .then(asText)
+      .then(stripMarkdown),
+    discriminator
+      .invoke(
+        `You are the DISCRIMINATOR (devil's advocate). Open with the bear case: liquidity, drawdown, ` +
+          `regime risk, every way this loses. Cite concrete numbers. 3-4 sentences. ${NO_MD}\n\n${brief}`,
+      )
+      .then(asText)
+      .then(stripMarkdown),
+  ]);
 
-  const discriminatorArgument = asText(
-    await discriminator.invoke(
-      `You are the DISCRIMINATOR (devil's advocate) on a trading tribunal. Attack this thesis: ` +
-        `liquidity, drawdown, regime risk, every way it loses. Be specific, 3-5 sentences.\n\n${brief}`,
-    ),
-  );
+  const turns: DebateTurn[] = [
+    { role: 'supporter', kind: 'opening', text: supOpening },
+    { role: 'discriminator', kind: 'opening', text: disOpening },
+  ];
 
+  // ── Phase 2: turn-taking rebuttals — each answers the opponent's MOST RECENT
+  // turn, so the loop must be serial. `rounds` exchanges, each = 1 discriminator
+  // rebuttal followed by 1 supporter rebuttal. We track each side's latest text
+  // plus a short running transcript the prompts can reference. ──
+  const supRebuttals: string[] = [];
+  const disRebuttals: string[] = [];
+  let supLast = supOpening; // supporter's most recent turn
+  let disLast = disOpening; // discriminator's most recent turn
+
+  for (let i = 0; i < exchanges; i++) {
+    const recap = turns.map((t) => `${t.role.toUpperCase()} (${t.kind}): ${t.text}`).join('\n');
+
+    // a. Discriminator rebuts the Supporter's most recent turn.
+    const disRebuttal = await discriminator
+      .invoke(
+        `You are the DISCRIMINATOR, exchange ${i + 1} of ${exchanges}. The Supporter's latest point was:\n\n` +
+          `"${supLast}"\n\nRebut it directly: name the specific claim or number you are attacking, then ` +
+          `dismantle it. Do NOT repeat any earlier point you have made. 2-3 sentences. ${NO_MD}\n\n` +
+          `For reference:\n${brief}\n\nDebate so far:\n${recap}`,
+      )
+      .then(asText)
+      .then(stripMarkdown);
+    turns.push({
+      role: 'discriminator',
+      kind: 'rebuttal',
+      text: disRebuttal,
+      repliesTo: "the Supporter's latest point",
+    });
+    disRebuttals.push(disRebuttal);
+    disLast = disRebuttal;
+
+    // b. Supporter rebuts the Discriminator's most recent turn.
+    const supRebuttal = await supporter
+      .invoke(
+        `You are the SUPPORTER, exchange ${i + 1} of ${exchanges}. The Discriminator's latest attack was:\n\n` +
+          `"${disLast}"\n\nDefend the trade head-on: answer their specific point directly. Do NOT repeat any ` +
+          `earlier point you have made. 2-3 sentences. ${NO_MD}\n\n` +
+          `For reference:\n${brief}\n\nDebate so far:\n${turns.map((t) => `${t.role.toUpperCase()} (${t.kind}): ${t.text}`).join('\n')}`,
+      )
+      .then(asText)
+      .then(stripMarkdown);
+    turns.push({
+      role: 'supporter',
+      kind: 'rebuttal',
+      text: supRebuttal,
+      repliesTo: "the Discriminator's latest attack",
+    });
+    supRebuttals.push(supRebuttal);
+    supLast = supRebuttal;
+  }
+
+  // ── Phase 3: the judge reads the full transcript, then rules ──
+  const transcript = turns.map((t) => `${t.role.toUpperCase()} (${t.kind}): ${t.text}`).join('\n\n');
   const judged = await judge
     .withStructuredOutput<JudgeOut>(JudgeOut, { name: 'verdict' })
     .invoke(
-      `You are the JUDGE on a trading tribunal. Weigh the Supporter and Discriminator, then issue ` +
+      `You are the JUDGE on a trading tribunal. Read the full debate, weigh both sides, then issue ` +
         `refined options referencing the thesis option ids. Give a predicted % outcome, risk, ` +
-        `caveats, and a 0-1 confidence per option.\n\n${brief}\n\n` +
-        `SUPPORTER:\n${supporterArgument}\n\nDISCRIMINATOR:\n${discriminatorArgument}`,
+        `caveats, and a 0-1 confidence per option. ${NO_MD}\n\n${brief}\n\nDEBATE:\n${transcript}`,
     );
+  const judgeSummary = stripMarkdown(judged.judgeSummary);
+
+  const supporterArgument = [supOpening, ...supRebuttals].join('\n\n');
+  const discriminatorArgument = [disOpening, ...disRebuttals].join('\n\n');
 
   const traces: ReasoningTrace[] = [
-    { role: 'supporter', summary: 'Bull case', steps: [{ label: 'Argument', detail: supporterArgument }] },
-    { role: 'discriminator', summary: 'Bear case', steps: [{ label: 'Argument', detail: discriminatorArgument }] },
-    { role: 'judge', summary: 'Synthesis', steps: [{ label: 'Verdict', detail: judged.judgeSummary }] },
+    {
+      role: 'supporter',
+      summary: 'Bull case',
+      steps: [
+        { label: 'Opening', detail: supOpening },
+        ...supRebuttals.map((detail, i) => ({ label: `Rebuttal ${i + 1}`, detail })),
+      ],
+    },
+    {
+      role: 'discriminator',
+      summary: 'Bear case',
+      steps: [
+        { label: 'Opening', detail: disOpening },
+        ...disRebuttals.map((detail, i) => ({ label: `Rebuttal ${i + 1}`, detail })),
+      ],
+    },
+    { role: 'judge', summary: 'Synthesis', steps: [{ label: 'Verdict', detail: judgeSummary }] },
   ];
 
-  return {
+  return humanizeDeep({
     thesisId: thesis.id,
     supporterArgument,
     discriminatorArgument,
-    judgeSummary: judged.judgeSummary,
+    judgeSummary,
     refinedOptions: judged.refinedOptions,
+    turns,
     traces,
-  };
+  });
 }

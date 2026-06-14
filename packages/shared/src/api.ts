@@ -6,9 +6,11 @@ import type {
   AssetSymbol,
   ChatMessage,
   DebateResult,
+  IntakeFields,
   ProviderId,
   RoleModelMap,
   Thesis,
+  TokenInfo,
 } from './types.js';
 
 /** Route paths, referenced by both server and client. */
@@ -21,8 +23,10 @@ export const API = {
   thesisHuman: '/api/thesis/human',
   debate: '/api/debate',
   assistant: '/api/assistant',
+  intakeExtract: '/api/intake/extract',
   history: '/api/history',
   leaderboard: '/api/leaderboard',
+  symbols: '/api/symbols',
 } as const;
 
 // ── /api/providers ───────────────────────────────────────────────────────────
@@ -103,6 +107,15 @@ export interface AssistantRequest {
 /** Streamed; each chunk is a partial assistant message. */
 export type AssistantChunk = { delta: string } | { done: true };
 
+// ── /api/intake/extract ──────────────────────────────────────────────────────
+
+export interface IntakeExtractRequest {
+  /** A free-form Step-1 intake answer, e.g. "buy 10 sol and make $100 profit". */
+  message: string;
+}
+/** The fields the model could pull from `message`; absent fields stay unset. */
+export type IntakeExtractResponse = IntakeFields;
+
 // ── /api/history ─────────────────────────────────────────────────────────────
 
 export interface HistoryRecord {
@@ -128,3 +141,7 @@ export interface LeaderboardRow {
   avgPnlMUSD: number;
 }
 export type LeaderboardResponse = LeaderboardRow[];
+
+// ── /api/symbols ─────────────────────────────────────────────────────────────
+
+export type SymbolsResponse = TokenInfo[];

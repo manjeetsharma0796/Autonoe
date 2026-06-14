@@ -13,7 +13,7 @@ import "./ai-answer.css";
 
 function clean(s: string): string {
   return s
-    .replace(/ ?[—–] ?/g, " - ")
+    .replace(/ ?[-–] ?/g, " - ")
     .replace(/\s-+>\s/g, " ➜ ")
     .replace(/\s→\s/g, " ➜ ");
 }

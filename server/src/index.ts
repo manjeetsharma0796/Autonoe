@@ -1,4 +1,4 @@
-// T-201 — server entrypoint. Boots the Express app on PORT (default 8787).
+// T-201 - server entrypoint. Boots the Express app on PORT (default 8787).
 import { createApp } from './app.ts';
 import { seedEnvProviderKeys } from './store.ts';
 

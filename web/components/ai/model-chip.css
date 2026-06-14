@@ -16,6 +16,7 @@
   touch-action: manipulation;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
   max-width: 100%;
+  min-width: 0;
 }
 .mchip:hover {
   border-color: var(--violet);
@@ -38,10 +39,13 @@
 }
 .mchip .prov {
   color: var(--faint);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .mchip b {
   color: var(--violet2);
   font-weight: 600;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

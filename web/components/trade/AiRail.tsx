@@ -34,7 +34,7 @@ function SendIcon() {
   );
 }
 
-// AI sender header — makes "this is the AI" obvious
+// AI sender header - makes "this is the AI" obvious
 function AiHead() {
   return (
     <div className="aimsg-head">

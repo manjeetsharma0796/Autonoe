@@ -6,7 +6,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import type { Thesis } from "@autonoe/shared";
 import styles from "./studio.module.css";
-import { StepThesis } from "./StepThesis";
+import { IntakeChat } from "./intake/IntakeChat";
 import { StepJudge } from "./StepJudge";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -120,7 +120,7 @@ export function Workspace() {
         data-step={1}
         style={{ display: step === 1 ? "block" : "none" }}
       >
-        <StepThesis onSendToJudge={handleSendToJudge} />
+        <IntakeChat onSendToJudge={handleSendToJudge} />
       </div>
 
       <div

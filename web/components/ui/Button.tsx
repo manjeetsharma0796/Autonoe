@@ -51,7 +51,7 @@ export interface IconButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "bare";
   size?: Size;
-  /** Required for a11y — icon-only buttons need a label. */
+  /** Required for a11y - icon-only buttons need a label. */
   "aria-label": string;
   /** Optional toggled state styling. */
   tone?: "good" | "bad";

@@ -510,6 +510,35 @@
   text-align: center;
 }
 
+/* on-chain / advisory badges in the last table column */
+.onchainBadge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--green);
+  border: 1px solid rgba(63, 224, 166, 0.35);
+  border-radius: 6px;
+  padding: 2px 7px;
+  background: rgba(63, 224, 166, 0.07);
+  white-space: nowrap;
+}
+
+.advisoryBadge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--faint);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 2px 7px;
+  background: transparent;
+  white-space: nowrap;
+}
+
 .mfoot {
   padding: 18px 26px;
   border-top: 1px solid var(--line2);

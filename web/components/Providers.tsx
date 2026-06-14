@@ -4,6 +4,8 @@ import { useState, type ReactNode } from "react";
 import { WagmiProvider, createConfig, http } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import "@rainbow-me/rainbowkit/styles.css";
 import { mantleSepolia } from "@autonoe/chain";
 import { WalletProvider } from "@/components/wallet/WalletProvider";
 
@@ -24,7 +26,17 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <WalletProvider>{children}</WalletProvider>
+        <RainbowKitProvider
+          modalSize="compact"
+          theme={darkTheme({
+            accentColor: "#F59E0B",
+            accentColorForeground: "#1b1305",
+            borderRadius: "medium",
+            overlayBlur: "small",
+          })}
+        >
+          <WalletProvider>{children}</WalletProvider>
+        </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
   );

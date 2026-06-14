@@ -2,6 +2,7 @@
 
 import { STATS, type Pair } from "./data";
 import { PairSelector } from "./PairSelector";
+
 import { TradingViewChart } from "@/components/charts/TradingViewChart";
 
 /** Fixed tall chart - presets/resize removed per design direction. */
@@ -9,9 +10,12 @@ const CHART_HEIGHT = 520;
 
 export function ChartPanel({
   pair,
+  pairs,
   onSelectPair,
 }: {
   pair: Pair;
+  /** Full live pair list for the dropdown. */
+  pairs: Pair[];
   onSelectPair: (sym: string) => void;
 }) {
   const up = pair.dir === "up";
@@ -19,7 +23,7 @@ export function ChartPanel({
   return (
     <section className="panel" style={{ gridColumn: "1 / -1" }}>
       <div className="phead">
-        <PairSelector pair={pair} onSelect={onSelectPair} />
+        <PairSelector pair={pair} pairs={pairs} onSelect={onSelectPair} />
 
         <div className="lastpx">
           <span className="v num">{pair.px}</span>

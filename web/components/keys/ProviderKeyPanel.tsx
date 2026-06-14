@@ -10,8 +10,26 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import type { ModelInfo, ProviderInfo, ProviderId } from "@autonoe/shared";
-import { getProviders, getModels, postKey } from "@/lib/api";
+import type {
+  AIRole,
+  ModelChoice,
+  ModelInfo,
+  ProviderInfo,
+  ProviderId,
+  RoleModelMap,
+} from "@autonoe/shared";
+import { AI_ROLES } from "@autonoe/shared";
+import { getProviders, getModels, postKey, putRoles } from "@/lib/api";
+
+// Roles a user picks a model for from this panel. "all" fans out to every role.
+const APPLY_TARGETS: { value: string; label: string }[] = [
+  { value: "all", label: "All roles" },
+  { value: "thesis", label: "Thesis" },
+  { value: "assistant", label: "Assistant" },
+  { value: "supporter", label: "Supporter" },
+  { value: "discriminator", label: "Discriminator" },
+  { value: "judge", label: "Judge" },
+];
 
 // ── Static fallback provider metadata ────────────────────────────────────────
 
@@ -130,8 +148,33 @@ export function ProviderKeyPanel({ onModelsLoaded, compact }: ProviderKeyPanelPr
   const [loadingModels, setLoadingModels] = useState(false);
   const [modelError, setModelError] = useState("");
   const [modelFilter, setModelFilter] = useState("");
+  // Which role(s) a clicked model is applied to, + transient "applied" feedback.
+  const [applyTarget, setApplyTarget] = useState<string>("all");
+  const [applied, setApplied] = useState<{ model: string; ok: boolean } | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Assign the clicked model to the selected role(s) via PUT /api/roles (partial
+  // merge, so other roles are untouched). "all" fans out to every role.
+  const applyModel = useCallback(
+    async (modelId: string) => {
+      const choice: ModelChoice = { provider: selected, model: modelId };
+      const targets: AIRole[] =
+        applyTarget === "all" ? [...AI_ROLES] : [applyTarget as AIRole];
+      const partial: Partial<RoleModelMap> = {};
+      targets.forEach((r) => {
+        partial[r] = choice;
+      });
+      setApplied({ model: modelId, ok: true });
+      try {
+        await putRoles(partial);
+        setTimeout(() => setApplied((a) => (a?.model === modelId ? null : a)), 1800);
+      } catch {
+        setApplied({ model: modelId, ok: false });
+      }
+    },
+    [selected, applyTarget],
+  );
 
   // Load providers on mount
   useEffect(() => {
@@ -424,15 +467,61 @@ export function ProviderKeyPanel({ onModelsLoaded, compact }: ProviderKeyPanelPr
         <div>
           <div
             style={{
-              fontFamily: "var(--mono)",
-              fontSize: 10,
-              letterSpacing: "0.2em",
-              textTransform: "uppercase",
-              color: "var(--gold)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+              flexWrap: "wrap",
               marginBottom: 8,
             }}
           >
-            Models
+            <span
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: 10,
+                letterSpacing: "0.2em",
+                textTransform: "uppercase",
+                color: "var(--gold)",
+              }}
+            >
+              Models · click to use
+            </span>
+            <label
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontFamily: "var(--mono)",
+                fontSize: 10,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "var(--faint)",
+              }}
+            >
+              apply to
+              <select
+                value={applyTarget}
+                onChange={(e) => setApplyTarget(e.target.value)}
+                style={{
+                  background: "var(--bg2)",
+                  border: "1px solid var(--line)",
+                  borderRadius: 7,
+                  color: "var(--ink)",
+                  fontFamily: "var(--mono)",
+                  fontSize: 11,
+                  padding: "4px 8px",
+                  outline: "none",
+                  cursor: "pointer",
+                }}
+                aria-label="Apply the selected model to which role"
+              >
+                {APPLY_TARGETS.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           {loadingModels && (
@@ -485,54 +574,83 @@ export function ProviderKeyPanel({ onModelsLoaded, compact }: ProviderKeyPanelPr
                     No models match.
                   </div>
                 ) : (
-                  filteredModels.map((m) => (
-                    <div
-                      key={m.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 8,
-                        padding: "6px 10px",
-                        borderRadius: 7,
-                        background: "var(--bg2)",
-                        border: "1px solid var(--line2)",
-                      }}
-                    >
-                      <span
+                  filteredModels.map((m) => {
+                    const isApplied = applied?.model === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => void applyModel(m.id)}
+                        title={`Use ${m.id} for ${applyTarget === "all" ? "all roles" : applyTarget}`}
                         style={{
-                          fontFamily: "var(--mono)",
-                          fontSize: 11,
-                          color: "var(--ink)",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          minWidth: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 8,
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "6px 10px",
+                          borderRadius: 7,
+                          cursor: "pointer",
+                          background: isApplied ? "rgba(63,224,166,0.08)" : "var(--bg2)",
+                          border: `1px solid ${isApplied ? "var(--green)" : "var(--line2)"}`,
+                          transition: "border-color 0.15s ease, background 0.15s ease",
                         }}
-                        title={m.id}
+                        onMouseEnter={(e) => {
+                          if (!isApplied)
+                            (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--gold)";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isApplied)
+                            (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--line2)";
+                        }}
                       >
-                        {m.label || m.id}
-                      </span>
-                      <div style={{ display: "flex", gap: 4, alignItems: "center", flexShrink: 0 }}>
-                        {m.free && (
-                          <span
-                            style={{
-                              fontFamily: "var(--mono)",
-                              fontSize: 9,
-                              color: "var(--green)",
-                              background: "rgba(63,224,166,0.08)",
-                              border: "1px solid rgba(63,224,166,0.2)",
-                              borderRadius: 4,
-                              padding: "1px 5px",
-                            }}
-                          >
-                            FREE
-                          </span>
-                        )}
-                        <CtxBadge ctx={m.contextWindow} />
-                      </div>
-                    </div>
-                  ))
+                        <span
+                          style={{
+                            fontFamily: "var(--mono)",
+                            fontSize: 11,
+                            color: "var(--ink)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            minWidth: 0,
+                          }}
+                        >
+                          {m.label || m.id}
+                        </span>
+                        <div style={{ display: "flex", gap: 4, alignItems: "center", flexShrink: 0 }}>
+                          {isApplied && (
+                            <span
+                              style={{
+                                fontFamily: "var(--mono)",
+                                fontSize: 9,
+                                letterSpacing: "0.1em",
+                                color: applied?.ok ? "var(--green)" : "var(--red)",
+                              }}
+                            >
+                              {applied?.ok ? "✓ SET" : "FAILED"}
+                            </span>
+                          )}
+                          {m.free && (
+                            <span
+                              style={{
+                                fontFamily: "var(--mono)",
+                                fontSize: 9,
+                                color: "var(--green)",
+                                background: "rgba(63,224,166,0.08)",
+                                border: "1px solid rgba(63,224,166,0.2)",
+                                borderRadius: 4,
+                                padding: "1px 5px",
+                              }}
+                            >
+                              FREE
+                            </span>
+                          )}
+                          <CtxBadge ctx={m.contextWindow} />
+                        </div>
+                      </button>
+                    );
+                  })
                 )}
               </div>
 

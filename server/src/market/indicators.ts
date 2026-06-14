@@ -1,4 +1,4 @@
-// Technical indicators computed from a close-price series. Pure functions —
+// Technical indicators computed from a close-price series. Pure functions -
 // fully unit-tested, no I/O.
 
 export function sma(values: number[], period: number): number | null {

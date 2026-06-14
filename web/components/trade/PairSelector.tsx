@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { PAIRS, type Pair } from "./data";
+import type { Pair } from "./data";
 
 function Caret() {
   return (
@@ -19,9 +19,12 @@ function Caret() {
 
 export function PairSelector({
   pair,
+  pairs,
   onSelect,
 }: {
   pair: Pair;
+  /** Live pair list; falls back to the current pair if empty. */
+  pairs: Pair[];
   onSelect: (sym: string) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -58,7 +61,7 @@ export function PairSelector({
       </button>
 
       <div className="pairmenu" role="listbox">
-        {PAIRS.map((p) => (
+        {(pairs.length ? pairs : [pair]).map((p) => (
           <button
             type="button"
             role="option"

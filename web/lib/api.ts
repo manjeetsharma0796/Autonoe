@@ -7,12 +7,13 @@
 
 import type {
   AIRole,
-  AssetSymbol,
   ChatMessage,
   DebateResult,
+  IntakeFields,
   ProviderId,
   RoleModelMap,
   Thesis,
+  TokenInfo,
 } from '@autonoe/shared';
 
 import type {
@@ -70,7 +71,8 @@ export function postThesis(args: PostThesisArgs): Promise<Thesis> {
 export interface PostThesisHumanArgs {
   intent: string;
   body: string;
-  suggestedPair: AssetSymbol;
+  /** Widened to string so any Bybit token can be selected, not just the closed AssetSymbol union. */
+  suggestedPair: string;
 }
 
 export function postThesisHuman(args: PostThesisHumanArgs): Promise<Thesis> {
@@ -92,6 +94,13 @@ export interface PostAssistantArgs {
 
 export function postAssistant(args: PostAssistantArgs): Promise<ChatMessage> {
   return post<PostAssistantArgs, ChatMessage>('/api/assistant', args);
+}
+
+// ── /api/intake/extract ─────────────────────────────────────────────────────
+
+/** LLM-extract the trade-scoping fields a user stated in a free-form intake answer. */
+export function extractIntake(message: string): Promise<IntakeFields> {
+  return post<{ message: string }, IntakeFields>('/api/intake/extract', { message });
 }
 
 // ── /api/history ──────────────────────────────────────────────────────────────
@@ -141,7 +150,9 @@ export function getRoles(): Promise<RolesResponse> {
   return get<RolesResponse>('/api/roles');
 }
 
-export function putRoles(roles: RoleModelMap): Promise<RolesResponse> {
+/** Accepts a PARTIAL map - the backend merges it into the current roles, so a
+ *  single-role update never clobbers the others. Returns the full merged map. */
+export function putRoles(roles: Partial<RoleModelMap>): Promise<RolesResponse> {
   return request<RolesResponse>('/api/roles', {
     method: 'PUT',
     body: JSON.stringify(roles),
@@ -157,4 +168,16 @@ export interface PostKeyArgs {
 
 export function postKey(args: PostKeyArgs): Promise<SetKeyResponse> {
   return post<PostKeyArgs, SetKeyResponse>('/api/keys', args);
+}
+
+// ── /api/symbols ──────────────────────────────────────────────────────────────
+
+export type { TokenInfo };
+
+export function getSymbols(q?: string, limit?: number): Promise<TokenInfo[]> {
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (limit != null) params.set('limit', String(limit));
+  const qs = params.toString();
+  return get<TokenInfo[]>(`/api/symbols${qs ? `?${qs}` : ''}`);
 }

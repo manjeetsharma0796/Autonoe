@@ -1,4 +1,4 @@
-// T-203 — role → model configuration. Each AI role can run on a different
+// T-203 - role → model configuration. Each AI role can run on a different
 // provider/model; users override these defaults in Settings.
 
 import { AI_ROLES, type AIRole, type ModelChoice, type RoleModelMap } from '@autonoe/shared';

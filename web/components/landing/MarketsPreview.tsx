@@ -3,49 +3,92 @@
 import Link from "next/link";
 import s from "./landing.module.css";
 import { useReveal } from "./useReveal";
+import { useSymbols } from "@/lib/useSymbols";
 
-type Market = {
-  badge: string;
-  name: string;
-  desc: string;
-  price: string;
-  change: string;
-  dir: "up" | "down";
-  points: string;
-};
-
-const MARKETS: Market[] = [
+// Static fallback shown while live data loads (preserves SSR paint).
+const STATIC_MARKETS = [
   {
     badge: "W",
     name: "WMNT",
     desc: "Wrapped Mantle",
-    price: "1.2843",
-    change: "+4.21%",
-    dir: "up",
+    price: "-",
+    change: "-",
+    dir: "up" as const,
     points: "0,26 28,22 56,24 84,16 112,18 140,9 168,12 200,5",
   },
   {
     badge: "₿",
     name: "BTC",
-    desc: "Test Bitcoin",
-    price: "64,210",
-    change: "-1.08%",
-    dir: "down",
+    desc: "Bitcoin",
+    price: "-",
+    change: "-",
+    dir: "down" as const,
     points: "0,8 28,12 56,10 84,16 112,14 140,20 168,18 200,24",
   },
   {
     badge: "Ξ",
     name: "ETH",
-    desc: "Test Ether",
-    price: "3,488",
-    change: "+2.74%",
-    dir: "up",
+    desc: "Ether",
+    price: "-",
+    change: "-",
+    dir: "up" as const,
     points: "0,20 28,18 56,21 84,13 112,15 140,12 168,8 200,10",
   },
 ];
 
+const BADGES: Record<string, string> = { BTC: "₿", ETH: "Ξ", WMNT: "W" };
+const DESCS: Record<string, string> = {
+  BTC: "Bitcoin",
+  ETH: "Ether",
+  WMNT: "Wrapped Mantle",
+  SOL: "Solana",
+  SUI: "Sui",
+};
+
+/**
+ * Generate a rough SVG sparkline from a 24h change pct.
+ * Real sparklines would need candle data; this produces a directional wiggle
+ * consistent with the observed change direction.
+ */
+function mockSparkline(changePct: number): string {
+  const up = changePct >= 0;
+  // 8 points across 200px wide, 0–34 y range (lower y = higher price)
+  const base = up ? 26 : 8;
+  const end = up ? 5 : 24;
+  const pts = Array.from({ length: 8 }, (_, i) => {
+    const x = Math.round((i / 7) * 200);
+    const frac = i / 7;
+    const trend = base + (end - base) * frac;
+    // add small noise
+    const noise = (Math.sin(i * 2.3) * 4);
+    const y = Math.max(2, Math.min(32, Math.round(trend + noise)));
+    return `${x},${y}`;
+  });
+  return pts.join(" ");
+}
+
 export function MarketsPreview() {
   const root = useReveal(s.reveal);
+  // Show top 5 by volume; WMNT (onchain) should appear if in range
+  const { tokens, loading } = useSymbols(5);
+
+  const markets = loading || tokens.length === 0
+    ? STATIC_MARKETS
+    : tokens.map((t) => {
+        const ch = t.change24hPct;
+        const dir = ch >= 0 ? ("up" as const) : ("down" as const);
+        return {
+          badge: BADGES[t.symbol] ?? t.symbol[0],
+          name: t.symbol,
+          desc: DESCS[t.symbol] ?? t.symbol,
+          price: t.price.toLocaleString(undefined, {
+            maximumFractionDigits: t.price < 10 ? 4 : 2,
+          }),
+          change: `${ch >= 0 ? "+" : ""}${ch.toFixed(2)}%`,
+          dir,
+          points: mockSparkline(ch),
+        };
+      });
 
   return (
     <section ref={root} id="markets" className={`${s.section} wrap`}>
@@ -66,7 +109,7 @@ export function MarketsPreview() {
           <div>Last 7d</div>
         </div>
 
-        {MARKETS.map((m) => (
+        {markets.map((m) => (
           <Link
             href="/trade"
             className={`${s.mrow} ${s.mlink}`}

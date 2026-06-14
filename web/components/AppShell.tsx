@@ -4,10 +4,14 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { KeyQuickPanel } from "@/components/keys/KeyQuickPanel";
 import { usePathname } from "next/navigation";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { injected } from "wagmi/connectors";
+import { useAccount, useSendTransaction } from "wagmi";
+import { parseEther } from "viem";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { MNT_FAUCET_URL, DEFAULT_POLICY, type SpendingPolicy } from "@autonoe/wallet";
 import { useWallet } from "@/components/wallet/WalletProvider";
+
+/** Amount of native MNT sent to the agent wallet by the "Fund agent" action. */
+const FUND_AGENT_MNT = "0.5";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -60,10 +64,18 @@ function WalletDrawer({ onClose }: { onClose: () => void }) {
   const [policyTokens, setPolicyTokens] = useState(wallet.policy.allowedTokens.join(", "));
   const [policyError, setPolicyError] = useState<string | null>(null);
 
-  // MetaMask / funding wallet
-  const { address: metamaskAddr, isConnected } = useAccount();
-  const { connect, isPending: connectPending } = useConnect();
-  const { disconnect } = useDisconnect();
+  // External funding wallet (connected via RainbowKit ConnectButton).
+  const { isConnected } = useAccount();
+  // Send native MNT from the connected external wallet to the agent wallet.
+  const { sendTransaction, isPending: fundAgentPending } = useSendTransaction();
+
+  function handleFundAgent() {
+    if (!wallet.address) return;
+    sendTransaction({
+      to: wallet.address as `0x${string}`,
+      value: parseEther(FUND_AGENT_MNT),
+    });
+  }
 
   async function handleCreate() {
     if (!createPassphrase) { setWalletError("Enter a passphrase"); return; }
@@ -191,41 +203,32 @@ function WalletDrawer({ onClose }: { onClose: () => void }) {
           </span>
         </div>
 
-        {/* ── Section 1: Funding wallet (MetaMask / wagmi) ── */}
+        {/* ── Section 1: External funding wallet (RainbowKit) ── */}
         <div style={{ marginTop: 24 }}>
           <div style={{ fontFamily: "var(--mono)", fontSize: 11, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: "var(--muted)", marginBottom: 12 }}>
-            Funding wallet (MetaMask)
+            Funding wallet
           </div>
-          {isConnected && metamaskAddr ? (
-            <>
-              {label("Connected address")}
-              <p style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--ink)", wordBreak: "break-all", marginBottom: 12 }}>
-                {metamaskAddr}
-              </p>
-              <button
-                className="btn btn-ghost"
-                style={{ fontSize: 12, padding: "8px 14px" }}
-                onClick={() => disconnect()}
-                type="button"
-              >
-                Disconnect MetaMask
-              </button>
-            </>
-          ) : (
-            <>
-              <p style={{ fontFamily: "var(--body)", fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
-                Connect MetaMask to fund the agent wallet or sign external txs.
-              </p>
+          <p style={{ fontFamily: "var(--body)", fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+            Connect an external wallet to fund the agent wallet or sign external txs.
+          </p>
+          <ConnectButton showBalance={false} chainStatus="icon" accountStatus="address" />
+
+          {/* Fund agent: send native MNT from the connected wallet → agent address. */}
+          {isConnected && wallet.address && (
+            <div style={{ marginTop: 14 }}>
               <button
                 className="btn btn-gold"
                 style={{ fontSize: 12 }}
-                disabled={connectPending}
-                onClick={() => connect({ connector: injected() })}
+                disabled={fundAgentPending}
+                onClick={handleFundAgent}
                 type="button"
               >
-                {connectPending ? "Connecting…" : "Connect MetaMask →"}
+                {fundAgentPending ? "Sending…" : `Fund agent (${FUND_AGENT_MNT} MNT) →`}
               </button>
-            </>
+              <p style={{ fontFamily: "var(--mono)", fontSize: 10.5, color: "var(--faint)", marginTop: 8, lineHeight: 1.5 }}>
+                Sends {FUND_AGENT_MNT} MNT from the connected wallet to the agent address. Confirm in your wallet.
+              </p>
+            </div>
           )}
         </div>
 
@@ -574,7 +577,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   // ── Key/model quick-panel state (additive; isolated from wallet drawer) ──
   const [keyPanelOpen, setKeyPanelOpen] = useState(false);
 
-  const { address: metamaskAddr, isConnected } = useAccount();
   const wallet = useWallet();
 
   // Scroll-condense the floating nav, matching the mockup.
@@ -585,12 +587,11 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Button label: prefer agent address if unlocked, else MetaMask, else "Wallet →"
-  const btnLabel = wallet.isUnlocked && wallet.address
+  // Agent-wallet button reflects the self-custodial agent wallet only; the
+  // external funding wallet has its own RainbowKit ConnectButton beside it.
+  const agentBtnLabel = wallet.isUnlocked && wallet.address
     ? shortAddress(wallet.address)
-    : isConnected && metamaskAddr
-      ? shortAddress(metamaskAddr)
-      : "Wallet →";
+    : "Agent wallet →";
 
   return (
     <>
@@ -633,12 +634,16 @@ export function AppShell({ children }: { children: ReactNode }) {
               Models
             </button>
 
+            {/* External funding wallet — RainbowKit ConnectButton (compact). */}
+            <ConnectButton showBalance={false} chainStatus="icon" accountStatus="address" />
+
+            {/* Self-custodial agent wallet — create/unlock/fund/policy drawer. */}
             <button
               className="btn btn-gold"
               onClick={() => setDrawerOpen(true)}
               type="button"
             >
-              {btnLabel}
+              {agentBtnLabel}
             </button>
           </nav>
         </div>

@@ -1,4 +1,4 @@
-// Express app — implements the REST contract in @autonoe/shared (PRD §12).
+// Express app - implements the REST contract in @autonoe/shared (PRD §12).
 // History/leaderboard return empty until the chain lib (T-108) lands in T-207.
 
 import express, { type Request, type Response, type NextFunction } from 'express';
@@ -9,6 +9,9 @@ import { getRoleMap, setRoleMap } from './roles.ts';
 import { generateThesis, structureHumanThesis } from './agents/thesis.ts';
 import { runDebate } from './agents/debate.ts';
 import { chat } from './agents/assistant.ts';
+import { chatConversational } from './agents/chatAgent.ts';
+import { askDebater, type DebaterRole } from './agents/debateFollowup.ts';
+import { extractIntake } from './agents/extract.ts';
 import { signPrice } from './oracle.ts';
 import { getHistory, getLeaderboard } from './history.ts';
 import { makeModel, type ChatModelLike, type ModelResolver } from './models.ts';
@@ -21,6 +24,7 @@ function streamingResolver(emit: (token: string) => void): ModelResolver {
     makeModel(resolveRole(role), { ...opts, onToken: emit }) as unknown as ChatModelLike;
 }
 import { getCandlesFor } from './candles.ts';
+import { getSymbols } from './market/symbols.ts';
 
 type Handler = (req: Request, res: Response) => Promise<void> | void;
 const wrap = (h: Handler) => (req: Request, res: Response, next: NextFunction) =>
@@ -69,7 +73,20 @@ export function createApp() {
   app.put(
     API.roles,
     wrap((req, res) => {
-      setRoleMap(req.body as RoleModelMap);
+      // Merge the (possibly partial) body into the current map so saving one role
+      // never clobbers the others. Backward-compatible with full-map senders.
+      const body = req.body;
+      if (!body || typeof body !== 'object' || Array.isArray(body)) {
+        throw httpError(400, 'role map object required');
+      }
+      for (const [role, choice] of Object.entries(body as Record<string, unknown>)) {
+        const c = choice as { provider?: unknown; model?: unknown } | null;
+        if (!c || typeof c !== 'object' || typeof c.provider !== 'string' || typeof c.model !== 'string') {
+          throw httpError(400, `role "${role}" must have string provider and model`);
+        }
+      }
+      const merged = { ...getRoleMap(), ...(body as Partial<RoleModelMap>) } as RoleModelMap;
+      setRoleMap(merged);
       res.json(getRoleMap());
     }),
   );
@@ -95,9 +112,11 @@ export function createApp() {
   app.post(
     API.debate,
     wrap(async (req, res) => {
-      const { thesis } = req.body ?? {};
+      const { thesis, rounds } = req.body ?? {};
       if (!thesis?.id) throw httpError(400, 'thesis required');
-      res.json(await runDebate(thesis));
+      const debateRounds =
+        rounds == null ? undefined : Math.min(6, Math.max(1, Math.trunc(Number(rounds)) || 1));
+      res.json(await runDebate(thesis, undefined, debateRounds));
     }),
   );
 
@@ -110,7 +129,17 @@ export function createApp() {
     }),
   );
 
-  // ── Streaming (SSE) variants — stream `thinking`/`token` deltas, then `result` ──
+  // Step-1 intake: LLM-extract trade-scoping fields from a free-form answer.
+  app.post(
+    API.intakeExtract,
+    wrap(async (req, res) => {
+      const { message } = req.body ?? {};
+      if (typeof message !== 'string' || !message.trim()) throw httpError(400, 'message required');
+      res.json(await extractIntake(message));
+    }),
+  );
+
+  // ── Streaming (SSE) variants - stream `thinking`/`token` deltas, then `result` ──
 
   app.post(
     '/api/assistant/stream',
@@ -122,6 +151,26 @@ export function createApp() {
       try {
         const reply = await chat({ messages, context }, resolver);
         ch.send('result', reply);
+        ch.send('done', {});
+      } catch (e) {
+        ch.send('error', { error: (e as Error).message });
+      }
+      ch.end();
+    }),
+  );
+
+  // Conversational "Chat" mode (studio). Normal back-and-forth on the assistant
+  // model - NOT the trade-scoping briefing assistant. Path is hardcoded.
+  app.post(
+    '/api/chat/stream',
+    wrap(async (req, res) => {
+      const { messages } = req.body ?? {};
+      if (!Array.isArray(messages)) throw httpError(400, 'messages[] required');
+      const ch = sse(res);
+      const resolver = streamingResolver((t) => ch.send('token', { delta: t }));
+      try {
+        const content = await chatConversational({ messages }, resolver);
+        ch.send('result', { role: 'assistant', content });
         ch.send('done', {});
       } catch (e) {
         ch.send('error', { error: (e as Error).message });
@@ -151,13 +200,54 @@ export function createApp() {
   app.post(
     '/api/debate/stream',
     wrap(async (req, res) => {
-      const { thesis } = req.body ?? {};
+      const { thesis, rounds } = req.body ?? {};
       if (!thesis?.id) throw httpError(400, 'thesis required');
+      const debateRounds =
+        rounds == null ? undefined : Math.min(6, Math.max(1, Math.trunc(Number(rounds)) || 1));
       const ch = sse(res);
       const resolver = streamingResolver((t) => ch.send('thinking', { delta: t }));
       try {
-        const result = await runDebate(thesis, resolver);
+        const result = await runDebate(thesis, resolver, debateRounds);
         ch.send('result', result);
+        ch.send('done', {});
+      } catch (e) {
+        ch.send('error', { error: (e as Error).message });
+      }
+      ch.end();
+    }),
+  );
+
+  // Post-debate "Ask the X" follow-up: in-character, tool-enabled, streamed reply
+  // from one of the three debaters. Path is hardcoded (not in @autonoe/shared).
+  app.post(
+    '/api/debate/ask',
+    wrap(async (req, res) => {
+      const { role, question, intent, supporterArgument, discriminatorArgument, judgeSummary } =
+        req.body ?? {};
+      if (role !== 'supporter' && role !== 'discriminator' && role !== 'judge') {
+        throw httpError(400, 'role must be supporter, discriminator, or judge');
+      }
+      if (typeof question !== 'string' || !question.trim()) {
+        throw httpError(400, 'question required');
+      }
+      const ch = sse(res);
+      const resolver = streamingResolver((t) => ch.send('token', { delta: t }));
+      try {
+        // The streaming resolver already emits `token` per generated token (it bakes
+        // its own onToken into the model), so no explicit onToken arg is needed here —
+        // same pattern as the other /stream handlers.
+        const content = await askDebater(
+          {
+            role: role as DebaterRole,
+            question,
+            intent: String(intent ?? ''),
+            supporterArgument: String(supporterArgument ?? ''),
+            discriminatorArgument: String(discriminatorArgument ?? ''),
+            judgeSummary: String(judgeSummary ?? ''),
+          },
+          resolver,
+        );
+        ch.send('result', { role: 'assistant', content });
         ch.send('done', {});
       } catch (e) {
         ch.send('error', { error: (e as Error).message });
@@ -173,6 +263,17 @@ export function createApp() {
       const symbol = req.query.symbol;
       if (!symbol || typeof symbol !== 'string') throw httpError(400, 'symbol query param required');
       res.json(await signPrice(symbol));
+    }),
+  );
+
+  // Dynamic symbol list from Bybit spot tickers.
+  app.get(
+    API.symbols,
+    wrap(async (req, res) => {
+      const q = typeof req.query.q === 'string' ? req.query.q : '';
+      const rawLimit = parseInt(String(req.query.limit ?? '80'), 10);
+      const limit = Math.min(isNaN(rawLimit) ? 80 : rawLimit, 500);
+      res.json(await getSymbols(q, limit));
     }),
   );
 

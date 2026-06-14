@@ -1,9 +1,10 @@
 // LangChain model factory. Every provider is OpenAI-compatible, so we build a
 // ChatOpenAI pointed at the provider's base URL. `modelForRole` resolves the
-// configured model + key for a given AI role — the single entry point the agents use.
+// configured model + key for a given AI role - the single entry point the agents use.
 
 import { ChatOpenAI } from '@langchain/openai';
 import type { AIRole, ModelChoice } from '@autonoe/shared';
+import { humanize } from '@autonoe/shared';
 import { baseUrl } from './providers.ts';
 import { getProviderKey } from './store.ts';
 import { resolveRole } from './roles.ts';
@@ -32,7 +33,7 @@ export function makeModel(choice: ModelChoice, opts: ModelOpts = {}): ChatOpenAI
     streaming: Boolean(opts.onToken),
     configuration: { baseURL: baseUrl(choice.provider) },
     callbacks: opts.onToken
-      ? [{ handleLLMNewToken: (token: string) => opts.onToken?.(token) }]
+      ? [{ handleLLMNewToken: (token: string) => opts.onToken?.(humanize(token)) }]
       : undefined,
   });
 }
@@ -43,7 +44,7 @@ export function modelForRole(role: AIRole, opts?: ModelOpts): ChatOpenAI {
 }
 
 /**
- * Injectable resolver type — agents depend on this so tests can pass a fake.
+ * Injectable resolver type - agents depend on this so tests can pass a fake.
  * The default implementation is `modelForRole`.
  */
 export type ModelResolver = (role: AIRole, opts?: ModelOpts) => ChatModelLike;

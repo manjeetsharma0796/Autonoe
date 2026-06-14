@@ -1,11 +1,11 @@
-// T-205 — the thesis agent. A real tool-calling loop: the model decides which
+// T-205 - the thesis agent. A real tool-calling loop: the model decides which
 // market/indicator/on-chain tools to call based on the user's intent, then a
 // structured finalize call turns the gathered evidence into a risk-tiered thesis.
 // Tools actually used become the reasoning traces ("Show thinking").
 
 import { z } from 'zod';
 import { SystemMessage, HumanMessage, ToolMessage } from '@langchain/core/messages';
-import { SUBAGENT_ROLES, type AIRole, type Thesis, type ThesisOption } from '@autonoe/shared';
+import { SUBAGENT_ROLES, humanizeDeep, type AIRole, type Thesis, type ThesisOption } from '@autonoe/shared';
 import { defaultResolver, type ModelResolver } from '../models.ts';
 import { resolveRole } from '../roles.ts';
 import { makeRecorder, makeTools } from './tools.ts';
@@ -23,9 +23,36 @@ const Option = z.object({
 const ThesisCore = z.object({
   suggestedPair: z.enum(['WMNT', 'BTC', 'ETH', 'SUI', 'SOL']),
   reasoning: z.string().describe('overall reasoning grounded in the tool evidence, 2-4 sentences'),
-  options: z.array(Option).min(2).max(4),
+  // min(1) (not 2): some providers hard-REJECT the tool call when the model
+  // returns a single option ("/options: minimum 2 items"), which would dead-end
+  // the whole flow. We accept >=1 here and guarantee >=2 in code (ensureTwoOptions).
+  options: z.array(Option).min(1).max(4),
 });
 type ThesisCore = z.infer<typeof ThesisCore>;
+
+/** The panel and debate need a real choice. If the model returned a single
+ *  option, synthesize a conservative half-size counterpart so the UI always
+ *  has >=2 without ever failing the structured-output call. */
+function ensureTwoOptions(options: ThesisCore['options']): ThesisCore['options'] {
+  if (options.length >= 2) return options;
+  const [first] = options;
+  if (!first) return options;
+  const half = Math.max(1, Math.round(first.sizeMUSD / 2));
+  return [
+    first,
+    {
+      direction: first.direction,
+      asset: first.asset,
+      sizeMUSD: half,
+      rationale: `Conservative half-size alternative: the same view on ${first.asset} at reduced exposure to cap drawdown while staying positioned.`,
+      predictedReturnPct: {
+        low: Math.round(first.predictedReturnPct.low / 2),
+        high: Math.round(first.predictedReturnPct.high / 2),
+      },
+      risk: first.risk === 'high' ? 'medium' : 'low',
+    },
+  ];
+}
 
 const SYSTEM =
   'You are Autonoe, an autonomous crypto trading strategist on the Mantle testnet. ' +
@@ -39,7 +66,7 @@ const SYSTEM =
 const MAX_STEPS = 5;
 
 function assemble(core: ThesisCore, intent: string, source: 'ai' | 'human', used: AIRole[]): Thesis {
-  const options: ThesisOption[] = core.options.map((o, i) => ({ id: `opt-${i + 1}`, ...o }));
+  const options: ThesisOption[] = ensureTwoOptions(core.options).map((o, i) => ({ id: `opt-${i + 1}`, ...o }));
   return {
     id: crypto.randomUUID(),
     intent,
@@ -99,14 +126,17 @@ export async function generateThesis(
     .withStructuredOutput<ThesisCore>(ThesisCore, { name: 'thesis' })
     .invoke([
       ...messages,
-      new HumanMessage('Now output the final thesis as structured data, grounded strictly in the tool evidence above.'),
+      new HumanMessage(
+        'Now output the final thesis as structured data, grounded strictly in the tool evidence above. ' +
+          'Provide 2 to 4 DISTINCT risk-tiered options (vary the size, direction, or risk) so the user has a real choice.',
+      ),
     ]);
 
   const traces = rec.traces();
   const used = [...new Set(traces.map((t) => t.role))];
   const thesis = assemble(core, input.intent, 'ai', used.length ? used : active);
   thesis.traces = traces;
-  return thesis;
+  return humanizeDeep(thesis);
 }
 
 export async function structureHumanThesis(
@@ -120,5 +150,5 @@ export async function structureHumanThesis(
     `risk-tiered options without inventing new directions.\n\nINTENT:\n${input.intent}\n\n` +
     `USER THESIS:\n${input.body}\n\nSuggested pair: ${input.suggestedPair}.`;
   const core = await structured.invoke(prompt);
-  return assemble({ ...core, suggestedPair: input.suggestedPair }, input.intent, 'human', []);
+  return humanizeDeep(assemble({ ...core, suggestedPair: input.suggestedPair }, input.intent, 'human', []));
 }

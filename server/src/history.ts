@@ -1,4 +1,4 @@
-// T-207 — Backs /api/history and /api/leaderboard with real data by joining
+// T-207 - Backs /api/history and /api/leaderboard with real data by joining
 // on-chain DecisionLog records with off-chain TradeMeta from SQLite.
 
 import { getPublicClient, isDeployed, readHistory } from '@autonoe/chain';

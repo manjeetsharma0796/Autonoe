@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import styles from "@/components/markets/markets.module.css";
-import { MarketStats } from "@/components/markets/MarketStats";
-import { MoversStrip } from "@/components/markets/MoversStrip";
-import { MarketsTable } from "@/components/markets/MarketsTable";
+import { MarketsShell } from "@/components/markets/MarketsShell";
 
 export const metadata: Metadata = {
   title: "Autonoe - Markets · trade against mUSD",
@@ -14,9 +12,7 @@ export default function MarketsPage() {
   return (
     <main>
       <section className={`${styles.markets} wrap`}>
-        <MarketStats />
-        <MoversStrip />
-        <MarketsTable />
+        <MarketsShell />
       </section>
 
       <footer className={`${styles.foot} wrap`}>

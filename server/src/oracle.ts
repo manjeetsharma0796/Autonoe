@@ -30,7 +30,7 @@ function signer(): SignerAccount {
   return cachedAccount;
 }
 
-/** Address that signs attestations — must equal PriceOracle.trustedSigner on-chain. */
+/** Address that signs attestations - must equal PriceOracle.trustedSigner on-chain. */
 export function oracleSignerAddress(): string {
   return signer().address;
 }

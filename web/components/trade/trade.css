@@ -884,7 +884,7 @@
     font-weight: 500;
   }
 
-  /* assistant chat — AI answers full-width, user questions distinct */
+  /* assistant chat - AI answers full-width, user questions distinct */
   .chat {
     display: flex;
     flex-direction: column;
@@ -902,7 +902,7 @@
     background-clip: content-box;
   }
 
-  /* AI message — full width, flat, clearly labelled as the AI */
+  /* AI message - full width, flat, clearly labelled as the AI */
   .aimsg {
     width: 100%;
   }
@@ -968,7 +968,7 @@
     }
   }
 
-  /* User message — right-aligned, gold, clearly "me" */
+  /* User message - right-aligned, gold, clearly "me" */
   .umsg {
     align-self: flex-end;
     max-width: 88%;

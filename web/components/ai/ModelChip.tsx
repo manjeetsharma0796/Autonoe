@@ -131,6 +131,9 @@ export function ModelChip({ role = "thesis" as AIRole }: { role?: AIRole }) {
     setOpen(next);
     if (!next) return;
     place();
+    // Re-sync this chip with the latest backend map so a change made in another
+    // chip (e.g. the setup card) is reflected here instead of showing stale state.
+    getRoles().then(setRoles).catch(() => {});
     refreshProviders().then(() => {
       getProviders()
         .then((ps) => {
@@ -160,11 +163,12 @@ export function ModelChip({ role = "thesis" as AIRole }: { role?: AIRole }) {
   }
 
   async function choose(modelId: string) {
-    if (!activeProv || !roles) return;
+    if (!activeProv) return;
     setSaving(true);
-    const next: RoleModelMap = { ...roles, [role]: { provider: activeProv, model: modelId } };
     try {
-      const saved = await putRoles(next);
+      // Save ONLY this role (partial). The backend merges it into the current
+      // map, so we never clobber other roles with a stale local snapshot.
+      const saved = await putRoles({ [role]: { provider: activeProv, model: modelId } });
       setRoles(saved);
       setOpen(false);
     } catch (e) {
