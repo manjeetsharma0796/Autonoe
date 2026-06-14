@@ -21,9 +21,10 @@ import { extractIntake, postThesisHuman } from "@/lib/api";
 import { streamSSE } from "@/lib/stream";
 import { AiAnswer } from "@/components/ai/AiAnswer";
 import { ModelChip } from "@/components/ai/ModelChip";
+import { TradingViewChart } from "@/components/ai/TradingViewChart";
 import { ArrowRightIcon, PenIcon, WarnIcon } from "../icons";
 import { type DataSourceKey } from "../data";
-import { InlineChart } from "./InlineChart";
+
 import styles from "./IntakeChat.module.css";
 
 // ── inline icons (free-chat composer + AI sender) ───────────────────────────────
@@ -197,17 +198,48 @@ function toAssetSymbol(raw: string | undefined): AssetSymbol {
   return (ASSET_SYMBOLS as readonly string[]).includes(up) ? (up as AssetSymbol) : "WMNT";
 }
 
+/** Returns true if the message is asking for a price chart (not just a price). */
+function chartRequested(text: string): boolean {
+  return /\b(chart|candle|candlestick|tradingview|graph|plot|show.*(price|market)|price.*(chart|graph|view)|live chart)\b/i.test(text);
+}
+
+/** Full-name aliases so users can type "solana", "bitcoin", etc. */
+const ASSET_NAME_MAP: Record<string, AssetSymbol> = {
+  bitcoin: "BTC",
+  btc: "BTC",
+  ethereum: "ETH",
+  eth: "ETH",
+  solana: "SOL",
+  sol: "SOL",
+  sui: "SUI",
+  mantle: "WMNT",
+  wmnt: "WMNT",
+  mnt: "WMNT",
+};
+
 /**
- * If a free-chat message clearly names a known asset, return its ticker so we
- * can drop a live Bybit sparkline (InlineChart) under the reply. Returns null
- * when no single asset is referenced.
+ * If a free-chat message clearly names a known asset (by ticker OR common name),
+ * return its ticker so we can drop a live Bybit sparkline under the reply.
+ * Returns null when no single asset is referenced.
  */
 function assetMentioned(text: string): AssetSymbol | null {
+  const lower = text.toLowerCase();
   const up = text.toUpperCase();
-  const hits = (ASSET_SYMBOLS as readonly string[]).filter((sym) =>
+
+  // Check full-name aliases first (e.g. "solana", "bitcoin")
+  const nameHits = new Set<AssetSymbol>();
+  for (const [name, sym] of Object.entries(ASSET_NAME_MAP)) {
+    if (new RegExp(`\\b${name}\\b`, "i").test(lower)) nameHits.add(sym);
+  }
+  if (nameHits.size === 1) return [...nameHits][0];
+
+  // Fall back to exact ticker symbol match
+  const tickerHits = (ASSET_SYMBOLS as readonly string[]).filter((sym) =>
     new RegExp(`\\b${sym}\\b`).test(up),
   );
-  return hits.length === 1 ? (hits[0] as AssetSymbol) : null;
+  if (tickerHits.length === 1) return tickerHits[0] as AssetSymbol;
+
+  return null;
 }
 
 /** Build the natural-language intent sentence from the (possibly edited) answers. */
@@ -303,10 +335,9 @@ type Turn =
   /**
    * Free-chat assistant reply. `prompt` is the full conversation snapshot sent to
    * /api/assistant/stream; `asset` (if set) drops a live Bybit sparkline under the
-   * streamed reply. Each ai-reply turn streams itself, so the scripted flow above
-   * is never touched.
+   * streamed reply; `tvSymbol` (if set) embeds a TradingView chart.
    */
-  | { kind: "ai-reply"; prompt: ChatMessage[]; asset: AssetSymbol | null };
+  | { kind: "ai-reply"; prompt: ChatMessage[]; asset: AssetSymbol | null; tvSymbol?: AssetSymbol | null };
 
 // ── props (identical to StepThesisProps) ────────────────────────────────────────
 
@@ -431,6 +462,10 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
   // free-chat composer (ask-anything, streamed via /api/assistant/stream)
   const [draft, setDraft] = useState("");
 
+  // Stable session ID for the server-side InMemoryChatMessageHistory.
+  // Generated once per component mount; cleared on "start over".
+  const sessionIdRef = useRef<string>(crypto.randomUUID());
+
   // true while the LLM intake extractor is reading a free-text answer.
   const [reading, setReading] = useState(false);
 
@@ -438,9 +473,8 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
   // conversation (no field capture, no auto-brief, no tribunal push).
   const [mode, setMode] = useState<"guided" | "chat">("guided");
   const [chatTurns, setChatTurns] = useState<
-    ({ kind: "cu"; text: string } | { kind: "cai"; prompt: ChatMessage[] })[]
+    Array<{ kind: "cu"; text: string } | { kind: "cai"; message: string; tvSymbol?: AssetSymbol | null; suggestions?: string[] }>
   >([]);
-  const chatHistoryRef = useRef<ChatMessage[]>([]);
 
   const endRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -693,6 +727,10 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
     setThinking("");
     setError(null);
     setDraft("");
+    setChatTurns([]);
+    // Drop the old session so history doesn't leak into a new conversation.
+    void fetch(`/api/chat/session/${sessionIdRef.current}`, { method: "DELETE" }).catch(() => {});
+    sessionIdRef.current = crypto.randomUUID();
   }, []);
 
   // ── free-chat: append a user bubble + a self-streaming assistant reply ──
@@ -717,10 +755,17 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
       };
       const prompt: ChatMessage[] = [primer, { role: "user", content: text }];
 
+      const mentionedAsset = assetMentioned(text);
+      const wantsChart = chartRequested(text);
       setTurns((prev) => [
         ...prev,
         { kind: "u", text },
-        { kind: "ai-reply", prompt, asset: assetMentioned(text) },
+        {
+          kind: "ai-reply",
+          prompt,
+          asset: wantsChart ? null : mentionedAsset,
+          tvSymbol: wantsChart ? mentionedAsset : null,
+        },
       ]);
       setDraft("");
       scrollDown();
@@ -759,18 +804,25 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
   // Chat mode: a normal conversation - append the user message + a streamed
   // assistant reply (conversational endpoint). No field capture, no question
   // advance, no brief. Sends the running history so it is multi-turn.
-  const sendChat = () => {
-    const text = draft.trim();
+  const sendChat = (customText?: string) => {
+    const text = (customText ?? draft).trim();
     if (!text) return;
-    const nextHistory: ChatMessage[] = [
-      ...chatHistoryRef.current,
-      { role: "user", content: text },
-    ];
-    chatHistoryRef.current = nextHistory;
-    setChatTurns((prev) => [...prev, { kind: "cu", text }, { kind: "cai", prompt: nextHistory }]);
-    setDraft("");
+    const wantsChart = chartRequested(text);
+    const mentionedAsset = assetMentioned(text);
+    setChatTurns((prev) => [
+      ...prev,
+      { kind: "cu", text },
+      { kind: "cai", message: text, tvSymbol: wantsChart ? mentionedAsset : null },
+    ]);
+    if (!customText) setDraft("");
     scrollDown();
   };
+
+  const setSuggestions = useCallback((turnIndex: number, suggestions: string[]) => {
+    setChatTurns((prev) =>
+      prev.map((t, i) => (i === turnIndex ? { ...t, suggestions } : t)),
+    );
+  }, []);
 
   const handleSend = () => (mode === "chat" ? sendChat() : sendComposer());
 
@@ -871,27 +923,33 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
                 </div>
               </div>
             )}
-            {chatTurns.map((t, i) =>
-              t.kind === "cu" ? (
-                <div className={styles.uturn} key={i}>
-                  <div className={styles.ubub}>{t.text}</div>
-                </div>
-              ) : (
+            {chatTurns.map((t, i) => {
+              if (t.kind === "cu") {
+                return (
+                  <div className={styles.uturn} key={i}>
+                    <div className={styles.ubub}>{t.text}</div>
+                  </div>
+                );
+              }
+              // Count how many AI turns came before this one to determine
+              // whether to show the full badge or just the icon.
+              const aiIndex = chatTurns.slice(0, i).filter((x) => x.kind === "cai").length;
+              return (
                 <AiReplyTurn
                   key={i}
-                  prompt={t.prompt}
+                  sessionId={sessionIdRef.current}
+                  message={t.message}
                   asset={null}
+                  tvSymbol={t.tvSymbol}
                   onStream={scrollDown}
                   endpoint="/api/chat/stream"
-                  onDone={(text) => {
-                    chatHistoryRef.current = [
-                      ...chatHistoryRef.current,
-                      { role: "assistant", content: text },
-                    ];
-                  }}
+                  compact={aiIndex > 0}
+                  onSuggestions={(s) => setSuggestions(i, s)}
+                  suggestions={t.suggestions}
+                  onSuggestionClick={(s) => sendChat(s)}
                 />
-              ),
-            )}
+              );
+            })}
           </>
         )}
         {mode === "guided" &&
@@ -908,7 +966,7 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
           }
           if (turn.kind === "ai-reply") {
             return (
-              <AiReplyTurn key={i} prompt={turn.prompt} asset={turn.asset} onStream={scrollDown} />
+              <AiReplyTurn key={i} prompt={turn.prompt} asset={turn.asset} tvSymbol={turn.tvSymbol} onStream={scrollDown} />
             );
           }
           if (turn.kind === "brief") {
@@ -1071,7 +1129,7 @@ function ChartTurn({ asset, onDone }: { asset: string; onDone: () => void }) {
           onDone={() => setTextDone(true)}
         />
       </div>
-      {textDone && <InlineChart assetLabel={asset} />}
+      {textDone && <TradingViewChart spec={{ symbol: asset, exchange: "BYBIT", interval: "60" }} />}
     </div>
   );
 }
@@ -1088,16 +1146,33 @@ function ChartTurn({ asset, onDone }: { asset: string; onDone: () => void }) {
  */
 function AiReplyTurn({
   prompt,
+  sessionId,
+  message,
   asset,
+  tvSymbol,
   onStream,
   endpoint = "/api/assistant/stream",
   onDone,
+  compact = false,
+  onSuggestions,
+  suggestions,
+  onSuggestionClick,
 }: {
-  prompt: ChatMessage[];
+  /** Full message array — used by guided-mode free-chat (/api/assistant/stream). */
+  prompt?: ChatMessage[];
+  /** Session ID for server-side history — used by chat mode (/api/chat/stream). */
+  sessionId?: string;
+  /** Single new user message — used together with sessionId. */
+  message?: string;
   asset: AssetSymbol | null;
+  tvSymbol?: AssetSymbol | null;
   onStream: () => void;
   endpoint?: string;
   onDone?: (text: string) => void;
+  compact?: boolean;
+  onSuggestions?: (s: string[]) => void;
+  suggestions?: string[];
+  onSuggestionClick?: (text: string) => void;
 }) {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
@@ -1117,10 +1192,16 @@ function AiReplyTurn({
 
     (async () => {
       try {
+        // Chat mode uses sessionId+message (server holds history).
+        // Guided free-chat uses the full prompt array (stateless).
+        const body = sessionId && message
+          ? { sessionId, message }
+          : { messages: prompt };
+
         let finalMessage: ChatMessage | null = null;
         await streamSSE(
           endpoint,
-          { messages: prompt },
+          body,
           {
             signal: ac.signal,
             onEvent(event, data) {
@@ -1133,6 +1214,9 @@ function AiReplyTurn({
                 }
               } else if (event === "result") {
                 finalMessage = data as ChatMessage;
+              } else if (event === "suggestions") {
+                const d = data as { suggestions?: string[] };
+                if (Array.isArray(d.suggestions)) onSuggestions?.(d.suggestions);
               } else if (event === "error") {
                 const d = data as { error?: string };
                 setError(d.error ?? "Unknown streaming error");
@@ -1164,8 +1248,8 @@ function AiReplyTurn({
         <span className={styles.aidot}>
           <BoltIcon />
         </span>
-        <span className={styles.aiwho}>Autonoe</span>
-        <span className={styles.aitag}>AI</span>
+        {!compact && <span className={styles.aiwho}>Autonoe</span>}
+        {!compact && <span className={styles.aitag}>AI</span>}
         {loading && (
           <button
             type="button"
@@ -1213,8 +1297,27 @@ function AiReplyTurn({
         </div>
       )}
 
-      {/* live Bybit sparkline for the asset the message referenced */}
-      {asset && !loading && !error && <InlineChart assetLabel={asset} />}
+      {/* TradingView interactive chart when the user explicitly asked for one */}
+      {tvSymbol && !error && <TradingViewChart spec={{ symbol: tvSymbol, exchange: "BYBIT", interval: "60" }} />}
+      {/* live Bybit sparkline for quick price lookups */}
+      {asset && !loading && !error && <TradingViewChart spec={{ symbol: asset, exchange: "BYBIT", interval: "60" }} />}
+
+      {/* Follow-up suggestion chips */}
+      {!loading && !error && suggestions && suggestions.length > 0 && (
+        <div className={styles.suggestions}>
+          {suggestions.map((s, i) => (
+            <button
+              key={i}
+              type="button"
+              className={styles.suggChip}
+              onClick={() => onSuggestionClick?.(s)}
+            >
+              <span className={styles.suggArrow}>↳</span>
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

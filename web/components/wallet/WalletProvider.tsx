@@ -27,6 +27,8 @@ import {
   type ExecuteResult,
 } from '@autonoe/wallet';
 import { browserWalletStore } from '@/lib/walletStore';
+import { recordTrade } from '@/lib/api';
+import type { RoleModelMap } from '@autonoe/shared';
 
 // ── Context types ─────────────────────────────────────────────────────────────
 
@@ -35,6 +37,17 @@ export interface ExecuteContext {
   thesisHash: `0x${string}`;
   /** keccak256 hash for the verdict, or zero-hash for direct execution. */
   verdictHash: `0x${string}`;
+  /**
+   * Optional off-chain metadata. When present, a successful execution is
+   * recorded so it appears on the History / leaderboard pages with model
+   * attribution and a tx explorer link.
+   */
+  meta?: {
+    thesisId: string;
+    source: 'ai' | 'human';
+    judged: boolean;
+    modelsUsed?: Partial<RoleModelMap>;
+  };
 }
 
 export interface WalletContextValue {
@@ -208,6 +221,25 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         policy,
       });
       void refreshBalances();
+
+      // Persist off-chain metadata so the execution appears on History /
+      // leaderboard. Best-effort: the trade is already committed on-chain, so a
+      // logging failure must never surface as a trade error.
+      if (ctx.meta) {
+        void recordTrade({
+          thesisId: ctx.meta.thesisId,
+          thesisHash: ctx.thesisHash,
+          source: ctx.meta.source,
+          judged: ctx.meta.judged,
+          chosenOptionRef: opt.optionRef,
+          modelsUsed: ctx.meta.modelsUsed ?? {},
+          asset: opt.asset,
+          txHash: result.decision?.txHash ?? result.txHash,
+          createdAt: new Date().toISOString(),
+        }).catch(() => {
+          /* swallow — never fail a committed trade on a logging error */
+        });
+      }
       return result;
     },
     [policy, refreshBalances],

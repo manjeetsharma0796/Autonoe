@@ -729,15 +729,6 @@ textarea.inp {
 
 /* model chip sits on its own row under the title: the full model name fits and
    every panel header looks identical (no truncation / edge-clipping). */
-.twChip {
-  padding: 4px 18px 13px 20px;
-  border-bottom: 1px solid var(--line2);
-  flex: 0 0 auto;
-}
-.twChip :global(.mchip) {
-  max-width: 100%;
-  min-width: 0;
-}
 .twRole {
   font-family: var(--mono);
   font-size: 11px;

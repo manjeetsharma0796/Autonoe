@@ -4,12 +4,12 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
 import { API, type ProviderId, type RoleModelMap } from '@autonoe/shared';
 import { listProviders, listModels } from './providers.ts';
-import { setProviderKey } from './store.ts';
+import { setProviderKey, recordTrade, type TradeMeta } from './store.ts';
 import { getRoleMap, setRoleMap } from './roles.ts';
 import { generateThesis, structureHumanThesis } from './agents/thesis.ts';
 import { runDebate } from './agents/debate.ts';
 import { chat } from './agents/assistant.ts';
-import { chatConversational } from './agents/chatAgent.ts';
+import { chatConversational, clearSession } from './agents/chatAgent.ts';
 import { askDebater, type DebaterRole } from './agents/debateFollowup.ts';
 import { extractIntake } from './agents/extract.ts';
 import { signPrice } from './oracle.ts';
@@ -160,22 +160,34 @@ export function createApp() {
   );
 
   // Conversational "Chat" mode (studio). Normal back-and-forth on the assistant
-  // model - NOT the trade-scoping briefing assistant. Path is hardcoded.
+  // model. History is stored server-side keyed by sessionId; client sends only
+  // the new user message each turn.
   app.post(
     '/api/chat/stream',
     wrap(async (req, res) => {
-      const { messages } = req.body ?? {};
-      if (!Array.isArray(messages)) throw httpError(400, 'messages[] required');
+      const { sessionId, message } = req.body ?? {};
+      if (!sessionId || typeof sessionId !== 'string') throw httpError(400, 'sessionId required');
+      if (!message || typeof message !== 'string') throw httpError(400, 'message required');
       const ch = sse(res);
       const resolver = streamingResolver((t) => ch.send('token', { delta: t }));
       try {
-        const content = await chatConversational({ messages }, resolver);
+        const { content, suggestions } = await chatConversational({ sessionId, message }, resolver);
         ch.send('result', { role: 'assistant', content });
+        ch.send('suggestions', { suggestions });
         ch.send('done', {});
       } catch (e) {
         ch.send('error', { error: (e as Error).message });
       }
       ch.end();
+    }),
+  );
+
+  // Clear a chat session's history (e.g. when user clicks "New chat").
+  app.delete(
+    '/api/chat/session/:id',
+    wrap((req, res) => {
+      clearSession(req.params.id ?? '');
+      res.json({ ok: true });
     }),
   );
 
@@ -293,6 +305,35 @@ export function createApp() {
   // T-207: backed by on-chain DecisionLog + off-chain TradeMeta store.
   app.get(API.history, wrap(async (_req, res) => { res.json(await getHistory()); }));
   app.get(API.leaderboard, wrap(async (_req, res) => { res.json(await getLeaderboard()); }));
+
+  // Off-chain trade metadata, posted by the client after a successful on-chain
+  // execution. Joined onto the on-chain DecisionLog by thesisHash so History /
+  // leaderboard can show source, model attribution and the tx explorer link.
+  app.post(
+    '/api/trades',
+    wrap((req, res) => {
+      const b = (req.body ?? {}) as Record<string, unknown>;
+      if (typeof b.thesisId !== 'string' || typeof b.thesisHash !== 'string') {
+        throw httpError(400, 'thesisId and thesisHash required');
+      }
+      const meta: TradeMeta = {
+        thesisId: b.thesisId,
+        thesisHash: b.thesisHash as `0x${string}`,
+        source: b.source === 'human' ? 'human' : 'ai',
+        judged: Boolean(b.judged),
+        chosenOptionRef: typeof b.chosenOptionRef === 'string' ? b.chosenOptionRef : '',
+        modelsUsed:
+          b.modelsUsed && typeof b.modelsUsed === 'object'
+            ? (b.modelsUsed as TradeMeta['modelsUsed'])
+            : {},
+        asset: typeof b.asset === 'string' ? b.asset : '',
+        txHash: typeof b.txHash === 'string' ? (b.txHash as `0x${string}`) : null,
+        createdAt: typeof b.createdAt === 'string' ? b.createdAt : new Date().toISOString(),
+      };
+      recordTrade(meta);
+      res.json({ ok: true });
+    }),
+  );
 
   // error handler
   app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

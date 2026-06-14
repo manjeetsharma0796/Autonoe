@@ -90,6 +90,8 @@ export interface TradeMeta {
   chosenOptionRef: string;
   modelsUsed: Partial<Record<AIRole, { provider: ProviderId; model: string }>>;
   asset: string;
+  /** Hash of the tx that logged this decision on-chain (for the History explorer link). */
+  txHash: `0x${string}` | null;
   createdAt: string;
 }
 

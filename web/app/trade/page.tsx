@@ -127,7 +127,7 @@ function TradeInner() {
             ) : (
               <span className="ping" style={{ background: "#3FE0A6" }} />
             )}{" "}
-            Mantle Sepolia · block 8,412,907
+            Mantle Sepolia · testnet
           </span>
         </div>
 

@@ -5,6 +5,7 @@ import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import type { ChatMessage } from '@autonoe/shared';
 import { humanize } from '@autonoe/shared';
+import { SystemMessage, HumanMessage, AIMessage, ToolMessage } from '@langchain/core/messages';
 import { defaultResolver, type ModelResolver } from '../models.ts';
 import { getTickerBySymbol } from '../market/bybit.ts';
 
@@ -62,34 +63,41 @@ export async function chat(
   input: { messages: ChatMessage[]; context?: Record<string, unknown> },
   resolve: ModelResolver = defaultResolver,
 ): Promise<ChatMessage> {
-  const ctx = input.context ? `\n\nCONTEXT: ${JSON.stringify(input.context)}` : '';
-  const convo = input.messages.map((m) => `${m.role.toUpperCase()}: ${m.content}`).join('\n');
-  const prompt = `${SYSTEM}${ctx}\n\n${convo}\n\nASSISTANT:`;
+  const ctxNote = input.context
+    ? `\n\nCONTEXT: ${JSON.stringify(input.context)}`
+    : '';
+  const system = SYSTEM + ctxNote;
 
-  // Bind the ticker tool if the model supports it; fall back to plain invoke otherwise.
+  const lcMessages: (SystemMessage | HumanMessage | AIMessage | ToolMessage)[] = [
+    new SystemMessage(system),
+    ...input.messages.map((m) =>
+      m.role === 'assistant' ? new AIMessage(m.content) : new HumanMessage(m.content),
+    ),
+  ];
+
   const baseModel = resolve('assistant', { temperature: 0.5 });
   const model = typeof (baseModel as unknown as { bindTools?: unknown }).bindTools === 'function'
     ? (baseModel as unknown as { bindTools: (t: unknown[]) => typeof baseModel }).bindTools([tickerTool])
     : baseModel;
 
-  let res = await model.invoke(prompt);
+  let res = await model.invoke(lcMessages);
 
-  // Simple tool loop: run tool calls until the model stops requesting them.
-  while (Array.isArray(res.tool_calls) && res.tool_calls.length > 0) {
-    const toolResults: string[] = [];
-    for (const call of res.tool_calls as Array<{ name: string; args: Record<string, unknown> }>) {
+  let steps = 0;
+  while (Array.isArray(res.tool_calls) && res.tool_calls.length > 0 && steps < 5) {
+    steps += 1;
+    lcMessages.push(new AIMessage({ content: res.content as string, tool_calls: res.tool_calls }));
+    for (const call of res.tool_calls as Array<{ name: string; args: Record<string, unknown>; id?: string }>) {
+      let out = '';
       if (call.name === 'get_ticker') {
         try {
-          const result = await tickerTool.invoke(call.args as { symbol: string });
-          toolResults.push(String(result));
+          out = String(await tickerTool.invoke(call.args as { symbol: string }));
         } catch (e) {
-          toolResults.push(`Error fetching price: ${(e as Error).message}`);
+          out = `Error fetching price: ${(e as Error).message}`;
         }
       }
+      lcMessages.push(new ToolMessage({ content: out, tool_call_id: call.id ?? call.name, name: call.name }));
     }
-    // Feed tool results back and get the next response.
-    const toolContext = toolResults.join('\n');
-    res = await baseModel.invoke(`${prompt}\n\nTOOL RESULTS:\n${toolContext}\n\nASSISTANT:`);
+    res = await baseModel.invoke(lcMessages);
   }
 
   const content = typeof res.content === 'string' ? res.content : String(res.content ?? '');

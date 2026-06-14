@@ -95,7 +95,16 @@ export function EditableOptionCard({
         optionRef: opt.optionRef,
         apiBase: "",
       },
-      { thesisHash, verdictHash },
+      {
+        thesisHash,
+        verdictHash,
+        meta: {
+          thesisId: thesis.id,
+          source: thesis.source,
+          judged: true,
+          modelsUsed: thesis.modelsUsed,
+        },
+      },
     );
   }
 

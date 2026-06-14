@@ -617,11 +617,6 @@ function SingleRound({
                   )}
                 </div>
 
-                {/* model chip on its own row - full name fits, identical across panels */}
-                <div className={styles.twChip}>
-                  <ModelChip role={a.trace} />
-                </div>
-
                 <AutoScroll className={styles.twBody}>
                   {!result ? (
                     phase === "loading" ? (

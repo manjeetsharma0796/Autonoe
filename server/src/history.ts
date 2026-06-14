@@ -29,7 +29,7 @@ export async function getHistory(): Promise<HistoryRecord[]> {
       source: meta?.source ?? 'ai',
       judged: meta?.judged ?? false,
       chosenOptionRef: meta?.chosenOptionRef ?? d.optionRef,
-      txHash: null,
+      txHash: meta?.txHash ?? null,
       pnlMUSD: Number(d.pnl) / 1e6,
       modelsUsed: meta?.modelsUsed ?? {},
       createdAt: new Date(d.timestamp * 1000).toISOString(),

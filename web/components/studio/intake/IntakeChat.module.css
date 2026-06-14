@@ -8,7 +8,11 @@
 .wrap {
   max-width: 760px;
   margin: 0 auto;
-  padding: 6px 4px 24px;
+  padding: 6px 4px 0;
+  /* fill remaining viewport height so composer can stick to the bottom */
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 80px); /* 80px ≈ nav height */
 }
 
 /* header - amber step badge, title, mono progress counter */
@@ -76,7 +80,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 22px 2px 8px;
+  padding: 22px 2px 100px; /* bottom padding clears the fixed composer */
 }
 
 /* assistant turn - no avatar, plain flowing text, full column width */
@@ -318,6 +322,67 @@
   color: var(--faint);
   padding: 24px 0 16px;
   text-align: center;
+}
+
+/* hover tooltip */
+.icTooltip {
+  position: absolute;
+  top: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px 10px;
+  pointer-events: none;
+  width: 130px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+.icTtPrice {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.icTtTime {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--faint);
+  margin-top: 1px;
+}
+
+/* ── follow-up suggestion chips ─────────────────────────────────────────────── */
+.suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 14px;
+}
+.suggChip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--body);
+  transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
+}
+.suggChip:hover {
+  border-color: rgba(139, 92, 246, 0.5);
+  color: var(--ink);
+  background: rgba(139, 92, 246, 0.05);
+}
+.suggArrow {
+  color: var(--faint);
+  font-size: 11px;
+  flex: none;
 }
 
 /* trade brief */
@@ -579,17 +644,25 @@
   animation: blink 1s steps(1) infinite;
 }
 
-/* ── persistent free-chat composer (pinned under the conversation) ──────────── */
+/* ── persistent free-chat composer (sticky at viewport bottom) ──────────── */
 .composer {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  margin: 18px 2px 2px;
-  background: var(--bg2);
-  border: 1px solid var(--line);
+  background: rgba(10, 13, 18, 0.82);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 14px;
   padding: 8px 8px 8px 14px;
   transition: border-color 0.12s ease;
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(748px, calc(100vw - 16px));
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.55), 0 0 0 0.5px rgba(255,255,255,0.04);
+  z-index: 40;
 }
 .composer:focus-within {
   border-color: var(--violet);
@@ -638,5 +711,11 @@
   font-size: 11px;
   color: var(--faint);
   font-family: var(--mono);
-  margin: 6px 4px 0;
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(748px, calc(100vw - 16px));
+  padding: 2px 4px 8px;
+  background: transparent;
 }

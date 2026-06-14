@@ -1,8 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { keccak256, stringToHex, formatUnits } from "viem";
+import type { ExecuteResult } from "@autonoe/wallet";
 import { SLIPPAGES, formatTo, type Pair } from "./data";
 import { Button } from "@/components/ui/Button";
+import { useWallet } from "@/components/wallet/WalletProvider";
+import { ExecuteModal } from "@/components/wallet/ExecuteModal";
+
+/** Assets with an oracle-priced synthetic market (everything else is advice-only). */
+const SYNTHETIC = ["BTC", "ETH", "SUI", "SOL"];
 
 function FlipIcon() {
   return (
@@ -45,8 +52,10 @@ function parseAmount(raw: string): number {
 }
 
 export function SwapBox({ pair }: { pair: Pair }) {
+  const wallet = useWallet();
   const [fromRaw, setFromRaw] = useState("1,000");
   const [slip, setSlip] = useState("0.5%");
+  const [modalOpen, setModalOpen] = useState(false);
 
   const fromNum = useMemo(() => parseAmount(fromRaw), [fromRaw]);
   const toOut = useMemo(() => fromNum * pair.rate, [fromNum, pair.rate]);
@@ -68,6 +77,48 @@ export function SwapBox({ pair }: { pair: Pair }) {
     [pair.rate]
   );
 
+  const isWmnt = pair.sym === "WMNT";
+  const isSynthetic = SYNTHETIC.includes(pair.sym);
+  const executable = isWmnt || isSynthetic;
+  const routeLabel = isWmnt
+    ? "Mantle AMM"
+    : isSynthetic
+      ? "SyntheticExchange"
+      : "advice-only";
+
+  // Real mUSD balance from the agent wallet (the swap spends mUSD).
+  const mUSDBalance = wallet.balances
+    ? `${Number(formatUnits(wallet.balances.mUSD, 6)).toLocaleString(undefined, {
+        maximumFractionDigits: 2,
+      })} mUSD`
+    : "—";
+
+  async function handleConfirm(
+    passphrase: string | null,
+  ): Promise<ExecuteResult> {
+    if (!wallet.isUnlocked && passphrase) {
+      await wallet.unlock(passphrase);
+    }
+    // Unique id so each direct trade is its own verifiable record.
+    const id = `trade-${pair.sym}-${Date.now()}`;
+    const thesisHash = keccak256(stringToHex(id));
+    const zeroHash = `0x${"0".repeat(64)}` as `0x${string}`;
+    return wallet.execute(
+      {
+        direction: "long",
+        asset: pair.sym,
+        sizeMUSD: fromNum,
+        optionRef: id,
+        apiBase: "",
+      },
+      {
+        thesisHash,
+        verdictHash: zeroHash,
+        meta: { thesisId: id, source: "human", judged: false },
+      },
+    );
+  }
+
   return (
     <section className="panel">
       <div className="phead">
@@ -77,7 +128,7 @@ export function SwapBox({ pair }: { pair: Pair }) {
         <div className="swapfield">
           <div className="sf-top">
             <span>From</span>
-            <span className="bal">Balance: 12,500.00 mUSD</span>
+            <span className="bal">Balance: {mUSDBalance}</span>
           </div>
           <div className="sf-main">
             <input
@@ -104,7 +155,6 @@ export function SwapBox({ pair }: { pair: Pair }) {
         <div className="swapfield">
           <div className="sf-top">
             <span>To (estimated)</span>
-            <span className="bal">Balance: 318.40 {pair.sym}</span>
           </div>
           <div className="sf-main">
             <input
@@ -136,13 +186,9 @@ export function SwapBox({ pair }: { pair: Pair }) {
             </span>
           </div>
           <div className="srow">
-            <span>Network fee</span>
-            <span className="v">~0.0012 MNT</span>
-          </div>
-          <div className="srow">
             <span>Route</span>
             <span className="v violet">
-              mUSD → {pair.sym} · MockDEX
+              mUSD → {pair.sym} · {routeLabel}
             </span>
           </div>
           <div className="slip">
@@ -165,16 +211,71 @@ export function SwapBox({ pair }: { pair: Pair }) {
         <div className="note">
           <InfoIcon />
           <span>
-            Output is estimated at <b>{slip}</b> slippage. The agent wallet will
-            revert if you receive less than the minimum. Testnet only - not
-            financial advice.
+            {executable ? (
+              <>
+                {isWmnt
+                  ? "Real mUSD → WMNT swap on the Mantle AMM."
+                  : "Opens an oracle-priced synthetic position on Mantle."}{" "}
+                The agent wallet reverts if you receive less than the minimum.
+                Testnet only - not financial advice.
+              </>
+            ) : (
+              <>
+                {pair.sym} is advice-only — only WMNT and the synthetic markets
+                (BTC, ETH, SUI, SOL) are executable on-chain. Testnet only - not
+                financial advice.
+              </>
+            )}
           </span>
         </div>
 
-        <Button variant="gold" size="lg" block style={{ marginTop: 16 }}>
-          Execute swap →
-        </Button>
+        {executable ? (
+          <Button
+            variant="gold"
+            size="lg"
+            block
+            style={{ marginTop: 16 }}
+            disabled={!wallet.isCreated || fromNum <= 0}
+            title={
+              !wallet.isCreated
+                ? "Create an agent wallet to execute"
+                : fromNum <= 0
+                  ? "Enter an amount"
+                  : "Execute on Mantle Sepolia"
+            }
+            onClick={() => setModalOpen(true)}
+          >
+            Execute {isWmnt ? "swap" : "position"} →
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="lg"
+            block
+            disabled
+            style={{ marginTop: 16 }}
+            title="Only WMNT and the synthetic markets (BTC, ETH, SUI, SOL) are executable on-chain"
+          >
+            Advice-only · not executable on-chain
+          </Button>
+        )}
       </div>
+
+      {modalOpen && executable && (
+        <ExecuteModal
+          option={{
+            id: `trade-${pair.sym}`,
+            direction: "long",
+            asset: pair.sym,
+            sizeMUSD: fromNum,
+            predictedReturnLabel: "—",
+            risk: "medium",
+          }}
+          onConfirm={handleConfirm}
+          onClose={() => setModalOpen(false)}
+          isUnlocked={wallet.isUnlocked}
+        />
+      )}
     </section>
   );
 }

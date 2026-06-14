@@ -96,7 +96,16 @@ function ThesisOptionCard({
         optionRef: opt.id,
         apiBase: "",
       },
-      { thesisHash, verdictHash: zeroHash },
+      {
+        thesisHash,
+        verdictHash: zeroHash,
+        meta: {
+          thesisId: thesis.id,
+          source: thesis.source,
+          judged: false,
+          modelsUsed: thesis.modelsUsed,
+        },
+      },
     );
   }
 

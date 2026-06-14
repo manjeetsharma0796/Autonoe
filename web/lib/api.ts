@@ -170,6 +170,26 @@ export function postKey(args: PostKeyArgs): Promise<SetKeyResponse> {
   return post<PostKeyArgs, SetKeyResponse>('/api/keys', args);
 }
 
+// ── /api/trades ───────────────────────────────────────────────────────────────
+
+/** Off-chain trade metadata persisted after a successful on-chain execution. */
+export interface TradeMetaInput {
+  thesisId: string;
+  thesisHash: `0x${string}`;
+  source: 'ai' | 'human';
+  judged: boolean;
+  chosenOptionRef: string;
+  modelsUsed: Partial<RoleModelMap>;
+  asset: string;
+  txHash: `0x${string}` | null;
+  createdAt: string;
+}
+
+/** Record trade metadata so the execution shows up on History / leaderboard. */
+export function recordTrade(meta: TradeMetaInput): Promise<{ ok: boolean }> {
+  return post<TradeMetaInput, { ok: boolean }>('/api/trades', meta);
+}
+
 // ── /api/symbols ──────────────────────────────────────────────────────────────
 
 export type { TokenInfo };
