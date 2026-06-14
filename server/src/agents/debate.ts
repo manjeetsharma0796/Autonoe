@@ -7,21 +7,54 @@ import type { DebateResult, DebateTurn, ReasoningTrace, Thesis } from '@autonoe/
 import { humanizeDeep, stripMarkdown } from '@autonoe/shared';
 import { defaultResolver, type ChatModelLike, type ModelResolver } from '../models.ts';
 
+// Tolerant schema: some providers validate tool-call args server-side and reject
+// when a model emits a quoted number or an off-enum risk ("High"), which dead-ends
+// the verdict. Accept loose shapes here and coerce/clamp in code (normalizeRefined).
+const LooseNum = z
+  .union([z.number(), z.string()])
+  .describe('a number (emit a plain number, not a quoted string)');
+
 const JudgeOut = z.object({
   judgeSummary: z.string(),
   refinedOptions: z
     .array(
       z.object({
         optionRef: z.string().describe('id of the thesis option, e.g. opt-1'),
-        predictedOutputPct: z.number(),
-        risk: z.enum(['low', 'medium', 'high']),
+        predictedOutputPct: LooseNum.describe('predicted % outcome (a number)'),
+        risk: z.string().describe('risk tier: one of low, medium, high'),
         caveats: z.array(z.string()),
-        confidence: z.number().min(0).max(1),
+        confidence: LooseNum.describe('confidence from 0 to 1 (a number)'),
       }),
     )
     .min(1),
 });
-type JudgeOut = z.infer<typeof JudgeOut>;
+type RawJudgeOut = z.infer<typeof JudgeOut>;
+
+type Risk = 'low' | 'medium' | 'high';
+
+function toNum(v: number | string, fallback: number): number {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : fallback;
+  const n = parseFloat(String(v).replace(/[^0-9.eE+-]/g, ''));
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function normRisk(v: unknown): Risk {
+  const s = String(v ?? '').toLowerCase();
+  if (s.includes('low')) return 'low';
+  if (s.includes('high')) return 'high';
+  return 'medium';
+}
+
+/** Coerce one loose refined option into the strict RefinedOption shape. */
+function normalizeRefined(o: RawJudgeOut['refinedOptions'][number]) {
+  return {
+    optionRef: o.optionRef,
+    predictedOutputPct: toNum(o.predictedOutputPct, 0),
+    risk: normRisk(o.risk),
+    caveats: o.caveats,
+    confidence: Math.min(1, Math.max(0, toNum(o.confidence, 0.5))),
+  };
+}
 
 // Appended to every debater/judge prompt: keep their output as plain prose so the
 // studio panels never render literal markdown markers.
@@ -134,7 +167,7 @@ export async function runDebate(
   // ── Phase 3: the judge reads the full transcript, then rules ──
   const transcript = turns.map((t) => `${t.role.toUpperCase()} (${t.kind}): ${t.text}`).join('\n\n');
   const judged = await judge
-    .withStructuredOutput<JudgeOut>(JudgeOut, { name: 'verdict' })
+    .withStructuredOutput<RawJudgeOut>(JudgeOut, { name: 'verdict' })
     .invoke(
       `You are the JUDGE on a trading tribunal. Read the full debate, weigh both sides, then issue ` +
         `refined options referencing the thesis option ids. Give a predicted % outcome, risk, ` +
@@ -170,7 +203,7 @@ export async function runDebate(
     supporterArgument,
     discriminatorArgument,
     judgeSummary,
-    refinedOptions: judged.refinedOptions,
+    refinedOptions: judged.refinedOptions.map(normalizeRefined),
     turns,
     traces,
   });

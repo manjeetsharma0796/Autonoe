@@ -79,7 +79,17 @@ export async function listModels(provider: ProviderId): Promise<ModelInfo[]> {
   }
   const json = (await res.json()) as { data?: unknown[]; models?: unknown[] };
   const rows = json.data ?? json.models ?? [];
-  return rows.map((m) => normalizeModel(provider, m as Record<string, unknown>));
+  // Dedupe by id: some providers (e.g. Mistral) return the same model id more
+  // than once, which would produce duplicate React keys downstream.
+  const seen = new Set<string>();
+  const models: ModelInfo[] = [];
+  for (const row of rows) {
+    const info = normalizeModel(provider, row as Record<string, unknown>);
+    if (!info.id || seen.has(info.id)) continue;
+    seen.add(info.id);
+    models.push(info);
+  }
+  return models;
 }
 
 function normalizeModel(provider: ProviderId, m: Record<string, unknown>): ModelInfo {

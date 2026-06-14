@@ -11,29 +11,93 @@ import { resolveRole } from '../roles.ts';
 import { makeRecorder, makeTools } from './tools.ts';
 import type { Fetcher } from '../market/bybit.ts';
 
+// Tolerant schema. Many providers (e.g. Groq) validate the model's tool-call
+// arguments against this JSON schema SERVER-SIDE and hard-reject the call when a
+// model emits "100" (string) for a number or "High" for an enum - which dead-ends
+// the whole flow and is the flaky "tool call validation failed" error. So we
+// accept the loose shapes here and coerce/clamp to strict types in code
+// (normalizeOption). Descriptions still tell the model the intended type/values.
+const LooseNum = z
+  .union([z.number(), z.string()])
+  .describe('a number (emit a plain number, not a quoted string)');
+
 const Option = z.object({
-  direction: z.enum(['long', 'short', 'hedge', 'hold']),
-  asset: z.enum(['WMNT', 'BTC', 'ETH', 'SUI', 'SOL']),
-  sizeMUSD: z.number().describe('position size in mUSD'),
+  direction: z.string().describe('one of: long, short, hedge, hold'),
+  asset: z.string().describe('one of: WMNT, BTC, ETH, SUI, SOL'),
+  sizeMUSD: LooseNum.describe('position size in mUSD (a number)'),
   rationale: z.string(),
-  predictedReturnPct: z.object({ low: z.number(), high: z.number() }),
-  risk: z.enum(['low', 'medium', 'high']),
+  predictedReturnPct: z.object({ low: LooseNum, high: LooseNum }),
+  risk: z.string().describe('risk tier: one of low, medium, high'),
 });
 
 const ThesisCore = z.object({
-  suggestedPair: z.enum(['WMNT', 'BTC', 'ETH', 'SUI', 'SOL']),
+  suggestedPair: z.string().describe('one of: WMNT, BTC, ETH, SUI, SOL'),
   reasoning: z.string().describe('overall reasoning grounded in the tool evidence, 2-4 sentences'),
   // min(1) (not 2): some providers hard-REJECT the tool call when the model
   // returns a single option ("/options: minimum 2 items"), which would dead-end
   // the whole flow. We accept >=1 here and guarantee >=2 in code (ensureTwoOptions).
   options: z.array(Option).min(1).max(4),
 });
-type ThesisCore = z.infer<typeof ThesisCore>;
+type RawThesisCore = z.infer<typeof ThesisCore>;
+
+// ── normalization: loose model output → strict ThesisOption fields ─────────────
+
+const ASSETS = ['WMNT', 'BTC', 'ETH', 'SUI', 'SOL'] as const;
+type Asset = (typeof ASSETS)[number];
+const DIRECTIONS = ['long', 'short', 'hedge', 'hold'] as const;
+type Direction = (typeof DIRECTIONS)[number];
+type Risk = 'low' | 'medium' | 'high';
+
+interface NormOption {
+  direction: Direction;
+  asset: Asset;
+  sizeMUSD: number;
+  rationale: string;
+  predictedReturnPct: { low: number; high: number };
+  risk: Risk;
+}
+
+function toNum(v: number | string, fallback: number): number {
+  if (typeof v === 'number') return Number.isFinite(v) ? v : fallback;
+  const n = parseFloat(String(v).replace(/[^0-9.eE+-]/g, ''));
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function normAsset(v: unknown): Asset {
+  const s = String(v ?? '').toUpperCase();
+  return ASSETS.find((a) => s.includes(a)) ?? 'WMNT';
+}
+
+function normDirection(v: unknown): Direction {
+  const s = String(v ?? '').toLowerCase();
+  return DIRECTIONS.find((d) => s.includes(d)) ?? 'hold';
+}
+
+function normRisk(v: unknown): Risk {
+  const s = String(v ?? '').toLowerCase();
+  if (s.includes('low')) return 'low';
+  if (s.includes('high')) return 'high';
+  return 'medium';
+}
+
+function normalizeOption(o: RawThesisCore['options'][number]): NormOption {
+  return {
+    direction: normDirection(o.direction),
+    asset: normAsset(o.asset),
+    sizeMUSD: Math.max(0, toNum(o.sizeMUSD, 0)),
+    rationale: o.rationale,
+    predictedReturnPct: {
+      low: toNum(o.predictedReturnPct.low, 0),
+      high: toNum(o.predictedReturnPct.high, 0),
+    },
+    risk: normRisk(o.risk),
+  };
+}
 
 /** The panel and debate need a real choice. If the model returned a single
  *  option, synthesize a conservative half-size counterpart so the UI always
  *  has >=2 without ever failing the structured-output call. */
-function ensureTwoOptions(options: ThesisCore['options']): ThesisCore['options'] {
+function ensureTwoOptions(options: NormOption[]): NormOption[] {
   if (options.length >= 2) return options;
   const [first] = options;
   if (!first) return options;
@@ -65,13 +129,14 @@ const SYSTEM =
 
 const MAX_STEPS = 5;
 
-function assemble(core: ThesisCore, intent: string, source: 'ai' | 'human', used: AIRole[]): Thesis {
-  const options: ThesisOption[] = ensureTwoOptions(core.options).map((o, i) => ({ id: `opt-${i + 1}`, ...o }));
+function assemble(core: RawThesisCore, intent: string, source: 'ai' | 'human', used: AIRole[]): Thesis {
+  const normalized = core.options.map(normalizeOption);
+  const options: ThesisOption[] = ensureTwoOptions(normalized).map((o, i) => ({ id: `opt-${i + 1}`, ...o }));
   return {
     id: crypto.randomUUID(),
     intent,
     source,
-    suggestedPair: core.suggestedPair,
+    suggestedPair: normAsset(core.suggestedPair),
     activeSources: used,
     options,
     reasoning: core.reasoning,
@@ -123,12 +188,14 @@ export async function generateThesis(
   }
 
   const core = await base
-    .withStructuredOutput<ThesisCore>(ThesisCore, { name: 'thesis' })
+    .withStructuredOutput<RawThesisCore>(ThesisCore, { name: 'thesis' })
     .invoke([
       ...messages,
       new HumanMessage(
         'Now output the final thesis as structured data, grounded strictly in the tool evidence above. ' +
-          'Provide 2 to 4 DISTINCT risk-tiered options (vary the size, direction, or risk) so the user has a real choice.',
+          'Provide 2 to 4 DISTINCT risk-tiered options (vary the size, direction, or risk) so the user has a real choice. ' +
+          'Types matter: sizeMUSD and predictedReturnPct.low/high must be plain numbers (not quoted strings); ' +
+          'risk must be exactly "low", "medium", or "high"; asset one of WMNT, BTC, ETH, SUI, SOL.',
       ),
     ]);
 
@@ -144,7 +211,7 @@ export async function structureHumanThesis(
   resolve: ModelResolver = defaultResolver,
 ): Promise<Thesis> {
   const model = resolve('thesis', { temperature: 0.2 });
-  const structured = model.withStructuredOutput<ThesisCore>(ThesisCore, { name: 'thesis' });
+  const structured = model.withStructuredOutput<RawThesisCore>(ThesisCore, { name: 'thesis' });
   const prompt =
     `${SYSTEM}\n\nThe user has written their own thesis. Convert it faithfully into structured, ` +
     `risk-tiered options without inventing new directions.\n\nINTENT:\n${input.intent}\n\n` +
