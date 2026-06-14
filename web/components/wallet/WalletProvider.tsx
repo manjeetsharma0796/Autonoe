@@ -28,6 +28,7 @@ import {
 } from '@autonoe/wallet';
 import { browserWalletStore } from '@/lib/walletStore';
 import { recordTrade } from '@/lib/api';
+import type { Commitment } from '@/lib/commitment';
 import type { RoleModelMap } from '@autonoe/shared';
 
 // ── Context types ─────────────────────────────────────────────────────────────
@@ -47,6 +48,8 @@ export interface ExecuteContext {
     source: 'ai' | 'human';
     judged: boolean;
     modelsUsed?: Partial<RoleModelMap>;
+    /** Commit-reveal payload hashed into thesisHash, stored for later verification. */
+    commitment?: Commitment;
   };
 }
 
@@ -235,6 +238,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           modelsUsed: ctx.meta.modelsUsed ?? {},
           asset: opt.asset,
           txHash: result.decision?.txHash ?? result.txHash,
+          commitment: ctx.meta.commitment ?? null,
           createdAt: new Date().toISOString(),
         }).catch(() => {
           /* swallow — never fail a committed trade on a logging error */

@@ -172,6 +172,8 @@ export function postKey(args: PostKeyArgs): Promise<SetKeyResponse> {
 
 // ── /api/trades ───────────────────────────────────────────────────────────────
 
+import type { Commitment } from './commitment';
+
 /** Off-chain trade metadata persisted after a successful on-chain execution. */
 export interface TradeMetaInput {
   thesisId: string;
@@ -182,12 +184,30 @@ export interface TradeMetaInput {
   modelsUsed: Partial<RoleModelMap>;
   asset: string;
   txHash: `0x${string}` | null;
+  /** Commit-reveal payload that hashes to thesisHash (null for legacy trades). */
+  commitment?: Commitment | null;
   createdAt: string;
 }
 
 /** Record trade metadata so the execution shows up on History / leaderboard. */
 export function recordTrade(meta: TradeMetaInput): Promise<{ ok: boolean }> {
   return post<TradeMetaInput, { ok: boolean }>('/api/trades', meta);
+}
+
+// ── /api/verify ───────────────────────────────────────────────────────────────
+
+export interface VerifyResult {
+  /** thesisHash recorded on-chain for this tx (null if unknown). */
+  onChainHash: `0x${string}` | null;
+  /** whether a DecisionLog entry with that hash actually exists on-chain. */
+  onChain: boolean;
+  /** the revealed commitment payload (null for legacy trades with no commit). */
+  commitment: Commitment | null;
+}
+
+/** Reveal the commitment for a trade tx so the client can recompute + verify it. */
+export function verifyTrade(txHash: string): Promise<VerifyResult> {
+  return get<VerifyResult>(`/api/verify?tx=${encodeURIComponent(txHash)}`);
 }
 
 // ── /api/symbols ──────────────────────────────────────────────────────────────

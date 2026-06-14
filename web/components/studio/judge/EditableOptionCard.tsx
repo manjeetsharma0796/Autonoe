@@ -5,6 +5,7 @@ import type { JSX } from "react";
 import type { RefinedOption, Thesis } from "@autonoe/shared";
 import { keccak256, stringToHex } from "viem";
 import type { ExecuteResult } from "@autonoe/wallet";
+import { buildCommitment, hashCommitment } from "@/lib/commitment";
 import { useWallet } from "@/components/wallet/WalletProvider";
 import { ExecuteModal } from "@/components/wallet/ExecuteModal";
 import { ShareButton } from "@/components/share/ShareCard";
@@ -84,7 +85,15 @@ export function EditableOptionCard({
     if (!thesis) throw new Error("No thesis available");
     if (!matchingOpt) throw new Error(`No matching thesis option for ref "${opt.optionRef}"`);
 
-    const thesisHash = keccak256(stringToHex(thesis.id));
+    // Commit-reveal: hash the canonical payload (incl. which models + the edited
+    // size) on-chain so it can be revealed and verified later.
+    const commitment = buildCommitment(thesis, {
+      optionRef: opt.optionRef,
+      asset: matchingOpt.asset,
+      direction: matchingOpt.direction,
+      sizeMUSD,
+    });
+    const thesisHash = hashCommitment(commitment);
     const verdictHash = keccak256(stringToHex(thesis.id + "|verdict"));
 
     return wallet.execute(
@@ -103,6 +112,7 @@ export function EditableOptionCard({
           source: thesis.source,
           judged: true,
           modelsUsed: thesis.modelsUsed,
+          commitment,
         },
       },
     );

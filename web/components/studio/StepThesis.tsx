@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AIRole, Thesis, ThesisOption, TokenInfo } from "@autonoe/shared";
 import { SUBAGENT_ROLES } from "@autonoe/shared";
-import { keccak256, stringToHex } from "viem";
 import type { ExecuteResult } from "@autonoe/wallet";
+import { buildCommitment, hashCommitment } from "@/lib/commitment";
 import styles from "./studio.module.css";
 import { ThinkingTrace } from "./ThinkingTrace";
 import {
@@ -86,7 +86,14 @@ function ThesisOptionCard({
     }
     // Zero verdictHash for direct execution (not judged).
     const zeroHash = `0x${"0".repeat(64)}` as `0x${string}`;
-    const thesisHash = keccak256(stringToHex(thesis.id));
+    // Commit-reveal: hash the canonical payload (incl. which models) on-chain.
+    const commitment = buildCommitment(thesis, {
+      optionRef: opt.id,
+      asset: opt.asset,
+      direction: opt.direction,
+      sizeMUSD: opt.sizeMUSD,
+    });
+    const thesisHash = hashCommitment(commitment);
 
     return wallet.execute(
       {
@@ -104,6 +111,7 @@ function ThesisOptionCard({
           source: thesis.source,
           judged: false,
           modelsUsed: thesis.modelsUsed,
+          commitment,
         },
       },
     );

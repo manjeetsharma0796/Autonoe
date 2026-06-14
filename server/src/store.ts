@@ -92,6 +92,8 @@ export interface TradeMeta {
   asset: string;
   /** Hash of the tx that logged this decision on-chain (for the History explorer link). */
   txHash: `0x${string}` | null;
+  /** Commit-reveal payload that hashes to thesisHash; revealed for verification. */
+  commitment?: unknown;
   createdAt: string;
 }
 

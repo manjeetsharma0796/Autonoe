@@ -42,7 +42,7 @@ async function readWithRetry(): Promise<Decisions> {
 // StrictMode in dev. Without this, those concurrent bursts of sequential
 // eth_calls trip the public RPC's rate limit. The cache serves repeat loads; the
 // in-flight promise collapses concurrent loads into a single chain read.
-let cache: { at: number; data: HistoryRecord[] } | null = null;
+let cache: { at: number; data: HistoryRecord[]; hashes: Set<string> } | null = null;
 let inflight: Promise<HistoryRecord[]> | null = null;
 const TTL_MS = 8_000;
 
@@ -51,8 +51,9 @@ export function invalidateHistoryCache(): void {
   cache = null;
 }
 
-async function loadHistory(): Promise<HistoryRecord[]> {
+async function loadHistory(): Promise<{ records: HistoryRecord[]; hashes: Set<string> }> {
   const decisions = await readWithRetry();
+  const hashes = new Set(decisions.map((d) => d.thesisHash.toLowerCase()));
 
   // Build a lookup map: lowercase thesisHash → TradeMeta
   const trades = listTrades();
@@ -76,7 +77,14 @@ async function loadHistory(): Promise<HistoryRecord[]> {
 
   // Sort newest-first
   records.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  return records;
+  return { records, hashes };
+}
+
+/** Whether a thesisHash actually exists in the on-chain DecisionLog. */
+export async function isOnChain(hash: string): Promise<boolean> {
+  if (!isDeployed()) return false;
+  await getHistory(); // populates the cache (incl. the hash set)
+  return cache?.hashes.has(hash.toLowerCase()) ?? false;
 }
 
 /**
@@ -90,8 +98,8 @@ export async function getHistory(): Promise<HistoryRecord[]> {
   if (inflight) return inflight; // concurrent callers join the in-flight read
 
   inflight = loadHistory()
-    .then((records) => {
-      cache = { at: Date.now(), data: records };
+    .then(({ records, hashes }) => {
+      cache = { at: Date.now(), data: records, hashes };
       return records;
     })
     .finally(() => {

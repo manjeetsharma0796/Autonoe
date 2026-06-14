@@ -6,6 +6,7 @@ import { getHistory, getLeaderboard } from "@/lib/api";
 import { PnlChart } from "@/components/benchmark/PnlChart";
 import { BenchmarkStats } from "@/components/benchmark/BenchmarkStats";
 import { Leaderboard } from "@/components/benchmark/Leaderboard";
+import { VerifyBadge } from "@/components/benchmark/VerifyBadge";
 
 const MANTLESCAN_BASE = "https://sepolia.mantlescan.xyz/tx";
 
@@ -84,6 +85,7 @@ function HistoryTable({ records }: { records: HistoryRecord[] }) {
             <th style={{ padding: "8px 12px" }}>Judged</th>
             <th style={{ padding: "8px 12px" }}>PnL</th>
             <th style={{ padding: "8px 12px" }}>Tx</th>
+            <th style={{ padding: "8px 12px" }}>Verify</th>
           </tr>
         </thead>
         <tbody>
@@ -166,6 +168,13 @@ function HistoryTable({ records }: { records: HistoryRecord[] }) {
                   >
                     {rec.txHash.slice(0, 8)}…{rec.txHash.slice(-6)} ↗
                   </a>
+                ) : (
+                  <span style={{ color: "var(--muted)", fontSize: 12 }}> - </span>
+                )}
+              </td>
+              <td style={{ padding: "12px" }}>
+                {rec.txHash ? (
+                  <VerifyBadge txHash={rec.txHash} />
                 ) : (
                   <span style={{ color: "var(--muted)", fontSize: 12 }}> - </span>
                 )}

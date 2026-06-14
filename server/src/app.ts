@@ -4,7 +4,7 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
 import { API, type ProviderId, type RoleModelMap } from '@autonoe/shared';
 import { listProviders, listModels } from './providers.ts';
-import { setProviderKey, recordTrade, type TradeMeta } from './store.ts';
+import { setProviderKey, recordTrade, listTrades, type TradeMeta } from './store.ts';
 import { getRoleMap, setRoleMap } from './roles.ts';
 import { generateThesis, structureHumanThesis } from './agents/thesis.ts';
 import { runDebate } from './agents/debate.ts';
@@ -13,7 +13,7 @@ import { chatConversational, clearSession } from './agents/chatAgent.ts';
 import { askDebater, type DebaterRole } from './agents/debateFollowup.ts';
 import { extractIntake } from './agents/extract.ts';
 import { signPrice } from './oracle.ts';
-import { getHistory, getLeaderboard, invalidateHistoryCache } from './history.ts';
+import { getHistory, getLeaderboard, invalidateHistoryCache, isOnChain } from './history.ts';
 import { makeModel, type ChatModelLike, type ModelResolver } from './models.ts';
 import { resolveRole } from './roles.ts';
 import { sse } from './stream.ts';
@@ -328,11 +328,29 @@ export function createApp() {
             : {},
         asset: typeof b.asset === 'string' ? b.asset : '',
         txHash: typeof b.txHash === 'string' ? (b.txHash as `0x${string}`) : null,
+        commitment: b.commitment ?? null,
         createdAt: typeof b.createdAt === 'string' ? b.createdAt : new Date().toISOString(),
       };
       recordTrade(meta);
       invalidateHistoryCache(); // surface the new trade on History without the TTL wait
       res.json({ ok: true });
+    }),
+  );
+
+  // Commit-reveal: reveal the commitment for a trade tx so the client can
+  // recompute keccak256(payload) and confirm it matches the on-chain thesisHash.
+  app.get(
+    '/api/verify',
+    wrap(async (req, res) => {
+      const tx = typeof req.query.tx === 'string' ? req.query.tx.toLowerCase() : '';
+      if (!tx) throw httpError(400, 'tx query param required');
+      const meta = listTrades().find((t) => (t.txHash ?? '').toLowerCase() === tx);
+      if (!meta) {
+        res.json({ onChainHash: null, onChain: false, commitment: null });
+        return;
+      }
+      const onChain = await isOnChain(meta.thesisHash);
+      res.json({ onChainHash: meta.thesisHash, onChain, commitment: meta.commitment ?? null });
     }),
   );
 
