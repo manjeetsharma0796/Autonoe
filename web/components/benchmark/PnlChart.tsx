@@ -8,7 +8,7 @@
  * is never horizontally stretched - no preserveAspectRatio="none".
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import type { HistoryRecord } from "@autonoe/shared";
 
 const H = 200;
@@ -21,6 +21,20 @@ function formatShortDate(iso: string): string {
     return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(iso));
   } catch {
     return iso.slice(0, 10);
+  }
+}
+
+/** Full date + timestamp for the hover tooltip, e.g. "Jun 15, 2:00 AM". */
+function formatDateTime(iso: string): string {
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(iso));
+  } catch {
+    return iso;
   }
 }
 
@@ -41,6 +55,7 @@ function cumulative(records: HistoryRecord[]): { value: number; date: string }[]
 export function PnlChart({ records }: { records: HistoryRecord[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(760);
+  const [hovered, setHovered] = useState<number | null>(null);
 
   useEffect(() => {
     const el = ref.current;
@@ -129,6 +144,14 @@ export function PnlChart({ records }: { records: HistoryRecord[] }) {
 
   const gradientId = "pnl-area-grad";
 
+  const handleMove = (e: ReactMouseEvent<SVGSVGElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    if (rect.width === 0 || pts.length === 0) return;
+    const svgX = ((e.clientX - rect.left) / rect.width) * W;
+    const i = Math.round(((svgX - PAD.left) / Math.max(INNER_W, 1)) * Math.max(pts.length - 1, 1));
+    setHovered(Math.max(0, Math.min(pts.length - 1, i)));
+  };
+
   return (
     <div
       ref={ref}
@@ -168,8 +191,10 @@ export function PnlChart({ records }: { records: HistoryRecord[] }) {
 
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        style={{ width: "100%", height: H, display: "block" }}
+        style={{ width: "100%", height: H, display: "block", cursor: "crosshair" }}
         aria-label="Cumulative PnL over time"
+        onMouseMove={handleMove}
+        onMouseLeave={() => setHovered(null)}
       >
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -248,6 +273,52 @@ export function PnlChart({ records }: { records: HistoryRecord[] }) {
           stroke="rgba(255,255,255,.06)"
           strokeWidth="1"
         />
+
+        {hovered !== null && pts[hovered] && (() => {
+          const p = pts[hovered];
+          const boxW = 156;
+          const boxH = 46;
+          const tx = Math.min(Math.max(p.x - boxW / 2, 2), W - boxW - 2);
+          const ty = Math.max(p.y - boxH - 12, 2);
+          const valLine = `${p.value >= 0 ? "+" : ""}${p.value.toFixed(2)} mUSD`;
+          return (
+            <g>
+              <line
+                x1={p.x}
+                y1={PAD.top}
+                x2={p.x}
+                y2={H - PAD.bottom}
+                stroke="rgba(255,255,255,.22)"
+                strokeWidth="1"
+                strokeDasharray="3 3"
+              />
+              <circle cx={p.x} cy={p.y} r="4.5" fill={color} stroke="#0b0e14" strokeWidth="1.5" />
+              <rect
+                x={tx}
+                y={ty}
+                width={boxW}
+                height={boxH}
+                rx="7"
+                fill="rgba(12,17,28,.95)"
+                stroke="rgba(255,255,255,.14)"
+                strokeWidth="1"
+              />
+              <text x={tx + 11} y={ty + 18} fontSize="11" fill="var(--muted)" fontFamily="var(--mono)">
+                {formatDateTime(p.date)}
+              </text>
+              <text
+                x={tx + 11}
+                y={ty + 35}
+                fontSize="13"
+                fontWeight="700"
+                fill={color}
+                fontFamily="var(--mono)"
+              >
+                {valLine}
+              </text>
+            </g>
+          );
+        })()}
       </svg>
     </div>
   );
