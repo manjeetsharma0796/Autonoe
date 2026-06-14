@@ -296,6 +296,41 @@
   padding: 14px 18px;
   border-bottom: 1px solid var(--line2);
 }
+.tsearch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 12px;
+  flex: 1;
+  max-width: 240px;
+  cursor: text;
+  transition: border-color 0.15s ease;
+}
+.tsearch:focus-within {
+  border-color: var(--gold);
+}
+.tsearch svg {
+  width: 14px;
+  height: 14px;
+  color: var(--faint);
+  flex: none;
+}
+.tsearch input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--ink);
+  font-size: 13px;
+  font-family: var(--mono);
+  width: 100%;
+}
+.tsearch input::placeholder {
+  color: var(--faint);
+}
+
 .mhead h2 {
   font-family: var(--disp);
   font-weight: 600;
@@ -339,7 +374,7 @@
   border-top: 1px solid var(--line2);
   transition: background 0.2s;
 }
-.mrow.head {
+.mrow:global(.head) {
   border-top: none;
   color: var(--faint);
   font-family: var(--mono);
@@ -348,7 +383,7 @@
   text-transform: uppercase;
   user-select: none;
 }
-.mrow.head :global(.sortable) {
+.mrow:global(.head) :global(.sortable) {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -362,25 +397,25 @@
   text-transform: inherit;
   color: inherit;
 }
-.mrow.head :global(.sortable):hover,
-.mrow.head :global(.sortable.active) {
+.mrow:global(.head) :global(.sortable):hover,
+.mrow:global(.head) :global(.sortable.active) {
   color: var(--muted);
 }
-.mrow.head :global(.sortable) svg {
+.mrow:global(.head) :global(.sortable) svg {
   width: 11px;
   height: 11px;
   opacity: 0.6;
 }
-.mrow.row {
+.mrow:global(.row) {
   cursor: pointer;
 }
-.mrow.row:hover {
+.mrow:global(.row):hover {
   background: rgba(255, 255, 255, 0.025);
 }
 .mrow :global(.r) {
   text-align: right;
 }
-.mrow.head :global(.r) {
+.mrow:global(.head) :global(.r) {
   justify-self: end;
 }
 

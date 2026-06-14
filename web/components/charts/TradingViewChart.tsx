@@ -9,24 +9,29 @@ import { useEffect, useRef } from 'react';
 
 const TV_SYMBOL: Record<string, string> = {
   WMNT: 'BYBIT:MNTUSDT', // WMNT wraps MNT
-  BTC: 'BINANCE:BTCUSDT',
-  ETH: 'BINANCE:ETHUSDT',
-  SUI: 'BINANCE:SUIUSDT',
-  SOL: 'BINANCE:SOLUSDT',
+  BTC: 'BYBIT:BTCUSDT',
+  ETH: 'BYBIT:ETHUSDT',
+  SUI: 'BYBIT:SUIUSDT',
+  SOL: 'BYBIT:SOLUSDT',
 };
 
-function tvSymbol(asset: string): string {
-  return TV_SYMBOL[asset] ?? `BINANCE:${asset.toUpperCase()}USDT`;
+// Prices come from Bybit spot, so point the chart at Bybit too — Binance lacks
+// most of the long-tail meme tokens that show up in the markets list.
+function tvSymbol(asset: string, bybitSymbol?: string): string {
+  if (bybitSymbol) return `BYBIT:${bybitSymbol.toUpperCase()}`;
+  return TV_SYMBOL[asset] ?? `BYBIT:${asset.toUpperCase()}USDT`;
 }
 
 export interface TradingViewChartProps {
   asset: string;
+  /** Exact Bybit spot ticker (e.g. "PEPEUSDT"). Preferred over the asset map when present. */
+  bybitSymbol?: string;
   /** Pixel height (number) or any CSS height string ('100%', 'min(78vh,860px)'…). */
   height?: number | string;
   interval?: string; // '60', 'D', etc.
 }
 
-export function TradingViewChart({ asset, height = 460, interval = '60' }: TradingViewChartProps) {
+export function TradingViewChart({ asset, bybitSymbol, height = 460, interval = '60' }: TradingViewChartProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,7 +50,7 @@ export function TradingViewChart({ asset, height = 460, interval = '60' }: Tradi
     script.async = true;
     script.type = 'text/javascript';
     script.innerHTML = JSON.stringify({
-      symbol: tvSymbol(asset),
+      symbol: tvSymbol(asset, bybitSymbol),
       interval,
       theme: 'dark',
       style: '1',
@@ -64,7 +69,7 @@ export function TradingViewChart({ asset, height = 460, interval = '60' }: Tradi
     return () => {
       host.innerHTML = '';
     };
-  }, [asset, interval]);
+  }, [asset, bybitSymbol, interval]);
 
   return (
     <div

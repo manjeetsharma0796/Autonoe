@@ -173,6 +173,8 @@
     top: calc(100% + 8px);
     left: 0;
     min-width: 260px;
+    max-height: 380px;
+    overflow-y: auto;
     z-index: 30;
     border: 1px solid var(--line);
     border-radius: 14px;
@@ -189,6 +191,32 @@
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
+  }
+  .pairsearch {
+    width: 100%;
+    margin-bottom: 6px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--ink);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .pairsearch::placeholder {
+    color: var(--faint);
+  }
+  .pairsearch:focus {
+    border-color: var(--gold2);
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .pairempty {
+    padding: 14px 12px;
+    color: var(--faint);
+    font-size: 12px;
+    text-align: center;
   }
   .pairopt {
     display: flex;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+// query state removed — search now lives inside MarketsTable
 import type { TokenInfo } from "../../lib/api";
 import { MarketStats } from "./MarketStats";
 import { MoversStrip } from "./MoversStrip";
@@ -13,7 +14,6 @@ import { MarketsTable } from "./MarketsTable";
  *   and MoversStrip (gainers/losers).
  */
 export function MarketsShell() {
-  const [query, setQuery] = useState("");
   const [tokens, setTokens] = useState<TokenInfo[]>([]);
 
   const handleTokensLoaded = useCallback((t: TokenInfo[]) => {
@@ -22,13 +22,9 @@ export function MarketsShell() {
 
   return (
     <>
-      <MarketStats tokens={tokens} query={query} onQueryChange={setQuery} />
+      <MarketStats tokens={tokens} />
       <MoversStrip tokens={tokens} />
-      <MarketsTable
-        query={query}
-        onQueryChange={setQuery}
-        onTokensLoaded={handleTokensLoaded}
-      />
+      <MarketsTable onTokensLoaded={handleTokensLoaded} />
     </>
   );
 }

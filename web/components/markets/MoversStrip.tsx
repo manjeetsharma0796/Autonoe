@@ -7,6 +7,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import styles from "./markets.module.css";
 import type { TokenInfo } from "../../lib/api";
+import { formatPrice } from "../../lib/format";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -46,14 +47,14 @@ function Card({
   return (
     <Link
       href={`/trade?pair=${slug}`}
-      className={`${styles.gcard} ${styles.reveal}`}
+      className={styles.gcard}
     >
       <span className={`b ${tokenBadgeClass(token.symbol)}`}>
         {tokenGlyph(token.symbol)}
       </span>
       <div className="meta">
         <div className="sname">mUSD/{token.symbol}</div>
-        <div className="sp">{token.price.toLocaleString("en-US", { maximumFractionDigits: 4 })} USDT</div>
+        <div className="sp">{formatPrice(token.price)} USDT</div>
       </div>
       <div className={`chg ${direction}`}>
         {sign}{pct.toFixed(2)}%
@@ -76,24 +77,16 @@ export function MoversStrip({ tokens }: MoversStripProps) {
 
   useGSAP(
     () => {
-      const reduce = window.matchMedia(
-        "(prefers-reduced-motion: reduce)",
-      ).matches;
+      const el = root.current;
+      if (!el || gainers.length + losers.length === 0) return;
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (reduce) {
-        gsap.set(`.${styles.reveal}`, { opacity: 1, y: 0 });
+        gsap.set(el, { opacity: 1, y: 0 });
         return;
       }
-      gsap.utils.toArray<HTMLElement>(`.${styles.reveal}`).forEach((el) => {
-        gsap.to(el, {
-          opacity: 1,
-          y: 0,
-          duration: 0.9,
-          ease: "power3.out",
-          scrollTrigger: { trigger: el, start: "top 90%" },
-        });
-      });
+      gsap.fromTo(el, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, ease: "power3.out" });
     },
-    { scope: root },
+    { scope: root, dependencies: [gainers.length, losers.length] },
   );
 
   if (tokens.length === 0) return null;
@@ -102,7 +95,7 @@ export function MoversStrip({ tokens }: MoversStripProps) {
     <div ref={root} className={styles.stripwrap}>
       {gainers.length > 0 && (
         <>
-          <div className={`${styles.striphead} ${styles.gain} ${styles.reveal}`}>
+          <div className={`${styles.striphead} ${styles.gain}`}>
             <span className="swatch" /> Top gainers · 24h
           </div>
           <div className={styles.strip}>
@@ -116,7 +109,7 @@ export function MoversStrip({ tokens }: MoversStripProps) {
       {losers.length > 0 && (
         <>
           <div
-            className={`${styles.striphead} ${styles.lose} ${styles.reveal}`}
+            className={`${styles.striphead} ${styles.lose}`}
             style={{ marginTop: 26 }}
           >
             <span className="swatch" /> Top losers · 24h

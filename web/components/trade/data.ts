@@ -5,6 +5,8 @@ export type Pair = {
   sym: string;
   badge: string;
   sub: string;
+  /** Bybit spot ticker (e.g. "MNTUSDT") used to point the TradingView chart at the right feed. */
+  bybitSymbol?: string;
   /** display price string */
   px: string;
   /** numeric price used for swap estimate (mUSD per 1 unit of asset) */
@@ -20,6 +22,7 @@ export const PAIRS: Pair[] = [
     sym: "WMNT",
     badge: "W",
     sub: "Wrapped Mantle",
+    bybitSymbol: "MNTUSDT",
     px: "1.2843",
     pxNum: 1.2843,
     ch: "4.21%",
@@ -30,6 +33,7 @@ export const PAIRS: Pair[] = [
     sym: "BTC",
     badge: "₿",
     sub: "Test Bitcoin",
+    bybitSymbol: "BTCUSDT",
     px: "64,210",
     pxNum: 64210,
     ch: "1.08%",
@@ -40,6 +44,7 @@ export const PAIRS: Pair[] = [
     sym: "ETH",
     badge: "Ξ",
     sub: "Test Ether",
+    bybitSymbol: "ETHUSDT",
     px: "3,488",
     pxNum: 3488,
     ch: "2.74%",

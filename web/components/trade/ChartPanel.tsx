@@ -38,7 +38,11 @@ export function ChartPanel({
 
       <div className="pbody chart-pbody">
         <div className="chartshell" style={{ height: CHART_HEIGHT }}>
-          <TradingViewChart asset={pair.sym} height="100%" />
+          <TradingViewChart
+            asset={pair.sym}
+            bybitSymbol={pair.bybitSymbol}
+            height="100%"
+          />
         </div>
 
         <div className="stat-strip">

@@ -7,7 +7,10 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import styles from "./markets.module.css";
 import { getSymbols, type TokenInfo } from "../../lib/api";
-import { SortIcon, StarIcon } from "./icons";
+import { formatPrice } from "../../lib/format";
+import { SearchIcon, SortIcon, StarIcon } from "./icons";
+
+const FAVORITES_KEY = "autonoe.favorites";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
@@ -21,13 +24,6 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "gainers", label: "Gainers" },
   { key: "losers", label: "Losers" },
 ];
-
-/** Format a USD price to a readable string. */
-function fmtPrice(n: number): string {
-  if (n >= 1_000) return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
-  if (n >= 1) return n.toFixed(4);
-  return n.toPrecision(4);
-}
 
 /** Format a volume number to compact string, e.g. "$1.23M". */
 function fmtVolume(n: number): string {
@@ -55,31 +51,33 @@ function glyph(symbol: string): string {
 
 // ── hook ─────────────────────────────────────────────────────────────────────
 
-function useSymbols(q: string) {
+function useSymbols() {
   const [tokens, setTokens] = useState<TokenInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetch = useCallback(() => {
-    setLoading(true);
-    setError(null);
-    getSymbols(q || undefined)
+  // Stale-while-revalidate: `loading` is true only until the FIRST fetch
+  // resolves. Background polls just swap `tokens` in place — the row key is the
+  // stable symbol, so React updates the price/change cells without remounting,
+  // and the table never blanks.
+  const refresh = useCallback(() => {
+    getSymbols(undefined)
       .then((data) => {
         setTokens(data);
+        setError(null);
         setLoading(false);
       })
       .catch((err: Error) => {
         setError(err.message ?? "Failed to load markets");
         setLoading(false);
       });
-  }, [q]);
+  }, []);
 
   useEffect(() => {
-    fetch();
-    // poll every 15 s
-    const id = setInterval(fetch, 15_000);
+    refresh();
+    const id = setInterval(refresh, 15_000);
     return () => clearInterval(id);
-  }, [fetch]);
+  }, [refresh]);
 
   return { tokens, loading, error };
 }
@@ -87,15 +85,13 @@ function useSymbols(q: string) {
 // ── component ─────────────────────────────────────────────────────────────────
 
 interface MarketsTableProps {
-  /** Search query controlled externally (from MarketStats search input). */
-  query: string;
-  onQueryChange: (q: string) => void;
-  /** Called with the live token list so MarketStats can compute its band. */
   onTokensLoaded?: (tokens: TokenInfo[]) => void;
 }
 
-export function MarketsTable({ query, onQueryChange, onTokensLoaded }: MarketsTableProps) {
+export function MarketsTable({ onTokensLoaded }: MarketsTableProps) {
   const root = useRef<HTMLDivElement>(null);
+  const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<TokenInfo[] | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [favorites, setFavorites] = useState<Set<string>>(
     () => new Set(["WMNT"]),
@@ -103,30 +99,75 @@ export function MarketsTable({ query, onQueryChange, onTokensLoaded }: MarketsTa
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
-  const { tokens, loading, error } = useSymbols(query);
+  const { tokens, loading, error } = useSymbols();
 
   // bubble token list up to MarketStats
   useEffect(() => {
     if (tokens.length > 0) onTokensLoaded?.(tokens);
   }, [tokens, onTokensLoaded]);
 
+  // P2 — favorites persistence. Read once on mount (read-in-effect avoids an
+  // SSR hydration mismatch); skip the first write so we never clobber the
+  // stored set before it's loaded.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(FAVORITES_KEY);
+      if (raw) {
+        const arr = JSON.parse(raw) as unknown;
+        if (Array.isArray(arr)) setFavorites(new Set(arr as string[]));
+      }
+    } catch {
+      // ignore malformed/unavailable storage
+    }
+  }, []);
+
+  const firstFavWrite = useRef(true);
+  useEffect(() => {
+    if (firstFavWrite.current) {
+      firstFavWrite.current = false;
+      return;
+    }
+    try {
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favorites]));
+    } catch {
+      // ignore unavailable storage
+    }
+  }, [favorites]);
+
+  // P5 — realtime search backed by the server, which can match ANY token (not
+  // just the top-80 loaded for the table). Debounced; prior results stay
+  // visible while a new query is in flight so the list never blanks.
+  useEffect(() => {
+    const q = search.trim();
+    if (!q) {
+      setSearchResults(null);
+      return;
+    }
+    const id = setTimeout(() => {
+      getSymbols(q, 100)
+        .then(setSearchResults)
+        .catch(() => {
+          // keep whatever is currently shown
+        });
+    }, 250);
+    return () => clearTimeout(id);
+  }, [search]);
+
   useGSAP(
     () => {
-      const reduce = window.matchMedia(
-        "(prefers-reduced-motion: reduce)",
-      ).matches;
+      const el = root.current;
+      if (!el) return;
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (reduce) {
-        gsap.set(`.${styles.reveal}`, { opacity: 1, y: 0 });
+        gsap.set(el, { opacity: 1, y: 0 });
         return;
       }
-      gsap.utils.toArray<HTMLElement>(`.${styles.reveal}`).forEach((el) => {
-        gsap.to(el, {
-          opacity: 1,
-          y: 0,
-          duration: 0.9,
-          ease: "power3.out",
-          scrollTrigger: { trigger: el, start: "top 90%" },
-        });
+      gsap.to(el, {
+        opacity: 1,
+        y: 0,
+        duration: 0.9,
+        ease: "power3.out",
+        scrollTrigger: { trigger: el, start: "top 90%" },
       });
     },
     { scope: root },
@@ -151,7 +192,12 @@ export function MarketsTable({ query, onQueryChange, onTokensLoaded }: MarketsTa
   };
 
   const rows = useMemo(() => {
-    let list = tokens.filter((t) => {
+    const q = search.trim().toUpperCase();
+    // When searching, prefer the server results (they can include long-tail
+    // tokens outside the top-80); fall back to the loaded set until they land.
+    const source = q ? (searchResults ?? tokens) : tokens;
+    let list = source.filter((t) => {
+      if (q && !t.symbol.includes(q)) return false;
       switch (filter) {
         case "favorites":
           return favorites.has(t.symbol);
@@ -180,12 +226,21 @@ export function MarketsTable({ query, onQueryChange, onTokensLoaded }: MarketsTa
       });
     }
     return list;
-  }, [tokens, filter, favorites, sortKey, sortDir]);
+  }, [tokens, searchResults, search, filter, favorites, sortKey, sortDir]);
 
   return (
     <div ref={root} className={`${styles.mk} ${styles.reveal}`}>
       <div className={styles.mhead}>
         <h2>All markets</h2>
+        <label className={styles.tsearch} aria-label="Search by symbol">
+          <SearchIcon />
+          <input
+            type="text"
+            placeholder="Search symbol…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </label>
         <div className={styles.filters}>
           {FILTERS.map((f) => (
             <button
@@ -229,32 +284,30 @@ export function MarketsTable({ query, onQueryChange, onTokensLoaded }: MarketsTa
         <div className="r sparkcell">On-chain</div>
       </div>
 
-      {loading && (
+      {loading && tokens.length === 0 && (
         <div className={styles.empty}>Loading markets…</div>
       )}
 
-      {!loading && error && (
+      {error && tokens.length === 0 && (
         <div className={styles.empty}>
           Could not load markets: {error}
         </div>
       )}
 
-      {!loading && !error && rows.length === 0 && (
+      {tokens.length > 0 && rows.length === 0 && (
         <div className={styles.empty}>
-          {query ? `No markets match "${query}".` : "No markets match this filter."}
+          {search ? `No markets match "${search.toUpperCase()}".` : "No markets match this filter."}
         </div>
       )}
 
-      {!loading && !error &&
-        rows.map((t) => (
-          <MarketRow
-            key={t.symbol}
-            token={t}
-            favorite={favorites.has(t.symbol)}
-            onToggleFavorite={() => toggleFavorite(t.symbol)}
-          />
-        ))
-      }
+      {rows.map((t) => (
+        <MarketRow
+          key={t.symbol}
+          token={t}
+          favorite={favorites.has(t.symbol)}
+          onToggleFavorite={() => toggleFavorite(t.symbol)}
+        />
+      ))}
 
       <div className={styles.mfoot}>
         <span className="ping" /> Live prices from Bybit spot ·
@@ -332,7 +385,7 @@ function MarketRow({
         </div>
       </div>
 
-      <div className={`${styles.px} r`}>{fmtPrice(token.price)}</div>
+      <div className={`${styles.px} r`}>{formatPrice(token.price)}</div>
       <div className={`${styles.pct} ${up ? "up" : "down"} r pctcell`}>
         {up ? "+" : ""}
         {token.change24hPct.toFixed(2)}%

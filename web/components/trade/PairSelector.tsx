@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Pair } from "./data";
+import { getSymbols, type TokenInfo } from "@/lib/api";
+import { formatPrice } from "@/lib/format";
 
 function Caret() {
   return (
@@ -17,6 +19,29 @@ function Caret() {
   );
 }
 
+/** A row in the dropdown — derived from either a live Pair or a search hit. */
+type Opt = {
+  sym: string;
+  badge: string;
+  sub: string;
+  px: string;
+  dir: "up" | "down";
+};
+
+function pairToOpt(p: Pair): Opt {
+  return { sym: p.sym, badge: p.badge, sub: p.sub, px: p.px, dir: p.dir };
+}
+
+function tokenToOpt(t: TokenInfo): Opt {
+  return {
+    sym: t.symbol,
+    badge: t.symbol[0],
+    sub: t.bybitSymbol,
+    px: formatPrice(t.price),
+    dir: t.change24hPct >= 0 ? "up" : "down",
+  };
+}
+
 export function PairSelector({
   pair,
   pairs,
@@ -28,6 +53,8 @@ export function PairSelector({
   onSelect: (sym: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<TokenInfo[] | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,6 +67,35 @@ export function PairSelector({
     document.addEventListener("click", onDoc);
     return () => document.removeEventListener("click", onDoc);
   }, [open]);
+
+  // Debounced server search so ANY listed token is reachable, not just the
+  // top-80 passed in `pairs`.
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) {
+      setResults(null);
+      return;
+    }
+    const id = setTimeout(() => {
+      getSymbols(q, 30)
+        .then(setResults)
+        .catch(() => {
+          // keep whatever is shown
+        });
+    }, 250);
+    return () => clearTimeout(id);
+  }, [query]);
+
+  const close = () => {
+    setOpen(false);
+    setQuery("");
+    setResults(null);
+  };
+
+  const searching = query.trim().length > 0;
+  const opts: Opt[] = searching
+    ? (results ?? []).map(tokenToOpt)
+    : (pairs.length ? pairs : [pair]).map(pairToOpt);
 
   return (
     <div className={`pairsel ${open ? "open" : ""}`} ref={ref}>
@@ -61,7 +117,25 @@ export function PairSelector({
       </button>
 
       <div className="pairmenu" role="listbox">
-        {(pairs.length ? pairs : [pair]).map((p) => (
+        <input
+          className="pairsearch"
+          type="text"
+          placeholder="Search any token…"
+          aria-label="Search tokens"
+          value={query}
+          onClick={(e) => e.stopPropagation()}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+
+        {searching && opts.length === 0 && (
+          <div className="pairempty">
+            {results === null
+              ? "Searching…"
+              : `No tokens match "${query.trim().toUpperCase()}".`}
+          </div>
+        )}
+
+        {opts.map((p) => (
           <button
             type="button"
             role="option"
@@ -70,7 +144,7 @@ export function PairSelector({
             key={p.sym}
             onClick={() => {
               onSelect(p.sym);
-              setOpen(false);
+              close();
             }}
           >
             <span className="b">{p.badge}</span>

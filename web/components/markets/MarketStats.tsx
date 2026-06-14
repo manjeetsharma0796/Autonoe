@@ -5,13 +5,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 import styles from "./markets.module.css";
-import {
-  BoltIcon,
-  GridIcon,
-  RowsIcon,
-  SearchIcon,
-  TrendIcon,
-} from "./icons";
+import { BoltIcon, GridIcon, RowsIcon, TrendIcon } from "./icons";
 import type { TokenInfo } from "../../lib/api";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -23,8 +17,6 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
  */
 interface MarketStatsProps {
   tokens: TokenInfo[];
-  query: string;
-  onQueryChange: (q: string) => void;
 }
 
 function fmtCompact(n: number): string {
@@ -34,7 +26,7 @@ function fmtCompact(n: number): string {
   return n.toFixed(0);
 }
 
-export function MarketStats({ tokens, query, onQueryChange }: MarketStatsProps) {
+export function MarketStats({ tokens }: MarketStatsProps) {
   const root = useRef<HTMLDivElement>(null);
 
   // Derived stats from live token list
@@ -129,15 +121,6 @@ export function MarketStats({ tokens, query, onQueryChange }: MarketStatsProps) 
           </p>
         </div>
 
-        <label className={`${styles.seek} ${styles.reveal}`} aria-label="Search markets">
-          <SearchIcon />
-          <input
-            type="text"
-            placeholder="Search a market…"
-            value={query}
-            onChange={(e) => onQueryChange(e.target.value)}
-          />
-        </label>
       </div>
 
       <div className={`${styles.statband} ${styles.reveal}`}>
