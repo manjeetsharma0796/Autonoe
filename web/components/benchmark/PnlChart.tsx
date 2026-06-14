@@ -4,102 +4,58 @@
  * Cumulative PnL-over-time SVG area chart.
  * Sorts HistoryRecord[] by createdAt, accumulates pnlMUSD (null → 0),
  * and renders a line/area chart with gain=green / loss=red colouring.
- * No external dependencies - custom SVG only, matching the markets sparkline pattern.
+ * Renders at the measured pixel width (viewBox === container width) so text
+ * is never horizontally stretched - no preserveAspectRatio="none".
  */
 
+import { useEffect, useRef, useState } from "react";
 import type { HistoryRecord } from "@autonoe/shared";
 
-const W = 800;
 const H = 200;
 const PAD = { top: 16, right: 16, bottom: 36, left: 56 };
-const INNER_W = W - PAD.left - PAD.right;
-const INNER_H = H - PAD.top - PAD.bottom;
-
 const GREEN = "#3FE0A6";
 const RED = "#FF6B6B";
 
-interface CumulativePoint {
-  x: number; // chart coordinate
-  y: number; // chart coordinate
-  value: number; // raw mUSD value
-  date: string; // formatted label
-}
-
 function formatShortDate(iso: string): string {
   try {
-    return new Intl.DateTimeFormat(undefined, {
-      month: "short",
-      day: "numeric",
-    }).format(new Date(iso));
+    return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(iso));
   } catch {
     return iso.slice(0, 10);
   }
 }
 
-function buildPoints(records: HistoryRecord[]): CumulativePoint[] {
+/** Running cumulative PnL series, oldest → newest. */
+function cumulative(records: HistoryRecord[]): { value: number; date: string }[] {
   const sorted = [...records].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
-
-  const cumulative: { value: number; date: string }[] = [];
+  const out: { value: number; date: string }[] = [];
   let running = 0;
   for (const rec of sorted) {
     running += rec.pnlMUSD ?? 0;
-    cumulative.push({ value: running, date: rec.createdAt });
+    out.push({ value: running, date: rec.createdAt });
   }
-
-  if (cumulative.length === 0) return [];
-
-  const values = cumulative.map((p) => p.value);
-  const minV = Math.min(0, ...values);
-  const maxV = Math.max(0, ...values);
-  const rangeV = maxV - minV || 1;
-
-  return cumulative.map((p, i) => ({
-    x: PAD.left + (i / Math.max(cumulative.length - 1, 1)) * INNER_W,
-    y: PAD.top + (1 - (p.value - minV) / rangeV) * INNER_H,
-    value: p.value,
-    date: p.date,
-  }));
-}
-
-function pointsToPolyline(pts: CumulativePoint[]): string {
-  return pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
-}
-
-function buildFillPath(pts: CumulativePoint[], baselineY: number): string {
-  if (pts.length === 0) return "";
-  const line = pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" L ");
-  const last = pts[pts.length - 1];
-  const first = pts[0];
-  return `M ${first.x.toFixed(1)},${baselineY.toFixed(1)} L ${line} L ${last.x.toFixed(1)},${baselineY.toFixed(1)} Z`;
-}
-
-function yAxisLabels(records: HistoryRecord[]): { y: number; label: string }[] {
-  const sorted = [...records].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-  );
-  const values: number[] = [];
-  let running = 0;
-  for (const rec of sorted) {
-    running += rec.pnlMUSD ?? 0;
-    values.push(running);
-  }
-  const minV = Math.min(0, ...values);
-  const maxV = Math.max(0, ...values);
-  const rangeV = maxV - minV || 1;
-
-  const ticks = [minV, (minV + maxV) / 2, maxV];
-  return ticks.map((v) => ({
-    y: PAD.top + (1 - (v - minV) / rangeV) * INNER_H,
-    label: (v >= 0 ? "+" : "") + v.toFixed(1),
-  }));
+  return out;
 }
 
 export function PnlChart({ records }: { records: HistoryRecord[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(760);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => setW(Math.max(320, Math.round(el.clientWidth)));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   if (records.length === 0) {
     return (
       <div
+        ref={ref}
         style={{
           border: "1px solid rgba(255,255,255,.08)",
           borderRadius: 16,
@@ -117,47 +73,65 @@ export function PnlChart({ records }: { records: HistoryRecord[] }) {
     );
   }
 
-  const pts = buildPoints(records);
+  const W = w;
+  const INNER_W = W - PAD.left - PAD.right;
+  const INNER_H = H - PAD.top - PAD.bottom;
+
+  const cum = cumulative(records);
+  const values = cum.map((p) => p.value);
+  const minV = Math.min(0, ...values);
+  const maxV = Math.max(0, ...values);
+  const rangeV = maxV - minV || 1;
+
+  const pts = cum.map((p, i) => ({
+    x: PAD.left + (i / Math.max(cum.length - 1, 1)) * INNER_W,
+    y: PAD.top + (1 - (p.value - minV) / rangeV) * INNER_H,
+    value: p.value,
+    date: p.date,
+  }));
+
   const lastValue = pts.length > 0 ? pts[pts.length - 1].value : 0;
   const color = lastValue >= 0 ? GREEN : RED;
-
-  // Zero-line Y coordinate
-  const sortedVals: number[] = [];
-  let running = 0;
-  for (const rec of [...records].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-  )) {
-    running += rec.pnlMUSD ?? 0;
-    sortedVals.push(running);
-  }
-  const minV = Math.min(0, ...sortedVals);
-  const maxV = Math.max(0, ...sortedVals);
-  const rangeV = maxV - minV || 1;
   const zeroY = PAD.top + (1 - (0 - minV) / rangeV) * INNER_H;
 
-  const polyline = pointsToPolyline(pts);
-  const fillPath = buildFillPath(pts, zeroY);
-  const axisLabels = yAxisLabels(records);
+  const polyline = pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const fillPath =
+    pts.length > 0
+      ? `M ${pts[0].x.toFixed(1)},${zeroY.toFixed(1)} L ${pts
+          .map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+          .join(" L ")} L ${pts[pts.length - 1].x.toFixed(1)},${zeroY.toFixed(1)} Z`
+      : "";
 
-  // X-axis date labels - up to 5 evenly spaced
-  const xLabels: { x: number; label: string }[] = [];
+  const ticks = [minV, (minV + maxV) / 2, maxV];
+  const axisLabels = ticks.map((v) => ({
+    y: PAD.top + (1 - (v - minV) / rangeV) * INNER_H,
+    label: (v >= 0 ? "+" : "") + v.toFixed(1),
+  }));
+
+  // Up to 5 evenly spaced x labels, then drop consecutive duplicates (e.g. a
+  // run of same-day trades) so the axis doesn't read "Jun 6 Jun 6 Jun 6 …".
+  const rawX: { x: number; label: string }[] = [];
   if (pts.length === 1) {
-    xLabels.push({ x: pts[0].x, label: formatShortDate(pts[0].date) });
-  } else if (pts.length > 1) {
+    rawX.push({ x: pts[0].x, label: formatShortDate(pts[0].date) });
+  } else {
     const step = Math.max(1, Math.floor((pts.length - 1) / 4));
     for (let i = 0; i < pts.length; i += step) {
-      xLabels.push({ x: pts[i].x, label: formatShortDate(pts[i].date) });
+      rawX.push({ x: pts[i].x, label: formatShortDate(pts[i].date) });
     }
     const last = pts[pts.length - 1];
-    if (xLabels[xLabels.length - 1].x !== last.x) {
-      xLabels.push({ x: last.x, label: formatShortDate(last.date) });
+    if (rawX[rawX.length - 1].x !== last.x) {
+      rawX.push({ x: last.x, label: formatShortDate(last.date) });
     }
   }
+  const xLabels = rawX.filter(
+    (l, i) => i === 0 || i === rawX.length - 1 || l.label !== rawX[i - 1].label,
+  );
 
   const gradientId = "pnl-area-grad";
 
   return (
     <div
+      ref={ref}
       style={{
         border: "1px solid rgba(255,255,255,.08)",
         borderRadius: 16,
@@ -186,14 +160,7 @@ export function PnlChart({ records }: { records: HistoryRecord[] }) {
         >
           Cumulative PnL
         </span>
-        <span
-          style={{
-            fontFamily: "var(--mono)",
-            fontWeight: 700,
-            fontSize: 15,
-            color,
-          }}
-        >
+        <span style={{ fontFamily: "var(--mono)", fontWeight: 700, fontSize: 15, color }}>
           {lastValue >= 0 ? "+" : ""}
           {lastValue.toFixed(2)} mUSD
         </span>
@@ -201,8 +168,7 @@ export function PnlChart({ records }: { records: HistoryRecord[] }) {
 
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        preserveAspectRatio="none"
-        style={{ width: "100%", height: 200, display: "block" }}
+        style={{ width: "100%", height: H, display: "block" }}
         aria-label="Cumulative PnL over time"
       >
         <defs>
@@ -212,7 +178,6 @@ export function PnlChart({ records }: { records: HistoryRecord[] }) {
           </linearGradient>
         </defs>
 
-        {/* Zero baseline */}
         <line
           x1={PAD.left}
           y1={zeroY}
@@ -223,7 +188,6 @@ export function PnlChart({ records }: { records: HistoryRecord[] }) {
           strokeDasharray="4 4"
         />
 
-        {/* Y-axis grid lines */}
         {axisLabels.map((tick, i) => (
           <g key={i}>
             <line
@@ -247,10 +211,8 @@ export function PnlChart({ records }: { records: HistoryRecord[] }) {
           </g>
         ))}
 
-        {/* Area fill */}
         <path d={fillPath} fill={`url(#${gradientId})`} />
 
-        {/* Line */}
         <polyline
           points={polyline}
           fill="none"
@@ -260,12 +222,10 @@ export function PnlChart({ records }: { records: HistoryRecord[] }) {
           strokeLinecap="round"
         />
 
-        {/* Data point dots */}
         {pts.map((p, i) => (
           <circle key={i} cx={p.x} cy={p.y} r="3" fill={color} opacity="0.7" />
         ))}
 
-        {/* X-axis labels */}
         {xLabels.map((lbl, i) => (
           <text
             key={i}
@@ -280,7 +240,6 @@ export function PnlChart({ records }: { records: HistoryRecord[] }) {
           </text>
         ))}
 
-        {/* Y-axis left border */}
         <line
           x1={PAD.left}
           y1={PAD.top}
