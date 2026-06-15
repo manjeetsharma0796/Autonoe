@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "cd .. && bun run build:packages && cd web && next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "echo \"(no web tests yet)\""
