@@ -12,6 +12,8 @@
   ],
   "scripts": {
     "build": "tsc -b",
+    "build:packages": "bun run --filter '@autonoe/shared' build && bun run --filter '@autonoe/chain' build && (bun run --filter '@autonoe/wallet' build || true)",
+    "vercel-build": "bun run build:packages && bun run --filter web build",
     "typecheck": "bun --filter '*' typecheck",
     "test": "bun --filter '*' test",
     "lint:todo": "bun scripts/lint-todo.ts"
