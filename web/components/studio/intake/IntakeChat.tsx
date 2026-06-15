@@ -477,21 +477,42 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
   >([]);
 
   const endRef = useRef<HTMLDivElement>(null);
+  const chatRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   // Mirrors `answers` so handlers/chart-onDone can read the latest synchronously.
   const answersRef = useRef<Answers>({});
 
+  // Anchor the NEWEST user message just under the nav and let the assistant's
+  // reply stream into the viewport below it (ChatGPT-style). Scrolling to
+  // document.scrollHeight overshot: `.wrap` has a `min-height: 100vh` flex
+  // filler below the short chat, so "document bottom" parked the reply off the
+  // top of the screen behind the nav. Anchoring is inherently viewport-relative
+  // - it scrolls exactly as far as the device height needs, no more. setTimeout,
+  // not rAF, so it still fires if the tab is briefly hidden; runs post-commit.
   const scrollDown = useCallback(() => {
-    // Scroll the WINDOW to the bottom so the newest message + the streaming reply
-    // come into view. (The old endRef.scrollIntoView({block:"end"}) could scroll
-    // UP toward the hero on a tall page - "back to home".) setTimeout, not rAF,
-    // so it still fires if the tab is briefly hidden (rAF is paused while hidden);
-    // it runs after React commits the new turns.
     setTimeout(() => {
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const doc = document.documentElement;
-      window.scrollTo({ top: doc.scrollHeight, behavior: reduce ? "auto" : "smooth" });
+      const users = chatRef.current?.querySelectorAll<HTMLElement>('[data-role="user"]');
+      const last = users && users.length ? users[users.length - 1] : null;
+      if (last) {
+        last.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      } else {
+        // No user turn yet (e.g. the first scripted question) - reveal the tail.
+        endRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "end" });
+      }
     }, 0);
+  }, []);
+
+  // Called on every streamed token. Only follows the growing reply when the
+  // reader is already near the bottom - never yanks them back up if they
+  // scrolled away to re-read, and never targets the min-height filler.
+  const followStream = useCallback(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const doc = document.documentElement;
+    const distanceToBottom = doc.scrollHeight - window.scrollY - window.innerHeight;
+    if (distanceToBottom < 160) {
+      endRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "end" });
+    }
   }, []);
 
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -907,7 +928,7 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
         <span className={styles.modelhint}>answers your free-chat</span>
       </div>
 
-      <div className={styles.chat}>
+      <div className={styles.chat} ref={chatRef}>
         {mode === "chat" && (
           <>
             {chatTurns.length === 0 && (
@@ -926,7 +947,7 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
             {chatTurns.map((t, i) => {
               if (t.kind === "cu") {
                 return (
-                  <div className={styles.uturn} key={i}>
+                  <div className={styles.uturn} key={i} data-role="user">
                     <div className={styles.ubub}>{t.text}</div>
                   </div>
                 );
@@ -941,7 +962,7 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
                   message={t.message}
                   asset={null}
                   tvSymbol={t.tvSymbol}
-                  onStream={scrollDown}
+                  onStream={followStream}
                   endpoint="/api/chat/stream"
                   compact={aiIndex > 0}
                   onSuggestions={(s) => setSuggestions(i, s)}
@@ -956,7 +977,7 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
           turns.map((turn, i) => {
             if (turn.kind === "u") {
             return (
-              <div className={styles.uturn} key={i}>
+              <div className={styles.uturn} key={i} data-role="user">
                 <div className={styles.ubub}>{turn.text}</div>
               </div>
             );
@@ -966,7 +987,7 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
           }
           if (turn.kind === "ai-reply") {
             return (
-              <AiReplyTurn key={i} prompt={turn.prompt} asset={turn.asset} tvSymbol={turn.tvSymbol} onStream={scrollDown} />
+              <AiReplyTurn key={i} prompt={turn.prompt} asset={turn.asset} tvSymbol={turn.tvSymbol} onStream={followStream} />
             );
           }
           if (turn.kind === "brief") {
@@ -1018,7 +1039,10 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
       </div>
 
       {/* persistent free-chat composer - ask anything; streams an assistant reply.
-          Independent of the scripted questions and the brief hand-off. */}
+          Independent of the scripted questions and the brief hand-off. The dock
+          is sticky (in flow) so it pins to the viewport bottom while scrolling
+          yet never overlaps the footer below it. */}
+      <div className={styles.composerDock}>
       <div className={styles.composer}>
         <textarea
           className={styles.composerInput}
@@ -1052,6 +1076,7 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
         {mode === "chat"
           ? "Normal conversation · nothing is captured as a trade · switch to Guided to scope one"
           : "Tap a chip to answer · or type your answer here · end with “?” to ask the assistant anything"}
+      </div>
       </div>
     </section>
   );

@@ -992,7 +992,8 @@ textarea.inp {
 footer.foot {
   border-top: 1px solid var(--line2);
   padding: 40px 0;
-  margin-top: 90px;
+  /* small gap so the sticky composer dock rests just above the footer */
+  margin-top: 20px;
   position: relative;
   z-index: 2;
   display: flex;
