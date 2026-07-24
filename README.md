@@ -1,5 +1,5 @@
 <div align="center">
-
+ 
 # 🜂 Autonoe
 
 ### Verifiable AI trading on Mantle — cross-examined decisions, executed on-chain, provable forever.
