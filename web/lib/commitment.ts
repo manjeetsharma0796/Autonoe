@@ -44,6 +44,16 @@ export function hashCommitment(c: Commitment): `0x${string}` {
   return keccak256(stringToHex(commitmentString(c)));
 }
 
+/** Deterministic JSON of any value - the same canonicalization used for commitments. */
+export function canonicalJson(value: unknown): string {
+  return canonical(value);
+}
+
+/** keccak256 of the canonical JSON of any value - a general-purpose commit seal. */
+export function hashSeal(value: unknown): `0x${string}` {
+  return keccak256(stringToHex(canonicalJson(value)));
+}
+
 export interface ExecParams {
   optionRef: string;
   asset: string;
