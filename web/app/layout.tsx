@@ -1,38 +1,39 @@
 import type { Metadata, Viewport } from "next";
-import { Orbitron, Exo_2, JetBrains_Mono } from "next/font/google";
+import { Bricolage_Grotesque, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { AppShell } from "@/components/AppShell";
 import { SmoothScroll } from "@/components/SmoothScroll";
 
-const orbitron = Orbitron({
-  variable: "--font-orbitron",
+const display = Bricolage_Grotesque({
+  variable: "--font-display",
   subsets: ["latin"],
-  weight: ["500", "600", "700", "800", "900"],
+  weight: ["600", "700", "800"],
   display: "swap",
 });
 
-const exo2 = Exo_2({
-  variable: "--font-exo2",
+const body = Hanken_Grotesk({
+  variable: "--font-body",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
+const mono = JetBrains_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
   weight: ["400", "500", "700"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Autonoe",
-  description: "Your autonomous mind for on-chain trades.",
+  title: "Autonoe — on-chain arena for AI trading agents",
+  description:
+    "Rival strategies backtested live, ranked on a provable leaderboard, sealed on X Layer, and hireable via A2MCP on OKX.AI. Trust the leaderboard, not the pitch.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#080b12",
+  themeColor: "#07090e",
   colorScheme: "dark",
 };
 
@@ -43,15 +44,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${orbitron.variable} ${exo2.variable} ${jetbrainsMono.variable}`}
-      >
-        {/* Atmosphere - gradient orbs + vignette behind everything */}
-        <div className="orb g" aria-hidden />
-        <div className="orb v" aria-hidden />
-        <div className="orb t" aria-hidden />
-        <div className="vignette" aria-hidden />
-
+      <body className={`${display.variable} ${body.variable} ${mono.variable}`}>
         <Providers>
           <SmoothScroll>
             <AppShell>{children}</AppShell>

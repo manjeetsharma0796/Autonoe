@@ -606,8 +606,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       >
         <div className="wrap">
           <nav className={scrolled ? "nav scrolled" : "nav"}>
-            <Link href="/" className="brand">
-              <span className="dot" /> AUTONOE
+            <Link href="/" className="brand" aria-label="Autonoe home">
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden fill="none">
+                <rect x="3" y="13" width="4" height="8" rx="1" fill="var(--gold)" opacity="0.5" />
+                <rect x="10" y="9" width="4" height="12" rx="1" fill="var(--gold)" opacity="0.78" />
+                <rect x="17" y="4" width="4" height="17" rx="1" fill="var(--gold)" />
+              </svg>
+              AUTONOE
             </Link>
 
             <div className="navlinks">
@@ -634,10 +639,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               Models
             </button>
 
-            {/* External funding wallet — RainbowKit ConnectButton (compact). */}
-            <ConnectButton showBalance={false} chainStatus="icon" accountStatus="address" />
-
-            {/* Self-custodial agent wallet — create/unlock/fund/policy drawer. */}
+            {/* One wallet action in the nav: the self-custodial agent wallet
+                drawer. The external funding wallet (RainbowKit) lives inside
+                that drawer, so the nav never shows two competing wallet buttons. */}
             <button
               className="btn btn-gold"
               onClick={() => setDrawerOpen(true)}
