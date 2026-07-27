@@ -30,7 +30,9 @@ export interface Arena {
   committedAt: number;
 }
 
-const BYBIT_BASE = process.env.BYBIT_BASE ?? "https://api.bybit.com";
+// Binance public market-data host: globally reachable (no geo-block, no key),
+// unlike api.bybit.com which 403s from US datacenter IPs (e.g. Vercel iad1).
+const KLINE_BASE = process.env.KLINE_BASE ?? "https://data-api.binance.vision";
 
 function normalizeSymbol(raw: string): string {
   const s = raw.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -39,19 +41,19 @@ function normalizeSymbol(raw: string): string {
 }
 
 async function fetchCloses(symbol: string, limit = 200): Promise<{ closes: number[]; firstTs: number; lastTs: number }> {
-  const url = `${BYBIT_BASE}/v5/market/kline?category=spot&symbol=${symbol}&interval=60&limit=${limit}`;
+  const url = `${KLINE_BASE}/api/v3/klines?symbol=${symbol}&interval=1h&limit=${limit}`;
   const res = await fetch(url, { headers: { accept: "application/json" } });
-  if (!res.ok) throw new Error(`bybit ${res.status}`);
-  const json = (await res.json()) as { result?: { list?: string[][] } };
-  const list = json.result?.list;
-  if (!list || list.length === 0) throw new Error("unknown or empty market");
-  // Bybit returns newest-first [start,open,high,low,close,...]; reverse to oldest->newest.
-  const rows = [...list].reverse();
-  const closes = rows.map((r) => Number(r[4]));
+  if (!res.ok) throw new Error(`market data ${res.status}`);
+  // Binance returns oldest->newest rows: [openTime,open,high,low,close,volume,closeTime,...].
+  const rows = (await res.json()) as unknown[];
+  if (!Array.isArray(rows) || rows.length === 0) throw new Error("unknown or empty market");
+  const closes = rows.map((r) => Number((r as string[])[4]));
   if (closes.some((n) => !Number.isFinite(n) || n <= 0) || closes.length < 60) {
     throw new Error("insufficient price history");
   }
-  return { closes, firstTs: Number(rows[0][0]), lastTs: Number(rows[rows.length - 1][0]) };
+  const first = Number((rows[0] as string[])[0]);
+  const last = Number((rows[rows.length - 1] as string[])[0]);
+  return { closes, firstTs: first, lastTs: last };
 }
 
 // ---- causal indicator series (index i uses only data through i) ----
