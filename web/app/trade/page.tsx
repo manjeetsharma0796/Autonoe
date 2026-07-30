@@ -152,7 +152,7 @@ function TradeInner() {
             <span className="dot" /> AUTONOE
           </div>
           <div>
-            Built for the Mantle Turing Test 2026 · testnet · not financial advice
+            Testnet · not financial advice
           </div>
         </footer>
       </div>
