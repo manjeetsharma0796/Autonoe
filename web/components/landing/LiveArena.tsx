@@ -26,6 +26,12 @@ const SYMBOLS = ["BTC", "ETH", "SOL"] as const;
 const pct = (n: number) => (n > 0 ? "+" : "") + n.toFixed(2) + "%";
 const toneClass = (n: number) => (n > 0 ? "text-green" : n < 0 ? "text-red" : "text-muted");
 
+// Responsive column grid: tighter on mobile so the strategy-name column keeps
+// real width; the wide desktop layout kicks in at sm.
+const COLS =
+  "grid grid-cols-[26px_1fr_54px_62px_40px] gap-2 sm:grid-cols-[40px_1fr_96px_104px_72px] sm:gap-3";
+const PADX = "px-3 sm:px-5";
+
 export function LiveArena() {
   const [symbol, setSymbol] = useState<string>("BTC");
   const [data, setData] = useState<Arena | null>(null);
@@ -98,25 +104,25 @@ export function LiveArena() {
       >
         {/* Column header */}
         <div
-          className="num grid items-center gap-3 px-5 py-3 text-[11px] uppercase tracking-[0.16em]"
-          style={{ gridTemplateColumns: "40px 1fr 96px 104px 72px", color: "var(--faint)", borderBottom: "1px solid var(--line)" }}
+          className={`num ${COLS} ${PADX} items-center py-3 text-[10.5px] uppercase tracking-[0.14em] sm:text-[11px] sm:tracking-[0.16em]`}
+          style={{ color: "var(--faint)", borderBottom: "1px solid var(--line)" }}
         >
           <span></span>
           <span>Strategy agent</span>
           <span className="text-right">Return</span>
-          <span className="text-right">vs Market</span>
+          <span className="text-right">vs Mkt</span>
           <span className="text-right">Win</span>
         </div>
 
         {loading && !data ? (
-          <div className="divide-y" style={{ borderColor: "var(--line2)" }}>
+          <div>
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="grid items-center gap-3 px-5 py-4" style={{ gridTemplateColumns: "40px 1fr 96px 104px 72px" }}>
+              <div key={i} className={`${COLS} ${PADX} items-center py-4`} style={{ borderTop: "1px solid var(--line2)" }}>
                 <div className="h-6 w-6 animate-pulse rounded-md" style={{ background: "rgba(255,255,255,0.06)" }} />
-                <div className="h-4 w-40 animate-pulse rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
-                <div className="ml-auto h-4 w-14 animate-pulse rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
-                <div className="ml-auto h-4 w-16 animate-pulse rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
+                <div className="h-4 w-32 animate-pulse rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
                 <div className="ml-auto h-4 w-10 animate-pulse rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
+                <div className="ml-auto h-4 w-12 animate-pulse rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
+                <div className="ml-auto h-4 w-8 animate-pulse rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
               </div>
             ))}
           </div>
@@ -134,9 +140,8 @@ export function LiveArena() {
                 return (
                   <div
                     key={r.agent}
-                    className="grid items-center gap-3 px-5 py-4 transition-colors"
+                    className={`${COLS} ${PADX} items-center py-4 transition-colors`}
                     style={{
-                      gridTemplateColumns: "40px 1fr 96px 104px 72px",
                       borderTop: "1px solid var(--line2)",
                       background: win ? "linear-gradient(90deg, rgba(163,230,53,0.08), transparent 70%)" : "transparent",
                     }}
@@ -151,14 +156,14 @@ export function LiveArena() {
                       {r.rank}
                     </span>
                     <span className="min-w-0">
-                      <span className="block truncate font-semibold" style={{ fontFamily: "var(--disp)", color: "var(--ink)" }}>
+                      <span className="block truncate text-[14px] font-semibold sm:text-[16px]" style={{ fontFamily: "var(--disp)", color: "var(--ink)" }}>
                         {r.name}
                       </span>
-                      <span className="block truncate text-[12.5px]" style={{ color: "var(--faint)" }}>{r.brief}</span>
+                      <span className="hidden truncate text-[12.5px] sm:block" style={{ color: "var(--faint)" }}>{r.brief}</span>
                     </span>
-                    <span className={`num text-right text-[15px] ${toneClass(r.returnPct)}`}>{pct(r.returnPct)}</span>
-                    <span className={`num text-right text-[15px] font-bold ${toneClass(r.vsBaselinePct)}`}>{pct(r.vsBaselinePct)}</span>
-                    <span className="num text-right text-[15px]" style={{ color: "var(--muted)" }}>{r.winRatePct.toFixed(0)}%</span>
+                    <span className={`num text-right text-[13px] sm:text-[15px] ${toneClass(r.returnPct)}`}>{pct(r.returnPct)}</span>
+                    <span className={`num text-right text-[13px] font-bold sm:text-[15px] ${toneClass(r.vsBaselinePct)}`}>{pct(r.vsBaselinePct)}</span>
+                    <span className="num text-right text-[13px] sm:text-[15px]" style={{ color: "var(--muted)" }}>{r.winRatePct.toFixed(0)}%</span>
                   </div>
                 );
               })}
@@ -166,7 +171,7 @@ export function LiveArena() {
 
             {/* Baseline + seal footer */}
             <div
-              className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"
+              className={`${PADX} flex flex-wrap items-center justify-between gap-x-4 gap-y-2 py-4`}
               style={{ borderTop: "1px solid var(--line)", background: "rgba(255,255,255,0.015)" }}
             >
               <span className="num text-[12.5px]" style={{ color: "var(--muted)" }}>
