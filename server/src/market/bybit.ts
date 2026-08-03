@@ -1,13 +1,13 @@
 // Bybit v5 public market data (no API key needed for spot kline/tickers).
-// Our tradable assets map to Bybit spot symbols; WMNT analyses use MNTUSDT
-// (MNT is what WMNT wraps) while the on-chain AMM remains the execution truth.
+// Our tradable assets map to Bybit spot symbols; WOKB analyses use MNTUSDT
+// (MNT is what WOKB wraps) while the on-chain AMM remains the execution truth.
 
 import type { AssetSymbol } from '@autonoe/shared';
 
 const BASE = process.env.BYBIT_BASE ?? 'https://api.bybit.com';
 
 export const BYBIT_SYMBOL: Record<AssetSymbol, string> = {
-  WMNT: 'MNTUSDT', // WMNT wraps MNT; analyses use MNTUSDT
+  WOKB: 'MNTUSDT', // WOKB wraps MNT; analyses use MNTUSDT
   BTC: 'BTCUSDT',
   ETH: 'ETHUSDT',
   SUI: 'SUIUSDT',
@@ -109,7 +109,7 @@ import type { TokenInfo } from '@autonoe/shared';
 
 /**
  * Fetch all *USDT spot tickers, sort by volume24h desc, return top `limit`.
- * MNTUSDT is remapped to WMNT (onchain: true); everything else is advise-only.
+ * MNTUSDT is remapped to WOKB (onchain: true); everything else is advise-only.
  */
 export async function getAllTickers(
   q = '',
@@ -129,7 +129,7 @@ export async function getAllTickers(
       const base = bybitSymbol.replace(/USDT$/, '');
       const isWMNT = base === 'MNT';
       return {
-        symbol: isWMNT ? 'WMNT' : base,
+        symbol: isWMNT ? 'WOKB' : base,
         bybitSymbol,
         price: Number(t.lastPrice ?? 0),
         change24hPct: Number(t.price24hPcnt ?? 0) * 100,

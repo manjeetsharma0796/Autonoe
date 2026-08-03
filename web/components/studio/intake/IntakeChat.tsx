@@ -77,7 +77,7 @@ const QUESTIONS: Question[] = [
   {
     id: "goal",
     think: "Reading your goal",
-    q: "Hey - what are you trying to do?",
+    q: "Hey — what are you trying to do?",
     opts: [
       { v: "grow", label: "Grow my stack" },
       { v: "hedge", label: "Hedge a position" },
@@ -91,7 +91,7 @@ const QUESTIONS: Question[] = [
     q: "Got it. Which asset are we looking at?",
     chart: true,
     opts: [
-      { v: "WMNT", label: "WMNT" },
+      { v: "WOKB", label: "WOKB" },
       { v: "BTC", label: "BTC" },
       { v: "ETH", label: "ETH" },
       { v: "SOL", label: "SOL" },
@@ -150,7 +150,7 @@ const QUESTIONS: Question[] = [
   {
     id: "stop",
     think: "Locking down risk",
-    q: "Last one - how do you want to handle downside?",
+    q: "Last one — how do you want to handle downside?",
     opts: [
       { v: "tight", label: "Tight stop", sub: "cut fast" },
       { v: "wide", label: "Wide stop", sub: "room to breathe" },
@@ -192,10 +192,10 @@ function suggestedSources(a: Answers): Record<DataSourceKey, boolean> {
   };
 }
 
-/** Normalize the asset answer onto a valid AssetSymbol; fall back to WMNT. */
+/** Normalize the asset answer onto a valid AssetSymbol; fall back to WOKB. */
 function toAssetSymbol(raw: string | undefined): AssetSymbol {
   const up = (raw ?? "").trim().toUpperCase();
-  return (ASSET_SYMBOLS as readonly string[]).includes(up) ? (up as AssetSymbol) : "WMNT";
+  return (ASSET_SYMBOLS as readonly string[]).includes(up) ? (up as AssetSymbol) : "WOKB";
 }
 
 /** Returns true if the message is asking for a price chart (not just a price). */
@@ -212,9 +212,9 @@ const ASSET_NAME_MAP: Record<string, AssetSymbol> = {
   solana: "SOL",
   sol: "SOL",
   sui: "SUI",
-  mantle: "WMNT",
-  wmnt: "WMNT",
-  mnt: "WMNT",
+  mantle: "WOKB",
+  wokb: "WOKB",
+  mnt: "WOKB",
 };
 
 /**
@@ -900,7 +900,7 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
         <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--faint)" }}>
           {mode === "guided"
             ? "scope a trade, step by step"
-            : "just chat - no trade scoping"}
+            : "just chat — no trade scoping"}
         </span>
         {mode === "chat" && (
           <button
@@ -1050,7 +1050,7 @@ export function IntakeChat({ onSendToJudge }: IntakeChatProps) {
           placeholder={
             mode === "chat"
               ? "Message Autonoe - ask anything (e.g. “what's BTC doing?”)"
-              : "Type your answer - or ask anything (e.g. “what's BTC doing?”)"
+              : "Type your answer — or ask anything (e.g. “what's BTC doing?”)"
           }
           aria-label={mode === "chat" ? "Message Autonoe" : "Type your answer or ask the assistant anything"}
           value={draft}
@@ -1146,7 +1146,7 @@ function ChartTurn({ asset, onDone }: { asset: string; onDone: () => void }) {
     <div className={styles.aturn}>
       <div className={styles.think}>
         <span className={styles.chev}>▸</span>
-        Pulling {asset} from Bybit
+        Pulling {asset} spot prices
       </div>
       <div className={styles.atext}>
         <StreamText
@@ -1390,7 +1390,7 @@ function BriefCard({
         </div>
         <div className={styles.atext}>
           <StreamText
-            text="Got it - here's your brief. Tweak anything, then send it to the tribunal."
+            text="Got it — here's your brief. Tweak anything, then send it to the judge panel."
             onDone={() => setBriefTextDone(true)}
           />
         </div>
@@ -1444,11 +1444,11 @@ function BriefCard({
                 <svg className={styles.spin} viewBox="0 0 16 16" fill="none" aria-hidden="true">
                   <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" strokeDasharray="20 8" />
                 </svg>
-                Running the tribunal…
+                Running the judge panel…
               </>
             ) : (
               <>
-                Run the tribunal
+                Run the judge panel
                 <ArrowRightIcon />
               </>
             )}

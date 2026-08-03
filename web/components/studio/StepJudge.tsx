@@ -626,7 +626,7 @@ function SingleRound({
                       </div>
                     ) : (
                       <div className={styles.twStatus}>
-                        <span>Choose this panel&apos;s model above, then run the tribunal.</span>
+                        <span>Choose this panel&apos;s model above, then run the judge panel.</span>
                       </div>
                     )
                   ) : isAdversary ? (
@@ -776,7 +776,7 @@ function TribunalSetup({
     <div className={roundStyles.setup}>
       <div className={roundStyles.setupHead}>
         <div className={roundStyles.setupKicker}>
-          {isFirst ? "Configure the tribunal" : "Re-evaluate · new round"}
+          {isFirst ? "Configure the judge panel" : "Re-evaluate · new round"}
         </div>
         <div className={roundStyles.setupTitle}>
           Choose each panel&apos;s model and how hard they argue, then run.
@@ -822,7 +822,7 @@ function TribunalSetup({
 
       <div className={roundStyles.setupActions}>
         <Button variant="gold" onClick={onRun} disabled={disabled}>
-          {isFirst ? "Run the tribunal" : "Run this round"}
+          {isFirst ? "Run the judge panel" : "Run this round"}
         </Button>
         <span className={roundStyles.setupNote}>
           {iterations} exchanges each · 3 models · streamed live
@@ -1019,7 +1019,7 @@ export function StepJudge({ active, thesis }: StepJudgeProps) {
       <div className={`${styles.notice}`} style={{ marginTop: 30 }}>
         <WarnIcon />
         Testnet · not financial advice. Executing routes to /trade where your agent wallet signs
-        the swap on Mantle - manual confirm.
+        the swap on X Layer — manual confirm.
       </div>
     </section>
   );

@@ -63,6 +63,9 @@
   align-items: center;
   gap: 8px;
   padding: 12px 2px 0;
+  /* The label + chip + hint don't fit one line on a 360px phone; the hint used
+     to push the row ~11px past the viewport. */
+  flex-wrap: wrap;
 }
 .modellab {
   font-size: 11px;
@@ -76,6 +79,12 @@
   font-size: 11px;
   color: var(--faint);
   font-family: var(--mono);
+  min-width: 0;
+}
+@media (max-width: 520px) {
+  .modelhint {
+    margin-left: 0;
+  }
 }
 
 .chat {

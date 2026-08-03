@@ -94,22 +94,31 @@
   letter-spacing: -0.01em;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html {
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  color-scheme: dark;
-  scroll-behavior: smooth;
-}
-body {
-  background: var(--bg);
-  color: var(--ink);
-  font-family: var(--body);
-  font-weight: 400;
-  line-height: 1.55;
-  overflow-x: hidden;
-  position: relative;
-  min-height: 100vh;
+/* Element resets MUST live in @layer base.
+   Unlayered CSS beats every @layer regardless of specificity, so a bare
+   universal margin/padding reset here silently zeroed out every Tailwind
+   padding and margin utility across the whole app — cards rendered with their
+   content flush to the border and the UI read as half-styled. Inside base,
+   utilities (a later layer) correctly win. */
+@layer base {
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    font-weight: 400;
+    line-height: 1.55;
+    overflow-x: hidden;
+    position: relative;
+    min-height: 100vh;
+  }
+  a { color: inherit; text-decoration: none; }
 }
 /* Single, static atmosphere: one faint lime glow up top — no orbs, no grain. */
 body::before {
@@ -136,7 +145,6 @@ body::before {
 }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.26); background-clip: content-box; }
 
-a { color: inherit; text-decoration: none; }
 .wrap { width: min(1180px, 92vw); margin-inline: auto; }
 .wrap-wide { width: min(1680px, 95vw); margin-inline: auto; }
 main { position: relative; z-index: 2; }
@@ -180,7 +188,106 @@ main { position: relative; z-index: 2; }
   background: var(--gold); border-radius: 2px; transition: width 0.22s var(--ease);
 }
 .navlinks a:hover::after, .navlinks a.active::after { width: 100%; }
-@media (max-width: 900px) { .navlinks { display: none; } }
+
+/* ---------- Mobile nav ---------- */
+/* The desktop links used to just `display:none` under 900px with nothing to
+   replace them, so every inner page was unreachable on a phone. */
+.navtoggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.navtoggle:hover { border-color: rgba(163, 230, 53, 0.45); background: rgba(163, 230, 53, 0.06); }
+.navtoggle span {
+  display: block;
+  width: 16px;
+  height: 1.5px;
+  background: currentColor;
+  border-radius: 2px;
+  position: relative;
+  transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease);
+}
+.navtoggle span::before, .navtoggle span::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  width: 16px;
+  height: 1.5px;
+  background: currentColor;
+  border-radius: 2px;
+  transition: transform var(--dur) var(--ease);
+}
+.navtoggle span::before { top: -5px; }
+.navtoggle span::after { top: 5px; }
+.navtoggle[aria-expanded="true"] span { background: transparent; }
+.navtoggle[aria-expanded="true"] span::before { transform: translateY(5px) rotate(45deg); }
+.navtoggle[aria-expanded="true"] span::after { transform: translateY(-5px) rotate(-45deg); }
+
+.navsheet {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(7, 9, 14, 0.94);
+  backdrop-filter: blur(16px) saturate(1.2);
+  box-shadow: var(--shadow);
+  animation: rise 0.22s var(--ease) forwards;
+}
+.navsheet a, .navsheet button {
+  font-family: var(--body);
+  font-size: 14.5px;
+  text-align: left;
+  color: var(--muted);
+  padding: 11px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+}
+.navsheet a:hover, .navsheet button:hover { color: var(--ink); background: rgba(255, 255, 255, 0.04); }
+.navsheet a.active { color: var(--gold2); background: var(--accent-soft); }
+
+@media (max-width: 900px) {
+  .navlinks { display: none; }
+  .navtoggle { display: inline-flex; }
+  .navsheet.open { display: flex; }
+  /* Keep brand + wallet + toggle inside 92vw at 390px — the wallet button
+     used to run 6px past the viewport edge. */
+  .nav { gap: var(--s2); padding: 10px 10px 10px 14px; }
+  .nav .btn { padding: 9px 12px; font-size: 12.5px; }
+  /* `.nav .nav-models` (0,2,0) so it beats `.btn { display: inline-flex }`,
+     which is declared later in this file at equal specificity. */
+  .nav .nav-models { display: none; }
+}
+@media (max-width: 420px) {
+  .brand { font-size: 12.5px; letter-spacing: 0.1em; gap: 7px; }
+  .nav .btn { padding: 8px 10px; font-size: 12px; }
+}
+
+/* ---------- Section rhythm ---------- */
+/* One vertical scale for every marketing section. Ad-hoc 104/128/140px values
+   stacked into 208-280px voids between blocks. */
+.section { padding-block: clamp(48px, 5.5vw, 72px); }
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s6);
+}
 
 /* ---------- Buttons ---------- */
 .btn {

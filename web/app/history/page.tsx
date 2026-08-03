@@ -8,7 +8,9 @@ import { BenchmarkStats } from "@/components/benchmark/BenchmarkStats";
 import { Leaderboard } from "@/components/benchmark/Leaderboard";
 import { VerifyBadge } from "@/components/benchmark/VerifyBadge";
 
-const MANTLESCAN_BASE = "https://sepolia.mantlescan.xyz/tx";
+// Explorer links come from the chain package so they follow the deployed
+// network (now OKLink / X Layer) instead of being pinned to one explorer.
+import { txUrl } from "@autonoe/chain";
 
 function formatDate(iso: string): string {
   try {
@@ -89,9 +91,12 @@ function HistoryTable({ records }: { records: HistoryRecord[] }) {
           </tr>
         </thead>
         <tbody>
-          {records.map((rec) => (
+          {/* thesisId is not unique in the DecisionLog — the same thesis can be
+              logged more than once, which tripped React's duplicate-key warning
+              and risks rows being dropped or duplicated on re-render. */}
+          {records.map((rec, i) => (
             <tr
-              key={rec.thesisId}
+              key={`${rec.thesisId}-${rec.createdAt}-${i}`}
               style={{ borderBottom: "1px solid rgba(255,255,255,.06)" }}
             >
               <td
@@ -138,7 +143,7 @@ function HistoryTable({ records }: { records: HistoryRecord[] }) {
                     Judged
                   </span>
                 ) : (
-                  <span style={{ color: "var(--muted)", fontSize: 13 }}> - </span>
+                  <span style={{ color: "var(--muted)", fontSize: 13 }}>—</span>
                 )}
               </td>
               <td
@@ -151,12 +156,12 @@ function HistoryTable({ records }: { records: HistoryRecord[] }) {
               >
                 {rec.pnlMUSD !== null
                   ? `${rec.pnlMUSD >= 0 ? "+" : ""}${rec.pnlMUSD.toFixed(2)} mUSD`
-                  : " - "}
+                  : "—"}
               </td>
               <td style={{ padding: "12px" }}>
                 {rec.txHash ? (
                   <a
-                    href={`${MANTLESCAN_BASE}/${rec.txHash}`}
+                    href={txUrl(rec.txHash)}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
@@ -169,14 +174,14 @@ function HistoryTable({ records }: { records: HistoryRecord[] }) {
                     {rec.txHash.slice(0, 8)}…{rec.txHash.slice(-6)} ↗
                   </a>
                 ) : (
-                  <span style={{ color: "var(--muted)", fontSize: 12 }}> - </span>
+                  <span style={{ color: "var(--muted)", fontSize: 12 }}>—</span>
                 )}
               </td>
               <td style={{ padding: "12px" }}>
                 {rec.txHash ? (
                   <VerifyBadge txHash={rec.txHash} />
                 ) : (
-                  <span style={{ color: "var(--muted)", fontSize: 12 }}> - </span>
+                  <span style={{ color: "var(--muted)", fontSize: 12 }}>—</span>
                 )}
               </td>
             </tr>
@@ -222,8 +227,8 @@ export default function HistoryPage() {
       <span className="tag">Benchmark</span>
       <h1 className="h2">History</h1>
       <p className="sub">
-        On-chain DecisionLog records - every thesis judged, executed, and
-        settled on Mantle Sepolia.
+        The verified record — every thesis the judge panel ruled on, executed and
+        settled on the testnet terminal, written to an on-chain DecisionLog.
       </p>
 
       {/* ── Loading / error state for history ─────────────────────── */}
@@ -256,7 +261,7 @@ export default function HistoryPage() {
           </div>
           <p style={{ color: "var(--muted)", maxWidth: 480, margin: "0 auto", fontSize: 15 }}>
             Couldn&apos;t reach the DecisionLog backend. Start the API server, then
-            reload - judged theses and on-chain PnL will appear here.
+            reload — judged theses and on-chain PnL will appear here.
           </p>
           <p style={{ color: "var(--faint)", fontFamily: "var(--mono)", fontSize: 11, marginTop: 14 }}>
             {historyError}
@@ -355,7 +360,7 @@ export default function HistoryPage() {
                   flexShrink: 0,
                 }}
               />
-              DecisionLog · Mantle Sepolia · {records.length} record
+              DecisionLog · testnet terminal · {records.length} record
               {records.length !== 1 ? "s" : ""}
             </div>
           </div>

@@ -7,11 +7,11 @@ import { usePathname } from "next/navigation";
 import { useAccount, useSendTransaction } from "wagmi";
 import { parseEther } from "viem";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { MNT_FAUCET_URL, DEFAULT_POLICY, type SpendingPolicy } from "@autonoe/wallet";
+import { OKB_FAUCET_URL, DEFAULT_POLICY, type SpendingPolicy } from "@autonoe/wallet";
 import { useWallet } from "@/components/wallet/WalletProvider";
 
-/** Amount of native MNT sent to the agent wallet by the "Fund agent" action. */
-const FUND_AGENT_MNT = "0.5";
+/** Amount of native OKB sent to the agent wallet by the "Fund agent" action. */
+const FUND_AGENT_OKB = "0.05";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -66,14 +66,14 @@ function WalletDrawer({ onClose }: { onClose: () => void }) {
 
   // External funding wallet (connected via RainbowKit ConnectButton).
   const { isConnected } = useAccount();
-  // Send native MNT from the connected external wallet to the agent wallet.
+  // Send native OKB from the connected external wallet to the agent wallet.
   const { sendTransaction, isPending: fundAgentPending } = useSendTransaction();
 
   function handleFundAgent() {
     if (!wallet.address) return;
     sendTransaction({
       to: wallet.address as `0x${string}`,
-      value: parseEther(FUND_AGENT_MNT),
+      value: parseEther(FUND_AGENT_OKB),
     });
   }
 
@@ -153,9 +153,9 @@ function WalletDrawer({ onClose }: { onClose: () => void }) {
     setPolicyTokens(DEFAULT_POLICY.allowedTokens.join(", "));
   }
 
-  const mntFaucetUrl = wallet.address
-    ? `${MNT_FAUCET_URL}?address=${wallet.address}`
-    : MNT_FAUCET_URL;
+  const okbFaucetUrl = wallet.address
+    ? `${OKB_FAUCET_URL}?address=${wallet.address}`
+    : OKB_FAUCET_URL;
 
   const label = (t: string) => (
     <div style={{ fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase" as const, color: "var(--faint)", marginBottom: 6 }}>
@@ -213,7 +213,7 @@ function WalletDrawer({ onClose }: { onClose: () => void }) {
           </p>
           <ConnectButton showBalance={false} chainStatus="icon" accountStatus="address" />
 
-          {/* Fund agent: send native MNT from the connected wallet → agent address. */}
+          {/* Fund agent: send native OKB from the connected wallet → agent address. */}
           {isConnected && wallet.address && (
             <div style={{ marginTop: 14 }}>
               <button
@@ -223,10 +223,10 @@ function WalletDrawer({ onClose }: { onClose: () => void }) {
                 onClick={handleFundAgent}
                 type="button"
               >
-                {fundAgentPending ? "Sending…" : `Fund agent (${FUND_AGENT_MNT} MNT) →`}
+                {fundAgentPending ? "Sending…" : `Fund agent (${FUND_AGENT_OKB} OKB) →`}
               </button>
               <p style={{ fontFamily: "var(--mono)", fontSize: 10.5, color: "var(--faint)", marginTop: 8, lineHeight: 1.5 }}>
-                Sends {FUND_AGENT_MNT} MNT from the connected wallet to the agent address. Confirm in your wallet.
+                Sends {FUND_AGENT_OKB} OKB from the connected wallet to the agent address. Confirm in your wallet.
               </p>
             </div>
           )}
@@ -258,7 +258,7 @@ function WalletDrawer({ onClose }: { onClose: () => void }) {
         {!wallet.isCreated && (
           <>
             <p style={{ fontFamily: "var(--body)", fontSize: 13, color: "var(--muted)", marginBottom: 14, lineHeight: 1.5 }}>
-              Create a dedicated autonomous wallet. The private key is encrypted locally - it never leaves your browser.
+              Create a dedicated autonomous wallet. The private key is encrypted locally — it never leaves your browser.
             </p>
             {label("Passphrase")}
             <input
@@ -339,9 +339,9 @@ function WalletDrawer({ onClose }: { onClose: () => void }) {
               <div style={{ border: "1px solid var(--line)", borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
                 {label("Balances")}
                 {[
-                  { sym: "MNT (gas)", val: formatBalance(wallet.balances.mnt, 18), col: "var(--gold2)" },
+                  { sym: "OKB (gas)", val: formatBalance(wallet.balances.okb, 18), col: "var(--gold2)" },
                   { sym: "mUSD", val: formatBalance(wallet.balances.mUSD, 6), col: "var(--green)" },
-                  { sym: "WMNT", val: formatBalance(wallet.balances.wmnt, 18), col: "var(--violet2)" },
+                  { sym: "WOKB", val: formatBalance(wallet.balances.wokb, 18), col: "var(--violet2)" },
                 ].map((b) => (
                   <div key={b.sym} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                     <span style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--muted)" }}>{b.sym}</span>
@@ -394,16 +394,16 @@ function WalletDrawer({ onClose }: { onClose: () => void }) {
               {fundError && <p style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--red)", marginTop: 6 }}>{fundError}</p>}
             </div>
 
-            {/* MNT gas faucet */}
+            {/* OKB gas faucet */}
             <div style={{ marginBottom: 16 }}>
-              {label("MNT gas faucet")}
+              {label("OKB gas faucet")}
               <a
-                href={mntFaucetUrl}
+                href={okbFaucetUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--gold2)", wordBreak: "break-all" }}
               >
-                {mntFaucetUrl}
+                {okbFaucetUrl}
               </a>
             </div>
 
@@ -465,7 +465,7 @@ function WalletDrawer({ onClose }: { onClose: () => void }) {
               {revealedKey && (
                 <div style={{ marginTop: 12, background: "rgba(255,107,107,0.06)", border: "1px solid rgba(255,107,107,0.2)", borderRadius: 10, padding: "12px 14px" }}>
                   <p style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--red)", letterSpacing: "0.14em", textTransform: "uppercase" as const, marginBottom: 6 }}>
-                    Private key - keep secret
+                    Private key — keep secret
                   </p>
                   <p style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink)", wordBreak: "break-all" }}>
                     {revealedKey}
@@ -531,7 +531,7 @@ function WalletDrawer({ onClose }: { onClose: () => void }) {
                   type="text"
                   value={policyTokens}
                   onChange={(e) => setPolicyTokens(e.target.value)}
-                  placeholder="WMNT, BTC, ETH, SUI, SOL"
+                  placeholder="WOKB, BTC, ETH, SUI, SOL"
                   style={{ width: "100%", fontFamily: "var(--body)", fontSize: 13, color: "var(--ink)", padding: "10px 13px", borderRadius: 10, border: "1px solid var(--line)", background: "rgba(255,255,255,0.025)", outline: "none", marginBottom: 12 }}
                 />
                 {policyError && <p style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--red)", marginBottom: 8 }}>{policyError}</p>}
@@ -576,6 +576,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   // ── Key/model quick-panel state (additive; isolated from wallet drawer) ──
   const [keyPanelOpen, setKeyPanelOpen] = useState(false);
+  // ── Mobile nav sheet (under 900px the desktop links are hidden) ──
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const wallet = useWallet();
 
@@ -586,6 +588,9 @@ export function AppShell({ children }: { children: ReactNode }) {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Navigating away should never leave the sheet hanging open over the page.
+  useEffect(() => setMenuOpen(false), [pathname]);
 
   // Agent-wallet button reflects the self-custodial agent wallet only; the
   // external funding wallet has its own RainbowKit ConnectButton beside it.
@@ -627,9 +632,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               ))}
             </div>
 
-            {/* Key/model quick-panel trigger - additive, isolated from wallet drawer */}
+            {/* Key/model quick-panel trigger - additive, isolated from wallet drawer.
+                Hidden on mobile, where it moves into the nav sheet. */}
             <button
-              className="btn btn-ghost"
+              className="btn btn-ghost nav-models"
               type="button"
               onClick={() => setKeyPanelOpen((v) => !v)}
               aria-label="Open API keys & models panel"
@@ -649,7 +655,36 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               {agentBtnLabel}
             </button>
+
+            <button
+              className="navtoggle"
+              type="button"
+              aria-expanded={menuOpen}
+              aria-controls="nav-sheet"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              onClick={() => setMenuOpen((v) => !v)}
+            >
+              <span />
+            </button>
           </nav>
+
+          <div id="nav-sheet" className={menuOpen ? "navsheet open" : "navsheet"}>
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={pathname === link.href ? "active" : undefined}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); setKeyPanelOpen(true); }}
+            >
+              API keys &amp; models
+            </button>
+          </div>
         </div>
       </header>
 

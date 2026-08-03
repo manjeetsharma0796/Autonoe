@@ -19,7 +19,7 @@ const GROUPS: { title: string; roles: { role: AIRole; label: string; desc: strin
     ],
   },
   {
-    title: "Tribunal",
+    title: "Judge panel",
     roles: [
       { role: "supporter", label: "Supporter", desc: "Argues for the thesis" },
       { role: "discriminator", label: "Discriminator", desc: "Argues against the thesis" },
@@ -29,7 +29,7 @@ const GROUPS: { title: string; roles: { role: AIRole; label: string; desc: strin
   {
     title: "Data subagents",
     roles: [
-      { role: "subagent.onchain", label: "On-chain", desc: "Wallet + DEX evidence from Mantle" },
+      { role: "subagent.onchain", label: "On-chain", desc: "Wallet + DEX evidence from the terminal" },
       { role: "subagent.market", label: "Market", desc: "Price, depth, funding rates" },
       { role: "subagent.news", label: "News", desc: "Headline sentiment" },
       { role: "subagent.indicators", label: "Indicators", desc: "RSI, MACD, macro signals" },

@@ -10,7 +10,10 @@
     "deploy:mantle": "hardhat run scripts/deploy.ts --network mantleSepolia"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.10",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@types/chai": "4",
+    "chai": "4",
     "dotenv": "^16.4.5",
     "hardhat": "^2.22.17",
     "ts-node": "^10.9.2",

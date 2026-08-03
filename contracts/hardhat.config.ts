@@ -6,7 +6,7 @@ import * as dotenv from "dotenv";
 dotenv.config({ path: "../.env" });
 dotenv.config({ path: "../.env.local", override: true });
 
-const RPC = process.env.MANTLE_SEPOLIA_RPC || "https://rpc.sepolia.mantle.xyz";
+const RPC = process.env.XLAYER_RPC_URL || "https://testrpc.xlayer.tech";
 // Accept keys with or without the 0x prefix.
 const norm = (k?: string) => (k ? (k.startsWith("0x") ? k : `0x${k}`) : undefined);
 const DEPLOYER = norm(process.env.DEPLOYER_PRIVATE_KEY);
@@ -18,22 +18,23 @@ const config: HardhatUserConfig = {
       optimizer: { enabled: true, runs: 200 },
       // IR pipeline avoids "stack too deep" in the Router's addLiquidity.
       viaIR: true,
-      // Mantle is an L2 — pin to paris (no PUSH0/cancun opcodes) for deploy safety.
+      // X Layer is a Polygon-CDK zkEVM — pin to paris (no PUSH0/cancun opcodes),
+      // which zkEVM bytecode support requires.
       evmVersion: "paris",
     },
   },
   networks: {
     // Local in-process network for tests.
     hardhat: {},
-    // Mantle Sepolia (chain 5003) — PRD §9. Accounts only present if a key is set.
-    mantleSepolia: {
+    // X Layer testnet (chain 1952) — the OKX settlement chain the arena already
+    // anchors to. Accounts only present if a deployer key is set.
+    xlayerTestnet: {
       url: RPC,
-      chainId: 5003,
+      chainId: 1952,
       accounts: DEPLOYER ? [DEPLOYER] : [],
     },
   },
-  // Keyless source verification via Sourcify. (Mantlescan's Etherscan-style
-  // verify now needs a paid V2 API key; Sourcify covers chain 5003 for free.)
+  // Keyless source verification via Sourcify.
   sourcify: {
     enabled: true,
   },

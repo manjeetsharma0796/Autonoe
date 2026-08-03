@@ -77,7 +77,7 @@ export function SwapBox({ pair }: { pair: Pair }) {
     [pair.rate]
   );
 
-  const isWmnt = pair.sym === "WMNT";
+  const isWmnt = pair.sym === "WOKB";
   const isSynthetic = SYNTHETIC.includes(pair.sym);
   const executable = isWmnt || isSynthetic;
   const routeLabel = isWmnt
@@ -214,14 +214,14 @@ export function SwapBox({ pair }: { pair: Pair }) {
             {executable ? (
               <>
                 {isWmnt
-                  ? "Real mUSD → WMNT swap on the Mantle AMM."
+                  ? "Real mUSD → WOKB swap on the Mantle AMM."
                   : "Opens an oracle-priced synthetic position on Mantle."}{" "}
                 The agent wallet reverts if you receive less than the minimum.
                 Testnet only - not financial advice.
               </>
             ) : (
               <>
-                {pair.sym} is advice-only — only WMNT and the synthetic markets
+                {pair.sym} is advice-only — only WOKB and the synthetic markets
                 (BTC, ETH, SUI, SOL) are executable on-chain. Testnet only - not
                 financial advice.
               </>
@@ -254,7 +254,7 @@ export function SwapBox({ pair }: { pair: Pair }) {
             block
             disabled
             style={{ marginTop: 16 }}
-            title="Only WMNT and the synthetic markets (BTC, ETH, SUI, SOL) are executable on-chain"
+            title="Only WOKB and the synthetic markets (BTC, ETH, SUI, SOL) are executable on-chain"
           >
             Advice-only · not executable on-chain
           </Button>

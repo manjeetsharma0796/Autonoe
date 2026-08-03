@@ -36,7 +36,7 @@ export default function SettingsPage() {
         <SectionHeader
           label="02"
           title="Role Model Assignments"
-          sub="Give each AI role its own provider and model. Changes save instantly and apply to every run - and you can paste a missing key right on the chip."
+          sub="Give each AI role its own provider and model. Changes save instantly and apply to every run — and you can paste a missing key right on the chip."
         />
         <div style={{ marginTop: 24, maxWidth: 780 }}>
           <RoleModelPanel />
@@ -50,7 +50,7 @@ export default function SettingsPage() {
         <SectionHeader
           label="03"
           title="Data Sources"
-          sub="Toggle subagents on or off. Disabled subagents are excluded from thesis generation - useful for faster runs or when a provider is unavailable."
+          sub="Toggle subagents on or off. Disabled subagents are excluded from thesis generation — useful for faster runs or when a provider is unavailable."
         />
         <div style={{ marginTop: 24 }}>
           <DataSourcePanel />

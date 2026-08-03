@@ -31,10 +31,10 @@ export function Balances() {
             </div>
             <div className="c">
               <div className="sy">
-                <span className="b">W</span> WMNT
+                <span className="b">W</span> WOKB
               </div>
-              <div className="n">{fmt(b.wmnt, 18, 4)}</div>
-              <div className="subv">wrapped MNT</div>
+              <div className="n">{fmt(b.wokb, 18, 4)}</div>
+              <div className="subv">wrapped OKB</div>
             </div>
             <div className="c">
               <div className="sy">

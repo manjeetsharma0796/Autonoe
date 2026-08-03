@@ -16,11 +16,11 @@ import { formatPrice } from "@/lib/format";
 /** Map a live TokenInfo to the Pair shape used by trade components. */
 function tokenToPair(t: TokenInfo): Pair {
   // Badge: first letter, with special characters for well-known tokens.
-  const BADGES: Record<string, string> = { BTC: "₿", ETH: "Ξ", WMNT: "W" };
+  const BADGES: Record<string, string> = { BTC: "₿", ETH: "Ξ", WOKB: "W" };
   const SUBS: Record<string, string> = {
     BTC: "Bitcoin",
     ETH: "Ether",
-    WMNT: "Wrapped Mantle",
+    WOKB: "Wrapped OKB",
     SOL: "Solana",
     SUI: "Sui",
   };
@@ -36,12 +36,17 @@ function tokenToPair(t: TokenInfo): Pair {
     dir: t.change24hPct >= 0 ? "up" : "down",
     // rate: how many tokens you get per 1 mUSD (approximated as 1/price since mUSD ≈ $1)
     rate: t.price > 0 ? 1 / t.price : 0,
+    // Live 24h range/volume for the terminal's stat strip.
+    high24h: (t as TokenInfo & { high24h?: number }).high24h,
+    low24h: (t as TokenInfo & { low24h?: number }).low24h,
+    vol24h: t.volume24h,
   };
 }
 
-/** Parse the `?pair=mUSD-SYM` slug → bare symbol. Defaults to WMNT. */
+/** Parse the `?pair=mUSD-SYM` slug → bare symbol. Defaults to BTC — the arena's
+ *  default market, and always present in the public spot list (OKB is not). */
 function symFromSlug(slug: string | null): string {
-  if (!slug) return "WMNT";
+  if (!slug) return "BTC";
   const m = slug.match(/^mUSD-(.+)$/i);
   return (m ? m[1] : slug).toUpperCase();
 }
@@ -127,7 +132,7 @@ function TradeInner() {
             ) : (
               <span className="ping" style={{ background: "#3FE0A6" }} />
             )}{" "}
-            Mantle Sepolia · testnet
+            Testnet terminal · X Layer
           </span>
         </div>
 

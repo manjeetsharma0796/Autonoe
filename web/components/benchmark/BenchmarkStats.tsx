@@ -14,6 +14,9 @@ function fmt(v: number, decimals = 2): string {
 interface Stats {
   total: number;
   judged: number;
+  /** Records that actually have a realised PnL — the denominator for win rate. */
+  settled: number;
+  wins: number;
   winRate: number; // 0..100
   totalPnl: number;
   best: number | null;
@@ -21,7 +24,11 @@ interface Stats {
 }
 
 function computeStats(records: HistoryRecord[]): Stats {
-  const withPnl = records.filter((r) => r.pnlMUSD !== null);
+  // A thesis only counts as settled once it actually executed on-chain. The
+  // backend writes pnlMUSD: 0 as a placeholder on unexecuted theses, so keying
+  // off `pnlMUSD !== null` alone counted 7 never-executed rows as settled
+  // trades and rendered a red "0.0%" win rate over them.
+  const withPnl = records.filter((r) => r.txHash !== null && r.pnlMUSD !== null);
   const pnls = withPnl.map((r) => r.pnlMUSD as number);
   const wins = pnls.filter((v) => v > 0).length;
   const winRate = pnls.length > 0 ? (wins / pnls.length) * 100 : 0;
@@ -32,6 +39,8 @@ function computeStats(records: HistoryRecord[]): Stats {
   return {
     total: records.length,
     judged: records.filter((r) => r.judged).length,
+    settled: pnls.length,
+    wins,
     winRate,
     totalPnl,
     best,
@@ -160,33 +169,39 @@ export function BenchmarkStats({ records }: { records: HistoryRecord[] }) {
           </div>
         </div>
 
+        {/* Gate on settled records, not total. With unsettled records the old
+            `total === 0` guard let a 0/0 division render as a red "0.0%" and a
+            "+0.00 mUSD" that both read as real results rather than "nothing has
+            settled yet". */}
         <StatCell
           label="Win rate"
-          value={s.total === 0 ? " - " : `${s.winRate.toFixed(1)}%`}
-          valueColor={s.total === 0 ? "var(--faint)" : winRateColor}
+          value={s.settled === 0 ? "—" : `${s.winRate.toFixed(1)}%`}
+          valueColor={s.settled === 0 ? "var(--faint)" : winRateColor}
           sub={
-            s.total === 0
-              ? "no data yet"
-              : `${Math.round((s.winRate / 100) * s.judged)} wins / ${s.judged} settled`
+            s.settled === 0
+              ? s.total === 0
+                ? "no trades yet"
+                : "awaiting settlement"
+              : `${s.wins} win${s.wins === 1 ? "" : "s"} / ${s.settled} settled`
           }
         />
 
         <StatCell
           label="Total PnL"
-          value={s.total === 0 ? " - " : `${fmt(s.totalPnl)} mUSD`}
-          valueColor={s.total === 0 ? "var(--faint)" : pnlColor}
-          sub="cumulative realised"
+          value={s.settled === 0 ? "—" : `${fmt(s.totalPnl)} mUSD`}
+          valueColor={s.settled === 0 ? "var(--faint)" : pnlColor}
+          sub={s.settled === 0 ? "nothing realised yet" : "cumulative realised"}
         />
 
         <StatCell
           label="Best trade"
-          value={s.best !== null ? `${fmt(s.best)} mUSD` : " - "}
+          value={s.best !== null ? `${fmt(s.best)} mUSD` : "—"}
           valueColor={s.best !== null && s.best > 0 ? "var(--green)" : "var(--faint)"}
         />
 
         <StatCell
           label="Worst trade"
-          value={s.worst !== null ? `${fmt(s.worst)} mUSD` : " - "}
+          value={s.worst !== null ? `${fmt(s.worst)} mUSD` : "—"}
           valueColor={
             s.worst !== null && s.worst < 0 ? "var(--red)" : "var(--faint)"
           }

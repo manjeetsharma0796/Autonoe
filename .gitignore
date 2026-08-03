@@ -10,3 +10,8 @@ cache/
 autonoe.db
 *.db
 .claude/
+.vercel
+
+# local tooling artifacts
+.playwright-mcp/
+graphify-out/

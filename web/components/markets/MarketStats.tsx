@@ -10,6 +10,9 @@ import type { TokenInfo } from "../../lib/api";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
+/** Markets the arena backtests its strategy roster against. */
+const ARENA_MARKETS = ["BTC", "ETH", "SOL"] as const;
+
 /**
  * Page head (eyebrow / title / search) plus the four-up market-stats band.
  * Accepts `tokens` from a live feed so all four cells are data-driven.
@@ -109,15 +112,15 @@ export function MarketStats({ tokens }: MarketStatsProps) {
       <div className={styles.phead}>
         <div className={styles.reveal}>
           <span className="eyebrow">
-            <span className="ping" /> Live feed · Bybit spot
+            <span className="ping" /> Live spot feed · public market data
           </span>
           <h1 className={styles.h1}>
-            Markets <span>against mUSD.</span>
+            The markets the <span>arena trades.</span>
           </h1>
           <p className={styles.sub}>
-            One synthetic dollar, every pair. Track price, momentum and depth -
-            then click into the <b>terminal</b> where the tribunal is one step
-            away.
+            Every pair the strategy agents are scored on. Track price, momentum
+            and depth — then open the <b>testnet terminal</b> to run one
+            yourself.
           </p>
         </div>
 
@@ -133,7 +136,7 @@ export function MarketStats({ tokens }: MarketStatsProps) {
             <div className="n">
               <span ref={counterRef}>{count > 0 ? count : 0}</span>
             </div>
-            <div className="d">all live · USDT pairs from Bybit</div>
+            <div className="d">all live · public USDT spot pairs</div>
           </div>
 
           <div className={styles.scell}>
@@ -156,13 +159,16 @@ export function MarketStats({ tokens }: MarketStatsProps) {
             </div>
           </div>
 
+          {/* The arena ranks a fixed roster of deep-liquidity markets. This used
+              to count on-chain AMM pairs, which is always 0 against a public
+              spot feed and rendered as a bare "-". */}
           <div className={styles.scell}>
             <div className="k">
               <TrendIcon />
-              On-chain pairs
+              Arena markets
             </div>
-            <div className="n">{tokens.filter((t) => t.onchain).length || "-"}</div>
-            <div className="d">AMM execution via Mantle</div>
+            <div className="n">{ARENA_MARKETS.length}</div>
+            <div className="d">{ARENA_MARKETS.join(" · ")} ranked every call</div>
           </div>
 
           <div className={`${styles.scell} ${styles.mover}`}>

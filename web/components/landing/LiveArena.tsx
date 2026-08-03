@@ -1,30 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-type Row = {
-  rank: number;
-  agent: string;
-  name: string;
-  brief: string;
-  returnPct: number;
-  vsBaselinePct: number;
-  winRatePct: number;
-  call: string;
-};
-type Arena = {
-  symbol: string;
-  window: { bars: number; interval: string };
-  baseline: { returnPct: number };
-  leaderboard: Row[];
-  top: { name: string };
-  commitHash: string;
-  anchor: { txHash: string; explorer: string } | null;
-};
-
-const SYMBOLS = ["BTC", "ETH", "SOL"] as const;
-const pct = (n: number) => (n > 0 ? "+" : "") + n.toFixed(2) + "%";
-const toneClass = (n: number) => (n > 0 ? "text-green" : n < 0 ? "text-red" : "text-muted");
+import { useArena, ARENA_SYMBOLS, pct, toneClass } from "./ArenaProvider";
 
 // Responsive column grid: tighter on mobile so the strategy-name column keeps
 // real width; the wide desktop layout kicks in at sm.
@@ -33,32 +9,11 @@ const COLS =
 const PADX = "px-3 sm:px-5";
 
 export function LiveArena() {
-  const [symbol, setSymbol] = useState<string>("BTC");
-  const [data, setData] = useState<Arena | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let alive = true;
-    setLoading(true);
-    setError(null);
-    fetch(`/api/service/arena?symbol=${symbol}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (!alive) return;
-        if (d?.error) setError(String(d.error));
-        else setData(d as Arena);
-      })
-      .catch((e) => alive && setError(e instanceof Error ? e.message : String(e)))
-      .finally(() => alive && setLoading(false));
-    return () => {
-      alive = false;
-    };
-  }, [symbol]);
+  const { symbol, setSymbol, data, loading, error } = useArena();
 
   return (
-    <section id="arena" className="wrap" style={{ paddingBlock: "clamp(72px, 10vw, 128px)" }}>
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <section id="arena" className="wrap section">
+      <div className="section-head">
         <div>
           <span className="eyebrow"><span className="ping" /> Live leaderboard</span>
           <h2 className="h2">The board is the pitch.</h2>
@@ -70,12 +25,12 @@ export function LiveArena() {
 
         {/* Symbol tabs */}
         <div
-          className="flex gap-1 rounded-[var(--r-pill)] border p-1"
+          className="flex shrink-0 gap-1 rounded-[var(--r-pill)] border p-1"
           style={{ borderColor: "var(--line)", background: "rgba(255,255,255,0.02)" }}
           role="tablist"
           aria-label="Market"
         >
-          {SYMBOLS.map((s) => {
+          {ARENA_SYMBOLS.map((s) => {
             const on = s === symbol;
             return (
               <button
@@ -114,15 +69,17 @@ export function LiveArena() {
           <span className="text-right">Win</span>
         </div>
 
-        {loading && !data ? (
+        {loading ? (
+          // Skeleton bar widths are fractions of each grid column, not fixed px —
+          // fixed w-8/w-12 overflowed the tighter mobile columns at 360px.
           <div>
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className={`${COLS} ${PADX} items-center py-4`} style={{ borderTop: "1px solid var(--line2)" }}>
                 <div className="h-6 w-6 animate-pulse rounded-md" style={{ background: "rgba(255,255,255,0.06)" }} />
-                <div className="h-4 w-32 animate-pulse rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
-                <div className="ml-auto h-4 w-10 animate-pulse rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
-                <div className="ml-auto h-4 w-12 animate-pulse rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
-                <div className="ml-auto h-4 w-8 animate-pulse rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
+                <div className="h-4 w-3/4 animate-pulse rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
+                <div className="ml-auto h-4 w-4/5 animate-pulse rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
+                <div className="ml-auto h-4 w-4/5 animate-pulse rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
+                <div className="ml-auto h-4 w-3/5 animate-pulse rounded" style={{ background: "rgba(255,255,255,0.06)" }} />
               </div>
             ))}
           </div>

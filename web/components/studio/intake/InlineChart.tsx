@@ -92,7 +92,7 @@ export function InlineChart({ assetLabel }: { assetLabel: string }) {
   if (!pts || !derived) {
     return (
       <div className={styles.inlinechart}>
-        <div className={styles.icLoad}>pulling {assetLabel} from Bybit…</div>
+        <div className={styles.icLoad}>pulling {assetLabel} spot prices…</div>
       </div>
     );
   }
@@ -112,7 +112,7 @@ export function InlineChart({ assetLabel }: { assetLabel: string }) {
     <div className={styles.inlinechart}>
       <div className={styles.icHead}>
         <span className={styles.icTitle}>
-          {assetLabel} <span className={styles.icTf}>· 48h · Bybit 1h</span>
+          {assetLabel} <span className={styles.icTf}>· 48h · 1h bars</span>
         </span>
         <span className={`${styles.icDelta} ${up ? styles.up : styles.down}`}>
           {delta >= 0 ? "+" : ""}{delta.toFixed(2)}%

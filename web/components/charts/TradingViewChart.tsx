@@ -8,15 +8,16 @@
 import { useEffect, useRef } from 'react';
 
 const TV_SYMBOL: Record<string, string> = {
-  WMNT: 'BYBIT:MNTUSDT', // WMNT wraps MNT
+  WOKB: 'BYBIT:OKBUSDT', // WOKB wraps native OKB
   BTC: 'BYBIT:BTCUSDT',
   ETH: 'BYBIT:ETHUSDT',
   SUI: 'BYBIT:SUIUSDT',
   SOL: 'BYBIT:SOLUSDT',
 };
 
-// Prices come from Bybit spot, so point the chart at Bybit too — Binance lacks
-// most of the long-tail meme tokens that show up in the markets list.
+// Our own price feed is Binance (api.bybit.com 403s from datacenter IPs), but
+// the TradingView widget connects from the browser, so Bybit is fine here — and
+// it carries MNT plus the long-tail tokens Binance doesn't list.
 function tvSymbol(asset: string, bybitSymbol?: string): string {
   if (bybitSymbol) return `BYBIT:${bybitSymbol.toUpperCase()}`;
   return TV_SYMBOL[asset] ?? `BYBIT:${asset.toUpperCase()}USDT`;

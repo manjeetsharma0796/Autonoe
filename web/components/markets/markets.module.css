@@ -221,7 +221,13 @@
   gap: 16px;
   margin-top: 16px;
 }
-@media (max-width: 760px) {
+/* Three cards don't fit a tablet: step down to two before going single-column. */
+@media (max-width: 1000px) {
+  .strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 620px) {
   .strip {
     grid-template-columns: 1fr;
   }
@@ -230,6 +236,9 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  /* Grid items default to min-width:auto, so this refused to shrink below its
+     min-content width and pushed the whole strip past the viewport at ~768px. */
+  min-width: 0;
   padding: 14px 16px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -277,6 +286,12 @@
   font-weight: 700;
   font-size: 14.5px;
   flex: none;
+  white-space: nowrap;
+}
+.gcard :global(.meta .sp) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── markets table ─────────────────────────────────────── */

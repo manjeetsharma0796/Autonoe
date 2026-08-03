@@ -16,18 +16,18 @@ interface MoversStripProps {
 }
 
 function tokenSlug(symbol: string): string {
-  return symbol === "WMNT" ? "mUSD-WMNT" : `mUSD-${symbol}`;
+  return symbol === "WOKB" ? "mUSD-WOKB" : `mUSD-${symbol}`;
 }
 
 function tokenGlyph(symbol: string): string {
   if (symbol === "BTC") return "₿";
   if (symbol === "ETH") return "Ξ";
-  if (symbol === "WMNT") return "W";
+  if (symbol === "WOKB") return "W";
   return symbol.slice(0, 2);
 }
 
 function tokenBadgeClass(symbol: string): string {
-  if (symbol === "WMNT") return "mnt";
+  if (symbol === "WOKB") return "mnt";
   if (symbol === "BTC") return "btc";
   if (symbol === "ETH") return "eth";
   return "";

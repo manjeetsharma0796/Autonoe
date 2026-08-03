@@ -83,7 +83,7 @@ export function PnlChart({ records }: { records: HistoryRecord[] }) {
           letterSpacing: ".06em",
         }}
       >
-        No PnL data yet - execute an AI thesis to populate the benchmark.
+        No PnL data yet — execute an AI thesis to populate the benchmark.
       </div>
     );
   }

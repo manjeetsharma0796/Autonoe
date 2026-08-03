@@ -1,6 +1,6 @@
 // Funding helpers (T-305): read agent balances, mint mUSD via the token faucet,
-// and surface the native MNT faucet link. The agent needs a little MNT for gas
-// before it can call the mUSD faucet — see MNT_FAUCET_URL.
+// and surface the native OKB faucet link. The agent needs a little OKB for gas
+// before it can call the mUSD faucet — see OKB_FAUCET_URL.
 
 import { type Hex } from 'viem';
 import { getBalance, readContract, writeContract, waitForTransactionReceipt } from 'viem/actions';
@@ -15,26 +15,26 @@ import {
   txUrl,
 } from '@autonoe/chain';
 
-/** Native MNT faucet (gas) — surfaced in the wallet drawer. */
-export const MNT_FAUCET_URL = FAUCET_URL;
+/** Native OKB faucet (gas) — surfaced in the wallet drawer. */
+export const OKB_FAUCET_URL = FAUCET_URL;
 
 export interface AgentBalances {
-  /** Native MNT (gas), 18dec base units. */
-  mnt: bigint;
+  /** Native OKB (gas), 18dec base units. */
+  okb: bigint;
   /** mUSD, 6dec base units. */
   mUSD: bigint;
-  /** WMNT, 18dec base units. */
-  wmnt: bigint;
+  /** WOKB, 18dec base units. */
+  wokb: bigint;
 }
 
 export async function getAgentBalances(address: `0x${string}`, rpcUrl?: string): Promise<AgentBalances> {
   const pc = getPublicClient(rpcUrl);
-  const [mnt, mUSD, wmnt] = await Promise.all([
+  const [okb, mUSD, wokb] = await Promise.all([
     getBalance(pc, { address }),
     readContract(pc, { address: addresses.mUSD, abi: erc20Abi, functionName: 'balanceOf', args: [address] }),
-    readContract(pc, { address: addresses.WMNT, abi: erc20Abi, functionName: 'balanceOf', args: [address] }),
+    readContract(pc, { address: addresses.WOKB, abi: erc20Abi, functionName: 'balanceOf', args: [address] }),
   ]);
-  return { mnt, mUSD, wmnt };
+  return { okb, mUSD, wokb };
 }
 
 /** Mint mUSD to the agent via the token faucet (cooldown + cap enforced on-chain). */

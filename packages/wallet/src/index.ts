@@ -36,7 +36,7 @@ export {
 } from './execute.js';
 
 export {
-  MNT_FAUCET_URL,
+  OKB_FAUCET_URL,
   getAgentBalances,
   fundMUSD,
   type AgentBalances,

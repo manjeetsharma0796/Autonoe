@@ -80,9 +80,9 @@ export function Workspace() {
       <section className={`${styles.pagehead} wrap`}>
         <div className="reveal">
           <span className="eyebrow">
-            <span className="ping" /> AI Workspace · Mantle Sepolia
+            <span className="ping" /> Testnet terminal · AI workspace
           </span>
-          <h1 className="h2">Studio - write it, then put it on trial.</h1>
+          <h1 className="h2">Studio — write it, then put it on trial.</h1>
           <p className="sub">
             Draft a thesis with AI or write your own, then either execute
             directly or route it through the Judge Panel for refined,

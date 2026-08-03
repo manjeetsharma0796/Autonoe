@@ -3,9 +3,9 @@ import styles from "@/components/markets/markets.module.css";
 import { MarketsShell } from "@/components/markets/MarketsShell";
 
 export const metadata: Metadata = {
-  title: "Autonoe - Markets · trade against mUSD",
+  title: "Autonoe — Markets · the arena's price feed",
   description:
-    "Track price, momentum and depth for every mUSD pair on Mantle Sepolia.",
+    "Live spot prices for every market Autonoe's strategy agents are scored on.",
 };
 
 export default function MarketsPage() {

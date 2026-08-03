@@ -5,7 +5,7 @@ export type Pair = {
   sym: string;
   badge: string;
   sub: string;
-  /** Bybit spot ticker (e.g. "MNTUSDT") used to point the TradingView chart at the right feed. */
+  /** Spot ticker (e.g. "OKBUSDT") used to point the TradingView chart at the right feed. */
   bybitSymbol?: string;
   /** display price string */
   px: string;
@@ -15,14 +15,18 @@ export type Pair = {
   dir: "up" | "down";
   /** mUSD -> asset conversion rate (asset per 1 mUSD) */
   rate: number;
+  /** Live 24h range + quote volume. Absent only for the static fallback pairs. */
+  high24h?: number;
+  low24h?: number;
+  vol24h?: number;
 };
 
 export const PAIRS: Pair[] = [
   {
-    sym: "WMNT",
+    sym: "WOKB",
     badge: "W",
-    sub: "Wrapped Mantle",
-    bybitSymbol: "MNTUSDT",
+    sub: "Wrapped OKB",
+    bybitSymbol: "OKBUSDT",
     px: "1.2843",
     pxNum: 1.2843,
     ch: "4.21%",
@@ -57,17 +61,18 @@ export const TIMEFRAMES = ["5m", "15m", "1H", "4H", "1D", "1W"] as const;
 
 export const SLIPPAGES = ["0.1%", "0.5%", "1.0%"] as const;
 
+/** Fallback strip shown only until the live pair resolves. */
 export const STATS = [
-  { k: "24h High", n: "1.3018", tone: "up" as const },
-  { k: "24h Low", n: "1.2210", tone: "down" as const },
-  { k: "24h Vol (mUSD)", n: "842,109", tone: undefined },
-  { k: "Liquidity", n: "3.91M", tone: undefined },
+  { k: "24h High", n: "—", tone: undefined },
+  { k: "24h Low", n: "—", tone: undefined },
+  { k: "24h Vol (USDT)", n: "—", tone: undefined },
+  { k: "24h Change", n: "—", tone: undefined },
 ];
 
 export const BALANCES = [
   { sym: "mUSD", badge: "$", n: "12,500.00", sub: "≈ $12,500", tone: undefined },
   {
-    sym: "WMNT",
+    sym: "WOKB",
     badge: "W",
     n: "318.40",
     sub: "+4.21% · ≈ $408.92",
@@ -113,11 +118,11 @@ export const CANDLES: [number, number, number, number][] = [
 export const THINKING_STEPS: { head: string; rest: string }[] = [
   {
     head: "Parsed intent",
-    rest: " - directional swing, asset WMNT, base mUSD, ~4h horizon, bullish bias.",
+    rest: " - directional swing, asset WOKB, base mUSD, ~4h horizon, bullish bias.",
   },
   {
     head: "On-chain pull",
-    rest: " - WMNT/mUSD pool depth 3.91M, 24h vol 842k, net inflow positive over 3 sessions.",
+    rest: " - WOKB/mUSD pool depth 3.91M, 24h vol 842k, net inflow positive over 3 sessions.",
   },
   {
     head: "Indicators",
